@@ -1,0 +1,3 @@
+/home/james/UoNDocs/ATOMIC/cmake-build-debug/CMakeFiles/ATOMIC.dir
+/home/james/UoNDocs/ATOMIC/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/james/UoNDocs/ATOMIC/cmake-build-debug/CMakeFiles/rebuild_cache.dir
