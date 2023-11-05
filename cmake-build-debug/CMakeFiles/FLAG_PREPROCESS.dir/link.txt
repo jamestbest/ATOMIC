@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\FLAG_PREPROCESS.dir/objects.a
+C:\PROGRA~1\JETBRA~1\CLION2~1.3\bin\mingw\bin\ar.exe qc CMakeFiles\FLAG_PREPROCESS.dir/objects.a @CMakeFiles\FLAG_PREPROCESS.dir\objects1.rsp
+C:\PROGRA~1\JETBRA~1\CLION2~1.3\bin\mingw\bin\gcc.exe -g -Wl,--whole-archive CMakeFiles\FLAG_PREPROCESS.dir/objects.a -Wl,--no-whole-archive -o FLAG_PREPROCESS.exe -Wl,--out-implib,libFLAG_PREPROCESS.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\FLAG_PREPROCESS.dir\linkLibs.rsp
