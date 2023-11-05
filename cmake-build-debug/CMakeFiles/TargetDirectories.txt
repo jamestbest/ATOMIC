@@ -1,4 +1,0 @@
-C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/CMakeFiles/ATOMIC.dir
-C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/CMakeFiles/FLAG_PREPROCESS.dir
-C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/CMakeFiles/rebuild_cache.dir
