@@ -8,7 +8,7 @@
 typedef unsigned int uint;
 #include "helper.h"
 
-long long int ATOM__FLAG_TO_INT(char* flag) {
+long long int flag_to_int(char* flag) {
     uint flag_len = len(flag);
     uint itters = umin(flag_len, 8);
 

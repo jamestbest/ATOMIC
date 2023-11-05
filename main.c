@@ -16,9 +16,9 @@ int main(int argc, char** argv) {
     parseArgs(argc, argv);
 
     printf("TOK-OUT: %d\nAST-OUT: %d\nANOTHER: %d\n",
-           ATOM__FLAGS[ATOM__FLAG_TOK_OUT],
-           ATOM__FLAGS[ATOM__FLAG_AST_OUT],
-           ATOM__FLAGS[ATOM__FLAG_ANOTHER_FLAG]);
+           ATOM_VR__FLAGS[ATOM_CT__FLAG_TOK_OUT],
+           ATOM_VR__FLAGS[ATOM_CT__FLAG_AST_OUT],
+           ATOM_VR__FLAGS[ATOM_CT__FLAG_ANOTHER_FLAG]);
 
     printf("Hello, World!\n");
 }
@@ -61,7 +61,7 @@ void parseArgs(int argc, char** argv) {
         //length is at least one
         if (arg[0] == '-') {
             if (arg_len >= 2 && arg[1] == '-') {
-                parseFlag(arg, arg_len); //--flagSet  --!flagset
+                parseFlag(arg); //--flagSet  --!flagset
             } else {
 //                parseOption(arg, arg_len, argv, i); //-o optionarg optionarg   e.g. -o tok ast  --this can map to flags.  -outname main.out --changes output name
             }
@@ -71,7 +71,7 @@ void parseArgs(int argc, char** argv) {
     }
 }
 
-void parseFlag(char* arg, uint arg_len) {
+void parseFlag(char* arg) {
     //turn the flag into an int from past --
     //this should be based on the next 8 characters of the flag
     //e.g. --!AST-OUT
@@ -82,13 +82,10 @@ void parseFlag(char* arg, uint arg_len) {
         enabled = false;
     }
 
-    int index = ATOM__FLAG_TO_INDEX(&arg[start]);
+    bool ret = flag_set(&arg[start], enabled);
 
-    if (index == -1) {
-        printf("Error: invalid flag given\"%s\"\n", &arg[start]);
-//        assert(false);//just for when making the flags to check for missed ones
+    if (!ret) {
+        printf("Error: invalid flag given \"%s\"\n", &arg[start]);
         return;
     }
-
-    ATOM__FLAGS[index] = enabled;
 }

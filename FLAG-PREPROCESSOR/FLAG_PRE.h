@@ -9,14 +9,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "helper.h"
-#include "FLAG_Shared.h"
+#include "../SharedIncludes/helper.h"
+#include "../SharedIncludes/FLAG_Shared.h"
 
 #define ATOM__FLAG_PRE_END          "//%%FLAG END%%"
 #define ATOM__FLAG_PRE_DEF_START    "//%%FLAG DEFINE%%"
 #define ATOM__FLAG_PRE_SWT_START    "//%%FLAG SWITCH%%"
 #define ATOM__FLAG_PRE_ENUM_START   "//%%FLAG ENUM%%"
-#define ATOM__FLAG_PRE_FLAG_REG     "ATOM__FLAG_"
+#define ATOM__FLAG_PRE_FLAG_REG     "ATOM_CT__FLAG_"
 
 typedef enum State {
     SEARCHING,

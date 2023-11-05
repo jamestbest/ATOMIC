@@ -97,12 +97,14 @@ int main(int argc, char** argv) {
 
     if (ret != 0) {
         printf("Error: Failed to remove old FLAGS.h");
+        exit(1);
     }
 
     ret = rename("./../FLAGSTEMP.h", "./../FLAGS.h");
 
     if (ret != 0) {
         printf("Error: Failed to overwrite old FLAGS.h");
+        exit(1);
     }
 
     return 0;
@@ -163,7 +165,7 @@ void parseDefs(FILE* nfile, Enums enums) {
         }
         converted_name[pos] = '\0';
 
-        long long int hash = ATOM__FLAG_TO_INT(converted_name);
+        long long int hash = flag_to_int(converted_name);
 
         char* buff = malloc(17); //it's in hex and 64 bit
         lltoa(hash, buff, 16);
