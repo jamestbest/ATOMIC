@@ -8,9 +8,9 @@ add_executable(ATOMIC
         Lexer.c
         Lexer.h
         main.h
-        helper.h
-        FLAGS.h FLAG_Shared.h)
+        SharedIncludes/helper.h
+        FLAGS.h SharedIncludes/FLAG_Shared.h)
 
 add_executable(FLAG_PREPROCESS
-        FLAG_PRE.c
-        FLAG_PRE.h FLAG_Shared.h)
+        FLAG-PREPROCESSOR/FLAG_PRE.c
+        FLAG-PREPROCESSOR/FLAG_PRE.h SharedIncludes/FLAG_Shared.h)
