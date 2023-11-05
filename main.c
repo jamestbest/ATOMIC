@@ -15,6 +15,11 @@ int main(int argc, char** argv) {
 
     parseArgs(argc, argv);
 
+    printf("TOK-OUT: %d\nAST-OUT: %d\nANOTHER: %d\n",
+           ATOM__FLAGS[ATOM__FLAG_TOK_OUT],
+           ATOM__FLAGS[ATOM__FLAG_AST_OUT],
+           ATOM__FLAGS[ATOM__FLAG_ANOTHER_FLAG]);
+
     printf("Hello, World!\n");
 }
 
@@ -80,7 +85,9 @@ void parseFlag(char* arg, uint arg_len) {
     int index = ATOM__FLAG_TO_INDEX(&arg[start]);
 
     if (index == -1) {
-        assert(false);//just for when making the flags to check for missed ones
+        printf("Error: invalid flag given\"%s\"\n", &arg[start]);
+//        assert(false);//just for when making the flags to check for missed ones
+        return;
     }
 
     ATOM__FLAGS[index] = enabled;

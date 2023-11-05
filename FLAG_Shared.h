@@ -14,7 +14,12 @@ long long int ATOM__FLAG_TO_INT(char* flag) {
 
     long long int out = 0;
     for (int i = 0; i < itters; i++) {
-        out |= (((long long int)flag[i]) << (i * 8));
+        //potential issue with another character being mapped?
+        /* 1. set 32 to 0 to set to capital
+         * 2. shift left to section, each byte has its own area in the llint
+         * 3. or to add to current out
+         */
+        out |= ((long long int)(flag[i] & ~(1 << 5))) << (i * 8);
     }
 
     return out;

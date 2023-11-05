@@ -25,30 +25,35 @@
 enum ATOM__FLAGS {
     ATOM__FLAG_TOK_OUT,
     ATOM__FLAG_AST_OUT,
-    ATOM__FLAG_,
     ATOM__FLAG_TEST,
+    ATOM__FLAG_ANOTHER_FLAG,
     //%%FLAG END%%
     ATOM__FLAG_COUNT,
 };
 
 //%%FLAG DEFINE%% FLAG PREPROCESSOR GENERATED DEFINES SHOULD APPEAR HERE
-#define ATOM__FLAG_TOK_OUT_HASH
-#define ATOM)_)DWADWA
+#define ATOM__FLAG_TOK_OUT_HASH 0x54554f0d4b4f54
+#define ATOM__FLAG_AST_OUT_HASH 0x54554f0d545341
+#define ATOM__FLAG_TEST_HASH 0x54534554
+#define ATOM__FLAG_ANOTHER_FLAG_HASH 0xd524548544f4e41
 //%%FLAG END%%
 
 bool ATOM__FLAGS[ATOM__FLAG_COUNT];
 
-#define test(NAME) case NAME.hash: \
-                        return NAME.index;
-
 int ATOM__FLAG_INT_TO_INDEX(long long int fi) {
     //%%FLAG SWITCH%% FLAG PREPROCESSOR GENERATED SWITCH CASE SHOULD APPEAR HERE
-    switch (fi) {
-        case ATOM__FLAG_TOK_OUT_HASH:
-            return ATOM__FLAG_TOK_OUT;
-        default:
-            return -1;
-    }
+	switch (fi) {
+		case ATOM__FLAG_TOK_OUT_HASH:
+			 return ATOM__FLAG_TOK_OUT;
+		case ATOM__FLAG_AST_OUT_HASH:
+			 return ATOM__FLAG_AST_OUT;
+		case ATOM__FLAG_TEST_HASH:
+			 return ATOM__FLAG_TEST;
+		case ATOM__FLAG_ANOTHER_FLAG_HASH:
+			 return ATOM__FLAG_ANOTHER_FLAG;
+		default:
+			return -1;
+	}
     //%%FLAG END%%
 }
 

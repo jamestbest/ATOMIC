@@ -93,7 +93,17 @@ int main(int argc, char** argv) {
     fclose(fptr);
     fclose(nfile);
 
-//    int ret = rename("./../FLAGSTEMP.h", "./../FLAGTEMP.h");
+    int ret = remove("./../FLAGS.h");
+
+    if (ret != 0) {
+        printf("Error: Failed to remove old FLAGS.h");
+    }
+
+    ret = rename("./../FLAGSTEMP.h", "./../FLAGS.h");
+
+    if (ret != 0) {
+        printf("Error: Failed to overwrite old FLAGS.h");
+    }
 
     return 0;
 }
@@ -189,8 +199,6 @@ Enums readEnums(FILE* fptr, FILE* nfile, char buff[BUFF_SIZE]) {
         char* flagname = malloc(l2comma); //includes \0
         memcpy(flagname, &buff[pos], l2comma - 1);
         flagname[l2comma - 1] = '\0';
-
-        printf("This is the length %d of %s\n", l2comma, flagname);
 
         enumNames[enumBuffPos++] = flagname;
         if (enumBuffPos >= enumBuffSize) {

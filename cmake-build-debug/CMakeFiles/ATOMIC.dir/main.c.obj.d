@@ -28,4 +28,5 @@ CMakeFiles/ATOMIC.dir/main.c.obj: \
  C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/x86_64-w64-mingw32/include/assert.h \
  C:\Users\jamescoward\CLionProjects\ATOMIC\helper.h \
  C:\Users\jamescoward\CLionProjects\ATOMIC\FLAGS.h \
+ C:\Users\jamescoward\CLionProjects\ATOMIC\FLAG_Shared.h \
  C:\Users\jamescoward\CLionProjects\ATOMIC\Lexer.h
