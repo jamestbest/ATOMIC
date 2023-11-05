@@ -68,28 +68,28 @@ include CMakeFiles/FLAG_PREPROCESS.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/FLAG_PREPROCESS.dir/flags.make
 
-CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj: CMakeFiles/FLAG_PREPROCESS.dir/flags.make
-CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj: C:/Users/jamescoward/CLionProjects/ATOMIC/FLAG_PRE.c
-CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj: CMakeFiles/FLAG_PREPROCESS.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\jamescoward\CLionProjects\ATOMIC\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj"
-	C:\PROGRA~1\JETBRA~1\CLION2~1.3\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj -MF CMakeFiles\FLAG_PREPROCESS.dir\FLAG_PRE.c.obj.d -o CMakeFiles\FLAG_PREPROCESS.dir\FLAG_PRE.c.obj -c C:\Users\jamescoward\CLionProjects\ATOMIC\FLAG_PRE.c
+CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj: CMakeFiles/FLAG_PREPROCESS.dir/flags.make
+CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj: C:/Users/jamescoward/CLionProjects/ATOMIC/FLAG-PREPROCESSOR/FLAG_PRE.c
+CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj: CMakeFiles/FLAG_PREPROCESS.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\jamescoward\CLionProjects\ATOMIC\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj"
+	C:\Users\jamescoward\AppData\Local\Programs\CLion\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj -MF CMakeFiles\FLAG_PREPROCESS.dir\FLAG-PREPROCESSOR\FLAG_PRE.c.obj.d -o CMakeFiles\FLAG_PREPROCESS.dir\FLAG-PREPROCESSOR\FLAG_PRE.c.obj -c C:\Users\jamescoward\CLionProjects\ATOMIC\FLAG-PREPROCESSOR\FLAG_PRE.c
 
-CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.i"
-	C:\PROGRA~1\JETBRA~1\CLION2~1.3\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E C:\Users\jamescoward\CLionProjects\ATOMIC\FLAG_PRE.c > CMakeFiles\FLAG_PREPROCESS.dir\FLAG_PRE.c.i
+CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.i"
+	C:\Users\jamescoward\AppData\Local\Programs\CLion\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E C:\Users\jamescoward\CLionProjects\ATOMIC\FLAG-PREPROCESSOR\FLAG_PRE.c > CMakeFiles\FLAG_PREPROCESS.dir\FLAG-PREPROCESSOR\FLAG_PRE.c.i
 
-CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.s"
-	C:\PROGRA~1\JETBRA~1\CLION2~1.3\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S C:\Users\jamescoward\CLionProjects\ATOMIC\FLAG_PRE.c -o CMakeFiles\FLAG_PREPROCESS.dir\FLAG_PRE.c.s
+CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.s"
+	C:\Users\jamescoward\AppData\Local\Programs\CLion\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S C:\Users\jamescoward\CLionProjects\ATOMIC\FLAG-PREPROCESSOR\FLAG_PRE.c -o CMakeFiles\FLAG_PREPROCESS.dir\FLAG-PREPROCESSOR\FLAG_PRE.c.s
 
 # Object files for target FLAG_PREPROCESS
 FLAG_PREPROCESS_OBJECTS = \
-"CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj"
+"CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj"
 
 # External object files for target FLAG_PREPROCESS
 FLAG_PREPROCESS_EXTERNAL_OBJECTS =
 
-FLAG_PREPROCESS.exe: CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj
+FLAG_PREPROCESS.exe: CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj
 FLAG_PREPROCESS.exe: CMakeFiles/FLAG_PREPROCESS.dir/build.make
 FLAG_PREPROCESS.exe: CMakeFiles/FLAG_PREPROCESS.dir/linkLibs.rsp
 FLAG_PREPROCESS.exe: CMakeFiles/FLAG_PREPROCESS.dir/objects1.rsp

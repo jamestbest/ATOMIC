@@ -11,10 +11,10 @@
 				<Option working_dir="C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
-					<CompileFile command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="ATOMIC">
@@ -24,17 +24,17 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/include"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/../../../../include"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/include-fixed"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/../../../../x86_64-w64-mingw32/include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/../../../../include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/include-fixed"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/../../../../x86_64-w64-mingw32/include"/>
 					<Add directory="/mingw/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 ATOMIC"/>
-					<CompileFile command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 ATOMIC"/>
+					<CompileFile command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="ATOMIC/fast">
@@ -44,17 +44,17 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/include"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/../../../../include"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/include-fixed"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/../../../../x86_64-w64-mingw32/include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/../../../../include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/include-fixed"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/../../../../x86_64-w64-mingw32/include"/>
 					<Add directory="/mingw/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 ATOMIC/fast"/>
-					<CompileFile command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 ATOMIC/fast"/>
+					<CompileFile command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="FLAG_PREPROCESS">
@@ -64,17 +64,17 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/include"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/../../../../include"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/include-fixed"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/../../../../x86_64-w64-mingw32/include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/../../../../include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/include-fixed"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/../../../../x86_64-w64-mingw32/include"/>
 					<Add directory="/mingw/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 FLAG_PREPROCESS"/>
-					<CompileFile command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 FLAG_PREPROCESS"/>
+					<CompileFile command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="FLAG_PREPROCESS/fast">
@@ -84,52 +84,48 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/include"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/../../../../include"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/include-fixed"/>
-					<Add directory="C:/Program Files/JetBrains/CLion 2022.1.3/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/11.2.0/../../../../x86_64-w64-mingw32/include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/../../../../include"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/include-fixed"/>
+					<Add directory="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/../lib/gcc/x86_64-w64-mingw32/13.1.0/../../../../x86_64-w64-mingw32/include"/>
 					<Add directory="/mingw/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 FLAG_PREPROCESS/fast"/>
-					<CompileFile command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 FLAG_PREPROCESS/fast"/>
+					<CompileFile command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="edit_cache">
 				<Option working_dir="C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
-					<CompileFile command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="rebuild_cache">
 				<Option working_dir="C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
-					<CompileFile command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="C:/PROGRA~1/JETBRA~1/CLION2~1.3/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/Users/jamescoward/AppData/Local/Programs/CLion/bin/mingw/bin/mingw32-make.exe -f &quot;C:/Users/jamescoward/CLionProjects/ATOMIC/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/FLAG-PREPROCESSOR/FLAG_PRE.c">
+			<Option target="FLAG_PREPROCESS"/>
+		</Unit>
+		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/FLAG-PREPROCESSOR/FLAG_PRE.h">
+			<Option target="FLAG_PREPROCESS"/>
+		</Unit>
 		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/FLAGS.h">
 			<Option target="ATOMIC"/>
-		</Unit>
-		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/FLAG_PRE.c">
-			<Option target="FLAG_PREPROCESS"/>
-		</Unit>
-		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/FLAG_PRE.h">
-			<Option target="FLAG_PREPROCESS"/>
-		</Unit>
-		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/FLAG_Shared.h">
-			<Option target="ATOMIC"/>
-			<Option target="FLAG_PREPROCESS"/>
 		</Unit>
 		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/Lexer.c">
 			<Option target="ATOMIC"/>
@@ -137,7 +133,11 @@
 		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/Lexer.h">
 			<Option target="ATOMIC"/>
 		</Unit>
-		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/helper.h">
+		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/SharedIncludes/FLAG_Shared.h">
+			<Option target="ATOMIC"/>
+			<Option target="FLAG_PREPROCESS"/>
+		</Unit>
+		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/SharedIncludes/helper.h">
 			<Option target="ATOMIC"/>
 		</Unit>
 		<Unit filename="C:/Users/jamescoward/CLionProjects/ATOMIC/main.c">

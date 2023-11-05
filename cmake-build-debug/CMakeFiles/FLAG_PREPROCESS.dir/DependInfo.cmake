@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "C:/Users/jamescoward/CLionProjects/ATOMIC/FLAG_PRE.c" "CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj" "gcc" "CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj.d"
+  "C:/Users/jamescoward/CLionProjects/ATOMIC/FLAG-PREPROCESSOR/FLAG_PRE.c" "CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj" "gcc" "CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

@@ -132,7 +132,7 @@
 		},
 		{
 			"backtrace" : 1,
-			"path" : "helper.h",
+			"path" : "SharedIncludes/helper.h",
 			"sourceGroupIndex" : 1
 		},
 		{
@@ -142,7 +142,7 @@
 		},
 		{
 			"backtrace" : 1,
-			"path" : "FLAG_Shared.h",
+			"path" : "SharedIncludes/FLAG_Shared.h",
 			"sourceGroupIndex" : 1
 		}
 	],

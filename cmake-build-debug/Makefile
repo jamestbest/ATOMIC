@@ -141,29 +141,29 @@ FLAG_PREPROCESS/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\FLAG_PREPROCESS.dir\build.make CMakeFiles/FLAG_PREPROCESS.dir/build
 .PHONY : FLAG_PREPROCESS/fast
 
-FLAG_PRE.obj: FLAG_PRE.c.obj
-.PHONY : FLAG_PRE.obj
+FLAG-PREPROCESSOR/FLAG_PRE.obj: FLAG-PREPROCESSOR/FLAG_PRE.c.obj
+.PHONY : FLAG-PREPROCESSOR/FLAG_PRE.obj
 
 # target to build an object file
-FLAG_PRE.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\FLAG_PREPROCESS.dir\build.make CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.obj
-.PHONY : FLAG_PRE.c.obj
+FLAG-PREPROCESSOR/FLAG_PRE.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\FLAG_PREPROCESS.dir\build.make CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.obj
+.PHONY : FLAG-PREPROCESSOR/FLAG_PRE.c.obj
 
-FLAG_PRE.i: FLAG_PRE.c.i
-.PHONY : FLAG_PRE.i
+FLAG-PREPROCESSOR/FLAG_PRE.i: FLAG-PREPROCESSOR/FLAG_PRE.c.i
+.PHONY : FLAG-PREPROCESSOR/FLAG_PRE.i
 
 # target to preprocess a source file
-FLAG_PRE.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\FLAG_PREPROCESS.dir\build.make CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.i
-.PHONY : FLAG_PRE.c.i
+FLAG-PREPROCESSOR/FLAG_PRE.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\FLAG_PREPROCESS.dir\build.make CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.i
+.PHONY : FLAG-PREPROCESSOR/FLAG_PRE.c.i
 
-FLAG_PRE.s: FLAG_PRE.c.s
-.PHONY : FLAG_PRE.s
+FLAG-PREPROCESSOR/FLAG_PRE.s: FLAG-PREPROCESSOR/FLAG_PRE.c.s
+.PHONY : FLAG-PREPROCESSOR/FLAG_PRE.s
 
 # target to generate assembly for a file
-FLAG_PRE.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\FLAG_PREPROCESS.dir\build.make CMakeFiles/FLAG_PREPROCESS.dir/FLAG_PRE.c.s
-.PHONY : FLAG_PRE.c.s
+FLAG-PREPROCESSOR/FLAG_PRE.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\FLAG_PREPROCESS.dir\build.make CMakeFiles/FLAG_PREPROCESS.dir/FLAG-PREPROCESSOR/FLAG_PRE.c.s
+.PHONY : FLAG-PREPROCESSOR/FLAG_PRE.c.s
 
 Lexer.obj: Lexer.c.obj
 .PHONY : Lexer.obj
@@ -223,9 +223,9 @@ help:
 	@echo ... rebuild_cache
 	@echo ... ATOMIC
 	@echo ... FLAG_PREPROCESS
-	@echo ... FLAG_PRE.obj
-	@echo ... FLAG_PRE.i
-	@echo ... FLAG_PRE.s
+	@echo ... FLAG-PREPROCESSOR/FLAG_PRE.obj
+	@echo ... FLAG-PREPROCESSOR/FLAG_PRE.i
+	@echo ... FLAG-PREPROCESSOR/FLAG_PRE.s
 	@echo ... Lexer.obj
 	@echo ... Lexer.i
 	@echo ... Lexer.s
