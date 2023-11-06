@@ -27,13 +27,21 @@
  */
 
 //%%FLAG ENUM%%
-enum ATOM__FLAGS {
+enum ATOM_CT__FLAGS {
     ATOM_CT__FLAG_TOK_OUT,
     ATOM_CT__FLAG_AST_OUT,
     ATOM_CT__FLAG_TEST,
     ATOM_CT__FLAG_ANOTHER_FLAG,
-    //%%FLAG END%%
+    //%%END%%
     ATOM_CT__FLAG_COUNT,
+};
+
+//%%OPTION ENUM%%
+enum ATOM_CT__OPTIONS {
+    ATOM_CT__OPTION_E,
+    ATOM_CT__OPTION_O,
+    ATOM_CT__OPTION_OUT,
+    //%%END%%
 };
 
 //%%FLAG DEFINE%% FLAG PREPROCESSOR GENERATED DEFINES SHOULD APPEAR HERE
@@ -41,7 +49,13 @@ enum ATOM__FLAGS {
 #define ATOM_CT__FLAG_AST_OUT_HASH 0x54554f0d545341
 #define ATOM_CT__FLAG_TEST_HASH 0x54534554
 #define ATOM_CT__FLAG_ANOTHER_FLAG_HASH 0xd524548544f4e41
-//%%FLAG END%%
+//%%END%%
+
+//%%OPTION DEFINE%%
+//%%END%%
+
+//%%FLAG STRINGS%%
+//%%END%%
 
 bool ATOM_VR__FLAGS[ATOM_CT__FLAG_COUNT];
 
@@ -59,7 +73,7 @@ int flag_int_to_index(long long int fi) {
 		default:
 			return -1;
 	}
-    //%%FLAG END%%
+    //%%END%%
 }
 
 int flag_to_index(char* flag) {
@@ -75,6 +89,10 @@ bool flag_set(char* flagName, bool enable) {
 
     ATOM_VR__FLAGS[index] = enable;
     return true;
+}
+
+bool flag_get(enum ATOM_CT__FLAGS flag) {
+    return ATOM_VR__FLAGS[flag];
 }
 
 #endif //ATOMIC_FLAGS_H

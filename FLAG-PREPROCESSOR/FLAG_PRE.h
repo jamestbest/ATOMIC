@@ -12,7 +12,7 @@
 #include "../SharedIncludes/helper.h"
 #include "../SharedIncludes/FLAG_Shared.h"
 
-#define ATOM__FLAG_PRE_END          "//%%FLAG END%%"
+#define ATOM__FLAG_PRE_END          "//%%END%%"
 #define ATOM__FLAG_PRE_DEF_START    "//%%FLAG DEFINE%%"
 #define ATOM__FLAG_PRE_SWT_START    "//%%FLAG SWITCH%%"
 #define ATOM__FLAG_PRE_ENUM_START   "//%%FLAG ENUM%%"

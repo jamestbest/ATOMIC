@@ -483,7 +483,7 @@ I'm just going to steal C's pointer syntax
 example
 ```atom
     i : i4 = 10  
-    p : *i4      // p is a pointer to an i4
+    p : i4*      // p is a pointer to an i4
     p = &i       // p is a pointer to i
     *p = 20      // i is now 20
     print(*p)    // prints 20
