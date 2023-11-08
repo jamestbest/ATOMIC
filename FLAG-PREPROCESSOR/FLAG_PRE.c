@@ -17,29 +17,43 @@
  */
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        printf("Error: only accepts one file the path to the FLAGS.h file");
+    char* flags_path = "./../FLAGS.h";
+
+    if (argc > 2) {
+        printf("Error: only one argument; file path to FLAGS.h\n");
         exit(1);
     }
 
-    if (argv[1] == NULL) {
-        printf("Error: NULL ptr given in first arg");
-        exit(1);
+    if (argc == 2) {
+        if (argv[1] == NULL) {
+            printf("Error: NULL ptr given in first arg\n");
+            exit(1);
+        }
+
+        flags_path = argv[1];
     }
 
-    FILE *fptr = fopen(argv[1], "r");
+    FILE *fptr = fopen(flags_path, "r");
 
     if (fptr == NULL) {
-        printf("Error: cannot find file specified \"%s\"", argv[1]);
+        printf("Error: cannot find file specified \"%s\"\n", argv[1]);
         exit(1);
     }
+
+    char* dir = get_dir(flags_path);
 
     State state = SEARCHING;
 
-    FILE *nfile = fopen("./../FLAGSTEMP.h", "w"); //this is very not good. just to escape the build folder
+    char* dir_cpy = malloc(len(dir));
+    strcpy(dir_cpy, dir);
+
+    char* flag_temp_loc = strcat(dir_cpy, "/FLAGSTEMP.h");
+    char* flag_main_loc = strcat(dir, "/FLAGS.h");
+
+    FILE *nfile = fopen(flag_temp_loc, "w"); //this is very not good. just to escape the build folder
 
     if (nfile == NULL) {
-        printf("Error: couldn't create temp file for writing");
+        printf("Error: couldn't create temp file for writing\n");
         exit(1);
     }
 
@@ -48,19 +62,38 @@ int main(int argc, char** argv) {
     while (fgets(buff, BUFF_SIZE, fptr) != NULL) {
         if (state != SEARCHING) {
             switch (state) {
-                case FOUND_ENUM:
-                    enums = readEnums(fptr, nfile, buff);
+                case FOUND_FLAG_ENUM:
+                    enums = readEnums(fptr, nfile, buff, ATOM_CT__FLAG_PRE_FLAG_REG);
                     if (enums.enumNames == NULL) {
-                        printf("Error: Reading enums returned NULL ptr");
+                        printf("Error: Reading enums returned NULL ptr\n");
                         exit(1);
                     }
                     break;
-                case FOUND_HASH:
-                    parseDefs(nfile, enums);
+                case FOUND_OPTION_ENUM:
+                    enums = readEnums(fptr, nfile, buff, ATOM_CT__FLAG_PRE_OPT_REG);
+                    if (enums.enumNames == NULL) {
+                        printf("Error: Reading enums returned NULL ptr\n");
+                        exit(1);
+                    }
+                    break;
+                case FOUND_STRINGS:
+                    parseStrings(nfile, enums, ATOM_CT__FLAG_PRE_FLAG_REG);
                     cleanup(fptr, nfile, buff);
                     break;
-                case FOUND_SWITCH:
-                    parseSwitch(nfile, enums);
+                case FOUND_F_HASH:
+                    parseDefs(nfile, enums, ATOM_CT__FLAG_PRE_FLAG_REG);
+                    cleanup(fptr, nfile, buff);
+                    break;
+                case FOUND_O_HASH:
+                    parseDefs(nfile, enums, ATOM_CT__FLAG_PRE_OPT_REG);
+                    cleanup(fptr, nfile, buff);
+                    break;
+                case FOUND_IDX_SWITCH:
+                    parseIdxSwitch(nfile, enums);
+                    cleanup(fptr, nfile, buff);
+                    break;
+                case FOUND_STR_SWITCH:
+                    parseStrSwitch(nfile, enums);
                     cleanup(fptr, nfile, buff);
                     break;
                 default:
@@ -72,69 +105,97 @@ int main(int argc, char** argv) {
 
         int code = fputs(buff, nfile);
         if (code == EOF) {
-            printf("Error: fputs returned EOF");
+            printf("Error: fputs returned EOF\n");
         }
 
-        int define = startswith_ips(buff, ATOM__FLAG_PRE_DEF_START);
-        int switcho = startswith_ips(buff, ATOM__FLAG_PRE_SWT_START);
-        int enumo = startswith_ips(buff, ATOM__FLAG_PRE_ENUM_START);
+        int fdefine = startswith_ips(buff, ATOM_CT__FLAG_PRE_DEF_START);
+        int fswitchidx = startswith_ips(buff, ATOM_CT__FLAG_PRE_IDX_SWT_START);
+        int fswitchstr = startswith_ips(buff, ATOM_CT__FLAG_PRE_STR_SWT_START);
+        int fenum = startswith_ips(buff, ATOM_CT__FLAG_PRE_ENUM_START);
+        int fstrings = startswith_ips(buff, ATOM_CT__FLAG_PRE_STRING_START);
+        int oenum = startswith_ips(buff, ATOM_CT__FLAG_PRE_OPT_ENUM_START);
+        int odefine = startswith_ips(buff, ATOM_CT__FLAG_PRE_OPT_DEF_START);
         //shouldn't really do them all if one before is found but it's mostly going to not match any.
-        if (enumo != -1) {
-            state = FOUND_ENUM;
-        }
-        else if (define != -1) {
-            state = FOUND_HASH;
-        }
-        else if (switcho != -1) {
-            state = FOUND_SWITCH;
-        }
+
+        //[[TODO]] FIX THIS!
+        if (fenum != -1) state = FOUND_FLAG_ENUM;
+        else if (fdefine != -1) state = FOUND_F_HASH;
+        else if (fswitchidx != -1) state = FOUND_IDX_SWITCH;
+        else if (oenum != -1) state = FOUND_OPTION_ENUM;
+        else if (fstrings != -1) state = FOUND_STRINGS;
+        else if (odefine != -1) state = FOUND_O_HASH;
+        else if (fswitchstr != -1) state = FOUND_STR_SWITCH;
     }
 
     fclose(fptr);
     fclose(nfile);
 
-    int ret = remove("./../FLAGS.h");
+    int ret = remove(flag_main_loc);
 
     if (ret != 0) {
-        printf("Error: Failed to remove old FLAGS.h");
+        printf("Error: Failed to remove old \"%s\"\n", flag_main_loc);
         exit(1);
     }
 
-    ret = rename("./../FLAGSTEMP.h", "./../FLAGS.h");
+    ret = rename(flag_temp_loc, flag_main_loc);
 
     if (ret != 0) {
-        printf("Error: Failed to overwrite old FLAGS.h");
+        printf("Error: Failed to overwrite old \"%s\"\n", flag_main_loc);
         exit(1);
     }
+
+    printf("Success! File can be found here: \"%s\"\n", flag_main_loc);
 
     return 0;
 }
 
 void cleanup(FILE* fptr, FILE* nfile, char* buff) {
     //seek the %%flag end%%
-
-    while (fgets(buff, BUFF_SIZE, fptr) != NULL) {
-        if (startswith_ips(buff, ATOM__FLAG_PRE_END) != -1) {
+    //The buffer should still have the stat
+    do {
+        if (startswith_ips(buff, ATOM_CT__FLAG_PRE_END) != -1) {
             fputs(buff, nfile);
             return;
         }
+    } while (fgets(buff, BUFF_SIZE, fptr) != NULL);
+}
+
+void parseStrings(FILE* nfile, Enums enums, char* prefix) {
+    for (int i = 0; i < enums.count; i++) {
+        char* enumName = enums.enumNames[i];
+
+        fprintf(nfile, "#define %s%s%s \"%s\"\n", prefix, enumName, "_STR", enumName);
     }
 }
 
-void parseSwitch(FILE* nfile, Enums enums) {
+void parseIdxSwitch(FILE* nfile, Enums enums) {
     fputs("\tswitch (fi) {\n", nfile);
     for (int i = 0; i < enums.count; i++) {
         char* enumName = enums.enumNames[i];
 
         fprintf(nfile, "\t\tcase %s%s%s:\n"
-                       "\t\t\t return %s%s;\n", ATOM__FLAG_PRE_FLAG_REG, enumName, "_HASH", ATOM__FLAG_PRE_FLAG_REG, enumName);
+                       "\t\t\treturn %s%s;\n", ATOM_CT__FLAG_PRE_FLAG_REG, enumName, "_HASH", ATOM_CT__FLAG_PRE_FLAG_REG, enumName);
     }
     fprintf(nfile, "\t\tdefault:\n"
                    "\t\t\treturn -1;\n"
                    "\t}\n");
 }
 
-void parseDefs(FILE* nfile, Enums enums) {
+void parseStrSwitch(FILE* nfile, Enums enums) {
+    fputs("\tswitch(index) {\n", nfile);
+    for (int i = 0; i < enums.count; i++) {
+        char *enumName = enums.enumNames[i];
+
+        fprintf(nfile, "\t\tcase %s%s:\n"
+                       "\t\t\treturn %s%s%s;\n", ATOM_CT__FLAG_PRE_FLAG_REG, enumName, ATOM_CT__FLAG_PRE_FLAG_REG,
+                enumName, "_STR");
+    }
+    fprintf(nfile, "\t\tdefault:\n"
+                   "\t\t\treturn \"ERROR NO ENUM NAME\";\n"
+                   "\t}\n");
+}
+
+void parseDefs(FILE* nfile, Enums enums, char* prefix) {
     //write all the new defs
 
     if (enums.enumNames == NULL) {
@@ -168,14 +229,14 @@ void parseDefs(FILE* nfile, Enums enums) {
         long long int hash = flag_to_int(converted_name);
 
         char* buff = malloc(17); //it's in hex and 64 bit
-        lltoa(hash, buff, 16);
-        fprintf(nfile, "#define %s%s_HASH 0x%s\n", ATOM__FLAG_PRE_FLAG_REG, enumName, buff);
+        sprintf(buff, "%llx", hash);
+        fprintf(nfile, "#define %s%s_HASH 0x%s\n", prefix, enumName, buff);
 
         free(buff);
     }
 }
 
-Enums readEnums(FILE* fptr, FILE* nfile, char buff[BUFF_SIZE]) {
+Enums readEnums(FILE* fptr, FILE* nfile, char buff[BUFF_SIZE], char* enum_prefix) {
     uint enumBuffSize = ENUM_BUFF_MIN_SIZE;
     uint enumBuffPos = 0;
     char** enumNames = malloc(enumBuffSize * sizeof (char *));
@@ -185,12 +246,12 @@ Enums readEnums(FILE* fptr, FILE* nfile, char buff[BUFF_SIZE]) {
         fputs(buff, nfile);
 
         //these should be similar to `    ATOM__FLAG_TOK_OUT,`
-        if (startswith_ips(buff, ATOM__FLAG_PRE_END) != -1) {
+        if (startswith_ips(buff, ATOM_CT__FLAG_PRE_END) != -1) {
             //found the enum count so return the gotten enums
             return (Enums) {enumNames, enumBuffPos};
         }
 
-        int pos = startswith_ips(buff, ATOM__FLAG_PRE_FLAG_REG);
+        int pos = startswith_ips(buff, enum_prefix);
         if (pos == -1) {
             continue;
         }
