@@ -10,6 +10,15 @@ typedef unsigned int uint;
 
 #define SPACE_C ' '
 
+#define C_RST  "\x1B[0m"
+#define C_RED  "\x1B[31m"
+#define C_GRN  "\x1B[32m"
+#define C_YLW  "\x1B[33m"
+#define C_BLU  "\x1B[34m"
+#define C_MGN  "\x1B[35m"
+#define C_CYN  "\x1B[36m"
+#define C_WHT  "\x1B[37m"
+
 uint umin(uint a, uint b) {
     return a < b ? a : b;
 }
@@ -84,6 +93,36 @@ int startswith_ips(const char* string, const char* pattern) {
         }
     }
     return string_p;
+}
+
+int find_last(char* string, char pattern) {
+    int out = -1;
+
+    uint ls = len(string);
+
+    for (int i = 0; i < ls; i++) {
+        if (string[i] == pattern) out = i;
+    }
+
+    return out;
+}
+
+char* get_dir(char* file) {
+    // /dir/dir2/dir3/file
+
+    int fwd = find_last(file, '/');
+    int bwd = find_last(file, '\\');
+
+    int loc = fwd == -1 ? bwd : fwd;
+
+    uint length = len(file);
+
+    char* dir = malloc(length);
+
+    memcpy(dir, file, loc);
+    dir[length - 1] = '\0';
+
+    return dir;
 }
 
 #endif //ATOMIC_HELPER_H
