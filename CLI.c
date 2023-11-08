@@ -6,9 +6,9 @@
 
 /* main entry point for the compiler
  *
- * exit codes
- *  0 - success
- *  1 - error with arguments
+ * exit codes - listed in errno-base.h
+ *  00 - success
+ *  12 - ENOMEM
  */
 int main(int argc, char** argv) {
     puts("Welcome to the ATOMIC CLI!");
@@ -19,12 +19,9 @@ int main(int argc, char** argv) {
 
     parseArgs(argc, argv);
 
-    printf("TOK-OUT: %d\nAST-OUT: %d\nANOTHER: %d\n",
-           ATOM_VR__FLAGS[ATOM_CT__FLAG_TOK_OUT],
-           ATOM_VR__FLAGS[ATOM_CT__FLAG_AST_OUT],
-           ATOM_VR__FLAGS[ATOM_CT__FLAG_ANOTHER_FLAG]);
+    print_flags();
 
-    puts("Hello, World!\n");
+    return 0;
 }
 
 
