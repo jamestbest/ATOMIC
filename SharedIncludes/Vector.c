@@ -4,7 +4,5 @@
 
 #include "Vector.h"
 
-
-VEC_ADD(int, int)
-
 VEC_ADD(char*, charp)
+VEC_ADD(char, char)
