@@ -13,7 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "SharedIncludes/Vector.c"
+#include "SharedIncludes/Vector.h"
 
 #define BUFF_SIZE 100
 
@@ -67,8 +67,8 @@ typedef struct Token {
     //                            `line
 } Token;
 
-VEC_ADD(Token, Token)
+VEC_DEF(Token, Token)
 
-size_t get_next_line(char** buff, size_t* buff_max, FILE* file);
+size_t get_next_line(charpp_vec buff, size_t* buff_max, FILE* file);
 
 #endif //ATOMIC_LEXER_H

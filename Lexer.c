@@ -4,6 +4,8 @@
 
 #include "Lexer.h"
 
+VEC_ADD(Token, Token)
+
 Token* lex(FILE* file) {
     /* Need to read in the file and turn the strings into tokens
      * I don't want to read the whole file in
@@ -40,12 +42,10 @@ Token* lex(FILE* file) {
     return 0;
 }
 
-
-
-size_t get_next_line(char** buff, size_t* buff_max, FILE* file) {
+size_t get_next_line(charpp_vec buff, size_t* buff_max, FILE* file) {
     size_t ret;
 
-    ret = getline(buff, buff_max, file);
+    ret = get_line(buff, buff_max, file);
 
     assert(errno != EINVAL);
 
@@ -59,4 +59,9 @@ size_t get_next_line(char** buff, size_t* buff_max, FILE* file) {
     }
 
     return ret;
+}
+
+int get_line(charpp_vec buff, size_t* buff_size, FILE* file) {
+    char_vec sbuff = char_vec_create();
+    fgets(sbuff.arr, *buff_size, file);
 }
