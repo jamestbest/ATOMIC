@@ -4,13 +4,29 @@ project(ATOMIC C)
 set(CMAKE_C_STANDARD 17)
 
 add_executable(ATOMICLI
+        SharedIncludes/Vector.c
+        Flags.c
+        Lexer.c
         CLI.c
-        CLI.h
-        SharedIncludes/FLAG_Shared.h
+        SharedIncludes/Helper_Math.c
+        SharedIncludes/Flag_shared.c
 )
 
 add_executable(FLAG_PREPROCESS
-        FLAG-PREPROCESSOR/FLAG_PRE.c
-        FLAG-PREPROCESSOR/FLAG_PRE.h
-        SharedIncludes/FLAG_Shared.h
+        Depricated/FLAG_PRE.c
+        SharedIncludes/Flag_shared.c
+        SharedIncludes/Helper_Math.c
 )
+add_executable(Flag_preprocessor
+        FLAG-PREPROCESSOR/Flag_Preprocessor.c
+        FLAG-PREPROCESSOR/Flag_Preprocessor.h
+        SharedIncludes/Vector.c
+        SharedIncludes/Vector.h
+        SharedIncludes/Flag_shared.c
+
+        SharedIncludes/Helper_String.c
+        SharedIncludes/Helper_Math.c
+        SharedIncludes/Helper_File.c
+)
+
+# todo need to create a lib from these
