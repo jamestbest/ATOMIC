@@ -11,10 +11,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "SharedIncludes/helper.h"
-#include "FLAGS.h"
-
-#include "Lexer.h"
+#include "SharedIncludes/Vector.h"
+#include "SharedIncludes/Helper_String.h"
 
 typedef unsigned int uint;
 

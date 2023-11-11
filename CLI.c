@@ -3,6 +3,7 @@
 //
 
 #include "CLI.h"
+#include "Flags.h"
 
 /* main entry point for the compiler
  *
