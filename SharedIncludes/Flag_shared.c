@@ -1,14 +1,10 @@
 //
-// Created by jamescoward on 05/11/2023.
+// Created by jamescoward on 08/11/2023.
 //
 
-#ifndef ATOMIC_FLAG_SHARED_H
-#define ATOMIC_FLAG_SHARED_H
+#include "Flag_shared.h"
 
-typedef unsigned int uint;
-#include "helper.h"
-
-long long int flag_to_int(char* flag) {
+long long int flag_to_int(const char* flag) {
     uint flag_len = len(flag);
     uint itters = umin(flag_len, 8);
 
@@ -26,5 +22,3 @@ long long int flag_to_int(char* flag) {
 
     return out;
 }
-
-#endif //ATOMIC_FLAG_SHARED_H
