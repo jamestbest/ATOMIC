@@ -9,8 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../SharedIncludes/helper.h"
-#include "../SharedIncludes/FLAG_Shared.h"
+#include "../SharedIncludes/Helper_Math.h"
+#include "../SharedIncludes/Flag_shared.h"
 
 #define ATOM_CT__FLAG_PRE_END              "//%%END%%"
 #define ATOM_CT__FLAG_PRE_DEF_START        "//%%FLAG DEFINE%%"

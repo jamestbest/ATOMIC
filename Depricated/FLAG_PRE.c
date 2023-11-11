@@ -17,7 +17,8 @@
  */
 
 int main(int argc, char** argv) {
-    char* flags_path = "./../FLAGS.h";
+    char* flags_h_path = "./../FLAGS.h";
+    char* flags_c_path = "./../FLAGS.c";
 
     if (argc > 2) {
         printf("Error: only one argument; file path to FLAGS.h\n");
@@ -30,71 +31,88 @@ int main(int argc, char** argv) {
             exit(1);
         }
 
-        flags_path = argv[1];
+        char* base_path = argv[1];
+        size_t length = len(argv[1]);
+        char* base_path_cpy = malloc((length + 1) * sizeof(char));
+        memcpy(base_path_cpy, base_path, length);
+
+        flags_h_path = strcat(base_path, "/FLAGS.h");
+        flags_c_path = strcat(base_path_cpy, "/FLAGS.c");
     }
 
-    FILE *fptr = fopen(flags_path, "r");
+    FILE* hptr = fopen(flags_h_path, "r");
+    FILE* cptr = fopen(flags_c_path, "r");
 
-    if (fptr == NULL) {
-        printf("Error: cannot find file specified \"%s\"\n", argv[1]);
+    if (hptr == NULL || cptr == NULL) {
+        printf("Error: cannot find file specified \"%s\" or \"%s\"\n", flags_h_path, flags_c_path);
         exit(1);
     }
 
-    char* dir = get_dir(flags_path);
+    char* hdir = get_dir(flags_h_path);
+    char* cdir = get_dir(flags_c_path);
 
     State state = SEARCHING;
 
-    char* dir_cpy = malloc(len(dir));
-    strcpy(dir_cpy, dir);
+    printf("Current Dir: \"%s\"\n", hdir);
 
-    char* flag_temp_loc = strcat(dir_cpy, "/FLAGSTEMP.h");
-    char* flag_main_loc = strcat(dir, "/FLAGS.h");
+    char* flag_h_temp_loc = strcat(hdir, "/FLAGSTEMP.h");
+    char* flag_c_temp_loc = strcat(cdir, "/FLAGSTEMP.c");
 
-    FILE *nfile = fopen(flag_temp_loc, "w"); //this is very not good. just to escape the build folder
+    FILE* nhfile = fopen(flag_h_temp_loc, "w"); //this is very not good. just to escape the build folder
+    FILE* ncfile = fopen(flag_c_temp_loc, "w");
 
-    if (nfile == NULL) {
+    if (nhfile == NULL || ncfile == NULL) {
         printf("Error: couldn't create temp file for writing\n");
         exit(1);
     }
 
+    FILE* fileptr = cptr;
+    FILE* nfileptr = ncfile;
+
     char buff[BUFF_SIZE];
     Enums enums = (Enums) {NULL, 0};
-    while (fgets(buff, BUFF_SIZE, fptr) != NULL) {
+    while (fgets(buff, BUFF_SIZE, fileptr) != NULL) {
         if (state != SEARCHING) {
             switch (state) {
                 case FOUND_FLAG_ENUM:
-                    enums = readEnums(fptr, nfile, buff, ATOM_CT__FLAG_PRE_FLAG_REG);
+                    enums = readEnums(fileptr, nfileptr, buff, ATOM_CT__FLAG_PRE_FLAG_REG);
                     if (enums.enumNames == NULL) {
                         printf("Error: Reading enums returned NULL ptr\n");
                         exit(1);
                     }
+                    fileptr = hptr;
+                    nfileptr = nhfile;
                     break;
                 case FOUND_OPTION_ENUM:
-                    enums = readEnums(fptr, nfile, buff, ATOM_CT__FLAG_PRE_OPT_REG);
+                    enums = readEnums(fileptr, nfileptr, buff, ATOM_CT__FLAG_PRE_OPT_REG);
                     if (enums.enumNames == NULL) {
                         printf("Error: Reading enums returned NULL ptr\n");
                         exit(1);
                     }
+                    fileptr = hptr;
+                    nfileptr = nhfile;
                     break;
                 case FOUND_STRINGS:
-                    parseStrings(nfile, enums, ATOM_CT__FLAG_PRE_FLAG_REG);
-                    cleanup(fptr, nfile, buff);
+                    parseStrings(nhfile, enums, ATOM_CT__FLAG_PRE_FLAG_REG);
+                    cleanup(fileptr, nfileptr, buff);
                     break;
                 case FOUND_F_HASH:
-                    parseDefs(nfile, enums, ATOM_CT__FLAG_PRE_FLAG_REG);
-                    cleanup(fptr, nfile, buff);
+                    parseDefs(nhfile, enums, ATOM_CT__FLAG_PRE_FLAG_REG);
+                    cleanup(fileptr, nfileptr, buff);
                     break;
                 case FOUND_O_HASH:
-                    parseDefs(nfile, enums, ATOM_CT__FLAG_PRE_OPT_REG);
-                    cleanup(fptr, nfile, buff);
+                    parseDefs(nhfile, enums, ATOM_CT__FLAG_PRE_OPT_REG);
+                    cleanup(fileptr, nfileptr, buff);
+                    fileptr = cptr;
+                    nfileptr = ncfile;
                     break;
                 case FOUND_IDX_SWITCH:
-                    parseIdxSwitch(nfile, enums);
-                    cleanup(fptr, nfile, buff);
+                    parseIdxSwitch(nhfile, enums);
+                    cleanup(fileptr, nfileptr, buff);
                     break;
                 case FOUND_STR_SWITCH:
-                    parseStrSwitch(nfile, enums);
-                    cleanup(fptr, nfile, buff);
+                    parseStrSwitch(nhfile, enums);
+                    cleanup(fileptr, nfileptr, buff);
                     break;
                 default:
                     break;
@@ -103,7 +121,7 @@ int main(int argc, char** argv) {
             continue;
         }
 
-        int code = fputs(buff, nfile);
+        int code = fputs(buff, nhfile);
         if (code == EOF) {
             printf("Error: fputs returned EOF\n");
         }
@@ -127,24 +145,27 @@ int main(int argc, char** argv) {
         else if (fswitchstr != -1) state = FOUND_STR_SWITCH;
     }
 
-    fclose(fptr);
-    fclose(nfile);
+    fclose(hptr);
+    fclose(nhfile);
 
-    int ret = remove(flag_main_loc);
+    fclose(cptr);
+    fclose(ncfile);
 
-    if (ret != 0) {
-        printf("Error: Failed to remove old \"%s\"\n", flag_main_loc);
-        exit(1);
-    }
+//    int ret = remove(flags_h_path);
+//
+//    if (ret != 0) {
+//        printf("Error: Failed to remove old \"%s\"\n", flags_h_path);
+//        exit(1);
+//    }
 
-    ret = rename(flag_temp_loc, flag_main_loc);
+//    ret = rename(flag_h_temp_loc, flags_h_path);
+//
+//    if (ret != 0) {
+//        printf("Error: Failed to overwrite old \"%s\"\n", flags_h_path);
+//        exit(1);
+//    }
 
-    if (ret != 0) {
-        printf("Error: Failed to overwrite old \"%s\"\n", flag_main_loc);
-        exit(1);
-    }
-
-    printf("Success! File can be found here: \"%s\"\n", flag_main_loc);
+    printf("Success! File can be found here: \"%s\"\n", flags_h_path);
 
     return 0;
 }
