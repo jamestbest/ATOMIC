@@ -4,11 +4,11 @@
 
 #include "Flag_shared.h"
 
-long long int flag_to_int(const char* flag) {
+llint flag_to_int(const char* flag) {
     uint flag_len = len(flag);
     uint itters = umin(flag_len, 8);
 
-    long long int out = 0;
+    llint out = 0;
     for (int i = 0; i < itters; i++) {
         //potential issue with another character being mapped? -- MAPS TO CR is this an issue? can you enter a CR without running the prog? probably
         /* 1. set 32 to 0 to set to capital
@@ -17,8 +17,18 @@ long long int flag_to_int(const char* flag) {
          *
          * essentially just packing upto 8 characters and then interpreting as an int
          */
-        out |= ((long long int)(flag[i] & ~(1 << 5))) << (i << 3);
+        out |= ((llint)(flag[i] & ~(1 << 5))) << (i << 3);
     }
+
+    return out;
+}
+
+llint flag_split_to_int(const char* flag_a, const char* flag_b) {
+    uint l1 = len(flag_a);
+
+    llint a = flag_to_int(flag_a);
+
+    llint out = a | (flag_to_int(flag_b) << (l1 << 3));
 
     return out;
 }

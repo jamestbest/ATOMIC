@@ -16,6 +16,7 @@ enum ATOM_CT__OPTIONS {
 enum ATOM_CT__FLAGS {
     ATOM_CT__FLAG_TOK_OUT,
     ATOM_CT__FLAG_AST_OUT,
+    ATOM_CT__FLAG_TESTER_OUT,
     ATOM_CT__FLAG_TEST,
     ATOM_CT__FLAG_ANOTHER_FLAG,
     ATOM_CT__FLAG_TEST_FLAG,
@@ -33,6 +34,8 @@ int flag_int_to_index(long long int fi) {
 			return ATOM_CT__FLAG_TOK_OUT;
 		case ATOM_CT__FLAG_AST_OUT_HASH:
 			return ATOM_CT__FLAG_AST_OUT;
+		case ATOM_CT__FLAG_TESTER_OUT_HASH:
+			return ATOM_CT__FLAG_TESTER_OUT;
 		case ATOM_CT__FLAG_TEST_HASH:
 			return ATOM_CT__FLAG_TEST;
 		case ATOM_CT__FLAG_ANOTHER_FLAG_HASH:
@@ -54,6 +57,8 @@ char* flag_index_to_string(int index) {
 			return ATOM_CT__FLAG_TOK_OUT_STR;
 		case ATOM_CT__FLAG_AST_OUT:
 			return ATOM_CT__FLAG_AST_OUT_STR;
+		case ATOM_CT__FLAG_TESTER_OUT:
+			return ATOM_CT__FLAG_TESTER_OUT_STR;
 		case ATOM_CT__FLAG_TEST:
 			return ATOM_CT__FLAG_TEST_STR;
 		case ATOM_CT__FLAG_ANOTHER_FLAG:
@@ -83,6 +88,15 @@ bool flag_set(char* flagName, bool enable) {
     return true;
 }
 
+bool flag_set_from_idx(int index, bool enable) {
+    if (index == -1) {
+        return false;
+    }
+
+    ATOM_VR__FLAGS[index] = enable;
+    return true;
+}
+
 bool flag_get(enum ATOM_CT__FLAGS flag) {
     return ATOM_VR__FLAGS[flag];
 }
@@ -92,5 +106,5 @@ void print_flags() {
     for (int i = 0; i < ATOM_CT__FLAG_COUNT - 1; i++) {
         printf("|-%s : %s" C_RST "\n", flag_index_to_string(i), flag_get(i) == 1 ? C_GRN "True" : C_RED "False");
     }
-    printf("`-%s : %s" C_RST "\n", flag_index_to_string(ATOM_CT__FLAG_COUNT - 1), flag_get(ATOM_CT__FLAG_COUNT - 1) == 1 ? C_GRN "True" : C_RED "False");
+    printf("`-%s : %s" C_RST "\n\n", flag_index_to_string(ATOM_CT__FLAG_COUNT - 1), flag_get(ATOM_CT__FLAG_COUNT - 1) == 1 ? C_GRN "True" : C_RED "False");
 }

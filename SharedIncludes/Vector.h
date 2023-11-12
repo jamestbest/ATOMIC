@@ -133,9 +133,10 @@ bool typename##_vec_add(typename##_vec* vector, type toAdd);
 #define VEC_FN_PROTO_POP(type, typename)                            \
     type typename##_vec_pop(typename##_vec* vector);
 
+//cannot return 0/NULL on pos = 0 as the return type can change
+//there must be a way around this
 #define VEC_FN_POP(type, typename)                                  \
     type typename##_vec_pop(typename##_vec* vector) {               \
-        if (vector->pos == 0) return 0;                             \
                                                                     \
         vector->pos -= 1;                                           \
                                                                     \

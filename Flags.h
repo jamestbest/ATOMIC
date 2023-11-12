@@ -42,21 +42,29 @@ enum ATOM_CT__FLAGS;
 //%%END%%
 
 //%%FLAG DEFINE%% FLAG PREPROCESSOR GENERATED DEFINES SHOULD APPEAR HERE
-#define ATOM_CT__FLAG_TOK_OUT_HASH 0x54554f5f4b4f54
-#define ATOM_CT__FLAG_AST_OUT_HASH 0x54554f5f545341
+#define ATOM_CT__FLAG_TOK_OUT_HASH 0x54554f0d4b4f54
+#define ATOM_CT__FLAG_AST_OUT_HASH 0x54554f0d545341
+#define ATOM_CT__FLAG_TESTER_OUT_HASH 0x4f0d524554534554
 #define ATOM_CT__FLAG_TEST_HASH 0x54534554
-#define ATOM_CT__FLAG_ANOTHER_FLAG_HASH 0x5f524548544f4e41
-#define ATOM_CT__FLAG_TEST_FLAG_HASH 0x414c465f54534554
-#define ATOM_CT__FLAG_TEST_FOUR_HASH 0x554f465f54534554
+#define ATOM_CT__FLAG_ANOTHER_FLAG_HASH 0xd524548544f4e41
+#define ATOM_CT__FLAG_TEST_FLAG_HASH 0x414c460d54534554
+#define ATOM_CT__FLAG_TEST_FOUR_HASH 0x554f460d54534554
 //%%END%%
 
 //%%FLAG STRINGS%%
 #define ATOM_CT__FLAG_TOK_OUT_STR "TOK_OUT"
 #define ATOM_CT__FLAG_AST_OUT_STR "AST_OUT"
+#define ATOM_CT__FLAG_TESTER_OUT_STR "TESTER_OUT"
 #define ATOM_CT__FLAG_TEST_STR "TEST"
 #define ATOM_CT__FLAG_ANOTHER_FLAG_STR "ANOTHER_FLAG"
 #define ATOM_CT__FLAG_TEST_FLAG_STR "TEST_FLAG"
 #define ATOM_CT__FLAG_TEST_FOUR_STR "TEST_FOUR"
+//%%END%%
+
+//%%OPTION STRINGS%%
+#define ATOM_CT__OPTION_E_STR "E"
+#define ATOM_CT__OPTION_O_STR "O"
+#define ATOM_CT__OPTION_OUT_STR "OUT"
 //%%END%%
 
 int flag_int_to_index(long long int fi);
@@ -65,6 +73,7 @@ char* flag_index_to_string(int index);
 void print_flags();
 bool flag_get(enum ATOM_CT__FLAGS flag);
 bool flag_set(char* flagName, bool enable);
+bool flag_set_from_idx(int index, bool enable);
 int flag_to_index(char* flag);
 
 

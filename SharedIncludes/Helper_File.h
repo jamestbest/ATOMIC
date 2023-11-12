@@ -7,8 +7,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "Helper_String.h"
+#include "Vector.h"
 
 typedef unsigned int uint;
 
@@ -22,5 +24,6 @@ typedef unsigned int uint;
 
 char* get_dir(char* file);
 char* get_path(const char* dir, const char* file);
+bool get_line(FILE* file, char_vec* vector);
 
 #endif //ATOMIC_HELPER_FILE_H

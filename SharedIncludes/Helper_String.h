@@ -6,6 +6,8 @@
 #define ATOMIC_HELPER_STRING_H
 
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef unsigned int uint;
 
@@ -20,5 +22,8 @@ uint len_with(const char* string, uint offset);
 uint len_from(const char* string, uint offset);
 uint len_from_to(const char* string, uint offset, char to);
 bool str_contains(const char* str, uint from, uint to, char c);
+
+char* str_cpy(const char* string);
+char* str_cpy_replace(const char* string, char find, char replace);
 
 #endif //ATOMIC_HELPER_STRING_H

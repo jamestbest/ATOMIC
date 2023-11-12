@@ -32,3 +32,32 @@ char* get_path(const char* dir, const char* file) {
 
     return ret;
 }
+
+bool get_line(FILE* file, char_vec* vector) {
+    uint pos = 0;
+
+    char* res = fgets(vector->arr, vector->size, file);
+
+    if (res == NULL) return false; //[[maybe]] should this be true?
+
+    while (!str_contains(vector->arr, pos, vector->size, '\n')) {
+        pos = vector->size - 1;
+
+        size_t nsize = (vector->size << 1);
+        char* nbuff = realloc(vector->arr, nsize);
+
+        if (nbuff == NULL) return false;
+
+        vector->arr = nbuff;
+
+        res = fgets(&(vector->arr[pos]), nsize - vector->size, file);
+
+        if (res == NULL) {
+            return true; //Found EOF
+        }
+
+        vector->size = nsize - 1;
+    }
+
+    return true;
+}

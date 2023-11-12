@@ -105,3 +105,34 @@ int find_last(char* string, char pattern) {
 
     return out;
 }
+
+char* str_cpy(const char* string) {
+    uint length = len(string);
+
+    char* out = malloc((length + 1) * sizeof(char));
+
+    if (out == NULL) return NULL;
+
+    memcpy(out, string, length);
+
+    out[length] = '\0';
+
+    return out;
+}
+
+char* str_cpy_replace(const char* string, char find, char replace) {
+    uint length = len(string);
+
+    char* out = malloc((length + 1) * sizeof(char));
+
+    if (out == NULL) return NULL;
+
+    for (int i = 0; i < length; i++) {
+        if (string[i] == find) out[i] = replace;
+        else out[i] = string[i];
+    }
+
+    out[length] = '\0';
+
+    return out;
+}
