@@ -6,62 +6,39 @@
 
 VEC_ADD(Token, Token)
 
-Token* lex(FILE* file) {
-    /* Need to read in the file and turn the strings into tokens
+Token_vec lex(FILE* file) {
+    /*
+     * Need to read in the file and turn the strings into tokens
      * I don't want to read the whole file in
      */
+    Token_vec tokens = Token_vec_create(BUFF_SIZE);
 
-    Token_vec tokens = Token_vec_create();
-
-    size_t buff_max = BUFF_SIZE;
     /* Streaming tokens? not at the moment just store all the lines in a buffer and then store information on the position and size of a token */
-    charp_vec lines = charp_vec_create();
+    charp_vec lines = charp_vec_create(BUFF_SIZE);
 
-    char* buff = malloc(buff_max * sizeof(char)); //store at least 100 characters
+    char_vec buffer = char_vec_create(BUFF_SIZE);
 
-    while (get_next_line(&buff, &buff_max, file)) {
-        //buff should contain the entire line as getline will resize the buffer to accommodate
+    while (get_line(file, &buffer)) {
+        line_to_tokens(&buffer, &tokens);
 
-        char* line = malloc(buff_max);
-
-        if (line == NULL) {
-            perror("Error: Malloc call within lexing");
-            exit(errno);
-        }
-
-        memcpy(line, buff, buff_max);
-
+        char* line = char_vec_steal(&buffer);
         charp_vec_add(&lines, line);
-
-        //[[maybe]] downsize the buffer to reduce the amount of memcpy otherwise a long line is going to increase the size of the buffer and all
-        //  subsequent runs will have to copy the larger buffer.
     }
 
-    free(buff);
+    char_vec_destroy(&buffer);
 
-    return 0;
+    return tokens;
 }
 
-size_t get_next_line(charpp_vec buff, size_t* buff_max, FILE* file) {
-    size_t ret;
 
-    ret = get_line(buff, buff_max, file);
+/*
+ * convert a char* to vec of tokens
+ *
+ * Words - Identifiers, Keywords,
+ * Numbers - Floats/Ints
+ * Strings/chars
+ * Operators
+ */
+void line_to_tokens(char_vec* line, Token_vec* tokens) {
 
-    assert(errno != EINVAL);
-
-    if (errno == ENOMEM) {
-        printf("Error: OUT OF MEM L bozo");
-        exit(ENOMEM);
-    }
-
-    if (ret == -1) {
-        perror("Error: Failed to read new line in file");
-    }
-
-    return ret;
-}
-
-int get_line(charpp_vec buff, size_t* buff_size, FILE* file) {
-    char_vec sbuff = char_vec_create();
-    fgets(sbuff.arr, *buff_size, file);
 }
