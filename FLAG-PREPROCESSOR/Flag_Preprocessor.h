@@ -32,7 +32,6 @@ typedef enum State {
     FOUND_FLG_STR,
 } State;
 
-bool get_line(FILE* file, char_vec* vector);
 
 void cleanup_write(FILE* file, FILE* nfile, char_vec* buffer);
 void cleanup_skip(FILE* file, FILE* nfile, char_vec* buffer);
@@ -69,5 +68,6 @@ char* get_path(const char* dir, const char* file);
 #define ATOM_CT__FLAGS_PRE_FLG_DEF          "//%%FLAG DEFINE%%"
 
 #define ATOM_CT__FLAGS_PRE_FLG_STR          "//%%FLAG STRINGS%%"
+#define ATOM_CT__FLAGS_PRE_OPT_STR          "//%%OPTION STRINGS%%"
 
 #endif //ATOMIC_FLAG_PREPROCESSOR_H

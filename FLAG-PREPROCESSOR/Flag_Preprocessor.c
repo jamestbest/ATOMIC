@@ -100,6 +100,9 @@ void parse_h(FILE* hptr, FILE* nhptr, charp_vec* flag_enums, charp_vec* option_e
         else if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_FLG_STR) != -1) {
             parse_string(hptr, nhptr, flag_enums, ATOM_CT__FLAGS_PRE_FLG_START, &buffer);
         }
+        else if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_OPT_STR) != -1) {
+            parse_string(hptr, nhptr, option_enums, ATOM_CT__FLAGS_PRE_OPT_START, &buffer);
+        }
         else {
             fputs(buffer.arr, nhptr);
         }
@@ -123,8 +126,11 @@ void parse_def(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, ch
 
     for (uint i = 0; i < enums->pos; i++) {
         const char* current_enum = enums->arr[i];
+        char* current_enum_dashed = str_cpy_replace(current_enum, '_', '-');
 
-        fprintf(nfile, "#define %s%s_HASH 0x%llx\n", prefix, current_enum, flag_to_int(current_enum));
+        fprintf(nfile, "#define %s%s_HASH 0x%llx\n", prefix, current_enum, flag_to_int(current_enum_dashed));
+
+        free(current_enum_dashed);
     }
 
     cleanup_skip(file, nfile, buffer);
@@ -228,33 +234,4 @@ void collect_enums(FILE* file, FILE* nfile, const char* prefix, char_vec* buffer
         charp_vec_add(enum_vec, s_enum);
     }
     cleanup_write(file, nfile, buffer);
-}
-
-bool get_line(FILE* file, char_vec* vector) {
-    uint pos = 0;
-
-    char* res = fgets(vector->arr, vector->size, file);
-
-    if (res == NULL) return false; //[[maybe]] should this be true?
-
-    while (!str_contains(vector->arr, pos, vector->size, '\n')) {
-        pos = vector->size - 1;
-
-        size_t nsize = (vector->size << 1);
-        char* nbuff = realloc(vector->arr, nsize);
-
-        if (nbuff == NULL) return false;
-
-        vector->arr = nbuff;
-
-        res = fgets(&(vector->arr[pos]), nsize - vector->size, file);
-
-        if (res == NULL) {
-            return true; //Found EOF
-        }
-
-        vector->size = nsize - 1;
-    }
-
-    return true;
 }
