@@ -13,14 +13,22 @@
 
 #include "SharedIncludes/Vector.h"
 #include "SharedIncludes/Helper_String.h"
+#include "Errors.h"
+#include "Flags.h"
+#include "Compiler.h"
 
 typedef unsigned int uint;
+typedef long long int llint;
 
-bool verifyArgs(int argc, char** argv);
-void parseArgs(int argc, char** argv);
+#define ATOM_CT__CLI_DEFAULT_OUT                "out.a"
+#define ATOM_CT__CLI_DEFAULT_FILE_BUFF_SIZE     4
 
-void parseFlag(char* arg);
-void parseOption(char* option, uint option_len, char** args, int arg_index);
-void parseFile(char* filename, uint filename_len);
+bool verify_args(int argc, char** argv);
+void parse_args(int argc, char** argv);
+
+void parse_flag(char* arg);
+void parse_option(char* arg, uint arg_len, char** argv, int argc, int* i);
+charp_vec get_option_args(char** argv, int* argp, int argc);
+void parse_file(char* file);
 
 #endif //ATOMIC_CLI_H
