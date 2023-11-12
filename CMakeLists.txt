@@ -8,15 +8,16 @@ add_executable(ATOMICLI
         Flags.c
         Lexer.c
         CLI.c
-        SharedIncludes/Helper_Math.c
         SharedIncludes/Flag_shared.c
+
+        SharedIncludes/Helper_String.c
+        SharedIncludes/Helper_Math.c
+        SharedIncludes/Helper_File.c
+        Errors.h
+        Compiler.c
+        Compiler.h
 )
 
-add_executable(FLAG_PREPROCESS
-        Depricated/FLAG_PRE.c
-        SharedIncludes/Flag_shared.c
-        SharedIncludes/Helper_Math.c
-)
 add_executable(Flag_preprocessor
         FLAG-PREPROCESSOR/Flag_Preprocessor.c
         FLAG-PREPROCESSOR/Flag_Preprocessor.h
