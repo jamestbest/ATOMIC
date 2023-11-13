@@ -49,8 +49,6 @@ void parse_switch(FILE* file, FILE* nfile, const char* prefix,
 void parse_def(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, char_vec* buffer);
 void parse_string(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, char_vec* buffer);
 
-char* get_path(const char* dir, const char* file);
-
 #define ATOM_CT__FLAGS_PRE_END              "//%%END%%"
 
 /* FLAGS.c */
