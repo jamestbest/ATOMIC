@@ -5,6 +5,7 @@ set(CMAKE_C_STANDARD 17)
 
 add_executable(ATOMICLI
         SharedIncludes/Vector.c
+        Compiler.c
         Flags.c
         Lexer.c
         CLI.c
@@ -14,8 +15,7 @@ add_executable(ATOMICLI
         SharedIncludes/Helper_Math.c
         SharedIncludes/Helper_File.c
         Errors.h
-        Compiler.c
-        Compiler.h
+        Tokens.h
 )
 
 add_executable(Flag_preprocessor
