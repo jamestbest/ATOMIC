@@ -126,13 +126,13 @@ int main(int argc, char** argv) {
             printf("Error: fputs returned EOF\n");
         }
 
-        int fdefine = startswith_ips(buff, ATOM_CT__FLAG_PRE_DEF_START);
-        int fswitchidx = startswith_ips(buff, ATOM_CT__FLAG_PRE_IDX_SWT_START);
-        int fswitchstr = startswith_ips(buff, ATOM_CT__FLAG_PRE_STR_SWT_START);
-        int fenum = startswith_ips(buff, ATOM_CT__FLAG_PRE_ENUM_START);
-        int fstrings = startswith_ips(buff, ATOM_CT__FLAG_PRE_STRING_START);
-        int oenum = startswith_ips(buff, ATOM_CT__FLAG_PRE_OPT_ENUM_START);
-        int odefine = startswith_ips(buff, ATOM_CT__FLAG_PRE_OPT_DEF_START);
+        int fdefine = starts_with_ips(buff, ATOM_CT__FLAG_PRE_DEF_START);
+        int fswitchidx = starts_with_ips(buff, ATOM_CT__FLAG_PRE_IDX_SWT_START);
+        int fswitchstr = starts_with_ips(buff, ATOM_CT__FLAG_PRE_STR_SWT_START);
+        int fenum = starts_with_ips(buff, ATOM_CT__FLAG_PRE_ENUM_START);
+        int fstrings = starts_with_ips(buff, ATOM_CT__FLAG_PRE_STRING_START);
+        int oenum = starts_with_ips(buff, ATOM_CT__FLAG_PRE_OPT_ENUM_START);
+        int odefine = starts_with_ips(buff, ATOM_CT__FLAG_PRE_OPT_DEF_START);
         //shouldn't really do them all if one before is found but it's mostly going to not match any.
 
         //[[TODO]] FIX THIS!
@@ -174,7 +174,7 @@ void cleanup(FILE* fptr, FILE* nfile, char* buff) {
     //seek the %%flag end%%
     //The buffer should still have the stat
     do {
-        if (startswith_ips(buff, ATOM_CT__FLAG_PRE_END) != -1) {
+        if (starts_with_ips(buff, ATOM_CT__FLAG_PRE_END) != -1) {
             fputs(buff, nfile);
             return;
         }
@@ -267,12 +267,12 @@ Enums readEnums(FILE* fptr, FILE* nfile, char buff[BUFF_SIZE], char* enum_prefix
         fputs(buff, nfile);
 
         //these should be similar to `    ATOM__FLAG_TOK_OUT,`
-        if (startswith_ips(buff, ATOM_CT__FLAG_PRE_END) != -1) {
+        if (starts_with_ips(buff, ATOM_CT__FLAG_PRE_END) != -1) {
             //found the enum count so return the gotten enums
             return (Enums) {enumNames, enumBuffPos};
         }
 
-        int pos = startswith_ips(buff, enum_prefix);
+        int pos = starts_with_ips(buff, enum_prefix);
         if (pos == -1) {
             continue;
         }

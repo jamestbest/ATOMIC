@@ -10,6 +10,8 @@
 #include <string.h>
 
 #include "../SharedIncludes/Helper_Math.h"
+#include "../SharedIncludes/Helper_File.h"
+#include "../SharedIncludes/Helper_String.h"
 #include "../SharedIncludes/Flag_shared.h"
 
 #define ATOM_CT__FLAG_PRE_END              "//%%END%%"
