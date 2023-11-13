@@ -11,21 +11,26 @@
 #define ARGERR 1
 #define ENOMEM 12
 
+
+//https://gcc.gnu.org/onlinedocs/gcc/Variadic-Macros.html
+//and if the variable arguments are omitted or empty, the ‘##’ operator causes the preprocessor to remove the comma before it.
+#define VA_ARGS(...) , ##__VA_ARGS__
+
 //Errros
-#define ERROR_BASE C_RED"ERROR"C_RST": "
+#define PError(ErrorMsg, ...) printf(ERROR_BASE ErrorMsg VA_ARGS(__VA_ARGS__))
 
-#define ATOM_CT__CLI_ERR_ARG_NONE       ERROR_BASE"The ATOMIC compiler requires at least one argument (file to compile)\n"
-#define ATOM_CT__CLI_ERR_ARG_NULL       ERROR_BASE"Error with argv, null pointer in first argument (bar program name)\n"
+#define ATOM_CT__CLI_ERR_ARG_NONE       "The ATOMIC compiler requires at least one argument (file to compile)\n"
+#define ATOM_CT__CLI_ERR_ARG_NULL       "Error with argv, null pointer in first argument (bar program name)\n"
 
-#define ATOM_CT__CLI_ERR_OPT_ARG        ERROR_BASE"Option \"%s\" require at least 1 argument\n"
+#define ATOM_CT__CLI_ERR_OPT_ARG        "Option \"%s\" require at least 1 argument\n"
 
 //Warnings
-#define WARNING_BASE C_YLW"WARNING"C_RST": "
+#define PWarn(WarningMsg, ...) printf(WARN_BASE WarningMsg VA_ARGS(__VA_ARGS__))
 
-#define ATOM_CT__CLI_WRN_OPT_FLG_INVLD  WARNING_BASE"Invalid flag given \"%s\"\n"
+#define ATOM_CT__CLI_WRN_OPT_FLG_INVLD  "Invalid flag given \"%s\"\n"
 
-#define ATOM_CT__CLI_WRN_OPT_ARG_COUNT  WARNING_BASE"Option \"-%s\" only acts on 1 argument, ignoring others\n"
-#define ATOM_CT__CLI_WRN_OPT_ARG_INVLD  WARNING_BASE"Option \"-%s\" given invalid argument \"%s\". Ignoring\n"
+#define ATOM_CT__CLI_WRN_OPT_ARG_COUNT  "Option \"-%s\" only acts on 1 argument, ignoring others\n"
+#define ATOM_CT__CLI_WRN_OPT_ARG_INVLD  "Option \"-%s\" given invalid argument \"%s\". Ignoring\n"
 
 //Strings
 #define ATOM_CT__CLI_OPT_OUT_TOK "tok"
