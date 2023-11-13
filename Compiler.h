@@ -5,6 +5,21 @@
 #ifndef ATOMIC_COMPILER_H
 #define ATOMIC_COMPILER_H
 
-void compile(const char* entry_point, const char* out_format);
+#include <stdio.h>
+
+#include "SharedIncludes/Vector.h"
+#include "Lexer.h"
+
+#define SUCCESS 0
+#define ERR_NO_SUCH_FILE 1
+
+#define BUFF_SIZE 100
+
+typedef struct CompileRet {
+    int code;
+    char* info;
+} CompileRet;
+
+CompileRet compile(const char* entry_point, const char* out_format, charp_vec files);
 
 #endif //ATOMIC_COMPILER_H
