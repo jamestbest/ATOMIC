@@ -33,31 +33,30 @@ char* get_path(const char* dir, const char* file) {
     return ret;
 }
 
-bool get_line(FILE* file, char_vec* vector) {
-    uint pos = 0;
+bool get_line(FILE* file, Buffer* buffer) {
+    uint pos;
+    char temp_buff[BUFF_MIN];
 
-    char* res = fgets(vector->arr, vector->size, file);
+    temp_buff[0] = '\0';
 
-    if (res == NULL) return false; //[[maybe]] should this be true?
+    buffer_clear(buffer);
 
-    while (!str_contains(vector->arr, pos, vector->size, '\n')) {
-        pos = vector->size - 1;
+    do {
+        if (feof(file) != 0) return buffer->pos != 0;
 
-        size_t nsize = (vector->size << 1);
-        char* nbuff = realloc(vector->arr, nsize);
+        char* fres = fgets(temp_buff, BUFF_MIN, file);
 
-        if (nbuff == NULL) return false;
-
-        vector->arr = nbuff;
-
-        res = fgets(&(vector->arr[pos]), nsize - vector->size, file);
-
-        if (res == NULL) {
-            return true; //Found EOF
+        if (fres == NULL) {
+            return pos != 0;
         }
 
-        vector->size = nsize - 1;
-    }
+        pos = buffer->pos;
+
+        int res = buffer_concat(buffer, temp_buff, BUFF_MIN);
+
+        if (res != 0) return false;
+
+    } while (strchr(&buffer->data[pos], '\n') == NULL);
 
     return true;
 }
