@@ -76,5 +76,4 @@ bool flag_set(char* flagName, bool enable);
 bool flag_set_from_idx(int index, bool enable);
 int flag_to_index(char* flag);
 
-
 #endif //ATOMIC_FLAGS_H
