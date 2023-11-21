@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "../SharedIncludes/Vector.h"
 #include "../SharedIncludes/Colours.h"
@@ -33,21 +34,22 @@ typedef enum State {
 } State;
 
 
-void cleanup_write(FILE* file, FILE* nfile, char_vec* buffer);
-void cleanup_skip(FILE* file, FILE* nfile, char_vec* buffer);
+void cleanup_write(FILE* file, FILE* nfile, Buffer* buffer);
+void cleanup_skip(FILE* file, FILE* nfile, Buffer* buffer);
 
 void collect_enums(FILE* file, FILE* nfile, const char* prefix,
-                   char_vec* buffer, charp_vec* enum_vec);
+                   Buffer* buffer, charp_vec* enum_vec);
+void free_enums(charp_vec* enums);
 
 void parse_c(FILE* cptr, FILE* ncptr, charp_vec* flag_enums, charp_vec* option_enums);
 void parse_h(FILE* hptr, FILE* nhptr, charp_vec* flag_enums, charp_vec* option_enums);
 
 void parse_switch(FILE* file, FILE* nfile, const char* prefix,
                   const char* to, const char* from, const char* default_value,
-                  char_vec* buffer, charp_vec* flag_enums);
+                  Buffer* buffer, charp_vec* flag_enums);
 
-void parse_def(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, char_vec* buffer);
-void parse_string(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, char_vec* buffer);
+void parse_def(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, Buffer* buffer);
+void parse_string(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, Buffer* buffer);
 
 #define ATOM_CT__FLAGS_PRE_END              "//%%END%%"
 

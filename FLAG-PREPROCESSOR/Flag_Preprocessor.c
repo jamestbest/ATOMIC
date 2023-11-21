@@ -50,6 +50,9 @@ int main(int argc, char** argv) {
     parse_c(cptr, ncptr, &flag_enums, &option_enums);
     parse_h(hptr, nhptr, &flag_enums, &option_enums);
 
+    free_enums(&flag_enums);
+    free_enums(&option_enums);
+
     //cleanup_write
     fclose(hptr);
     fclose(cptr);
@@ -87,30 +90,47 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+void free_enums(charp_vec* enums) {
+    for (uint i = 0; i < enums->pos; i++) {
+        free(charp_vec_get(enums, i));
+    }
+
+    free(enums->arr);
+
+    *enums = (charp_vec) {NULL, -1, -1};
+}
+
+void close_files(bool is_a_cool_function, ...) {
+//    va_list vl =
+    //todo add variable function to close files if not null
+}
+
 void parse_h(FILE* hptr, FILE* nhptr, charp_vec* flag_enums, charp_vec* option_enums) {
-    char_vec buffer = char_vec_create(32);
+    Buffer buffer = buffer_create(32);
 
     while (get_line(hptr, &buffer)) {
-        if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_OPT_DEF) != -1) {
+        if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_OPT_DEF) != -1) {
             parse_def(hptr, nhptr, option_enums, ATOM_CT__FLAGS_PRE_OPT_START, &buffer);
         }
-        else if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_FLG_DEF) != -1) {
+        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_DEF) != -1) {
             parse_def(hptr, nhptr, flag_enums, ATOM_CT__FLAGS_PRE_FLG_START, &buffer);
         }
-        else if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_FLG_STR) != -1) {
+        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_STR) != -1) {
             parse_string(hptr, nhptr, flag_enums, ATOM_CT__FLAGS_PRE_FLG_START, &buffer);
         }
-        else if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_OPT_STR) != -1) {
+        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_OPT_STR) != -1) {
             parse_string(hptr, nhptr, option_enums, ATOM_CT__FLAGS_PRE_OPT_START, &buffer);
         }
         else {
-            fputs(buffer.arr, nhptr);
+            fputs(buffer.data, nhptr);
         }
     }
+
+    buffer_destroy(&buffer);
 }
 
-void parse_string(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, char_vec* buffer) {
-    fputs(buffer->arr, nfile); //write the //%%XXXX STRINGS%%
+void parse_string(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, Buffer* buffer) {
+    fputs(buffer->data, nfile); //write the //%%XXXX STRINGS%%
 
     for (uint i = 0; i < enums->pos; i++) {
         const char* current_enum = enums->arr[i];
@@ -121,8 +141,8 @@ void parse_string(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix,
     cleanup_skip(file, nfile, buffer);
 }
 
-void parse_def(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, char_vec* buffer) {
-    fputs(buffer->arr, nfile); //write the //%%XXXX DEFINE%%
+void parse_def(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, Buffer* buffer) {
+    fputs(buffer->data, nfile); //write the //%%XXXX DEFINE%%
 
     for (uint i = 0; i < enums->pos; i++) {
         const char* current_enum = enums->arr[i];
@@ -137,37 +157,37 @@ void parse_def(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, ch
 }
 
 void parse_c(FILE* cptr, FILE* ncptr, charp_vec* flag_enums, charp_vec* option_enums) {
-    char_vec buffer = char_vec_create(32);
+    Buffer buffer = buffer_create(32);
 
     while (get_line(cptr,&buffer)) {
-        if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_OPT_ENUM) != -1) {
+        if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_OPT_ENUM) != -1) {
             collect_enums(cptr, ncptr, ATOM_CT__FLAGS_PRE_OPT_START, &buffer, option_enums);
         }
-        else if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_FLG_ENUM) != -1) {
+        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_ENUM) != -1) {
             collect_enums(cptr, ncptr, ATOM_CT__FLAGS_PRE_FLG_START, &buffer, flag_enums);
 
             char* countEnum = charp_vec_pop(flag_enums); //remove the count
             free(countEnum);
         }
-        else if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_FLG_IDX_SWT) != -1) {
+        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_IDX_SWT) != -1) {
             parse_switch(cptr, ncptr, ATOM_CT__FLAGS_PRE_FLG_START, "", "_HASH", "-1", &buffer, flag_enums);
         }
-        else if (starts_with_ips(buffer.arr, ATOM_CT__FLAGS_PRE_FLG_STR_SWT) != -1) {
+        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_STR_SWT) != -1) {
             parse_switch(cptr, ncptr, ATOM_CT__FLAGS_PRE_FLG_START, "_STR", "", "\"ERROR NO ENUM NAME\"", &buffer, flag_enums);
         }
         else {
-            fputs(buffer.arr, ncptr);
+            fputs(buffer.data, ncptr);
         }
     }
 
-    char_vec_destroy(&buffer);
+    buffer_destroy(&buffer);
 }
 
 void parse_switch(FILE* file, FILE* nfile, const char* prefix,
                   const char* to, const char* from, const char* default_value,
-                  char_vec* buffer, charp_vec* flag_enums) {
+                  Buffer* buffer, charp_vec* flag_enums) {
 
-    fputs(buffer->arr, nfile); //write the %%XX%%
+    fputs(buffer->data, nfile); //write the %%XX%%
 
     for (uint i = 0; i < flag_enums->pos; i++) {
         const char* flag_name = flag_enums->arr[i];
@@ -184,12 +204,12 @@ void parse_switch(FILE* file, FILE* nfile, const char* prefix,
 /*
 * Find the next %%END%% while writing to the newfile
 */
-void cleanup_write(FILE* file, FILE* nfile, char_vec* buffer) {
-    fputs(buffer->arr, nfile);
+void cleanup_write(FILE* file, FILE* nfile, Buffer* buffer) {
+    fputs(buffer->data, nfile);
 
     while (get_line(file, buffer)) {
-        fputs(buffer->arr, nfile);
-        if (starts_with_ips(buffer->arr, ATOM_CT__FLAGS_PRE_END)) {
+        fputs(buffer->data, nfile);
+        if (starts_with_ips(buffer->data, ATOM_CT__FLAGS_PRE_END)) {
             break;
         }
     }
@@ -198,37 +218,37 @@ void cleanup_write(FILE* file, FILE* nfile, char_vec* buffer) {
 /*
  * Find the next %%END%% skip writing to the nfile bar the end phrase
  */
-void cleanup_skip(FILE* file, FILE* nfile, char_vec* buffer) {
+void cleanup_skip(FILE* file, FILE* nfile, Buffer* buffer) {
     while (get_line(file, buffer)) {
-        if (starts_with_ips(buffer->arr, ATOM_CT__FLAGS_PRE_END) != -1) {
+        if (starts_with_ips(buffer->data, ATOM_CT__FLAGS_PRE_END) != -1) {
             break;
         }
     }
-    fputs(buffer->arr, nfile); //write the `//%%END%%`
+    fputs(buffer->data, nfile); //write the `//%%END%%`
 }
 
-void collect_enums(FILE* file, FILE* nfile, const char* prefix, char_vec* buffer, charp_vec* enum_vec) {
+void collect_enums(FILE* file, FILE* nfile, const char* prefix, Buffer* buffer, charp_vec* enum_vec) {
     //We're at the //%%XXXX ENUM%% label so write this to the file
-    fputs(buffer->arr, nfile);
+    fputs(buffer->data, nfile);
 
     get_line(file, buffer);
-    if (starts_with_ips(buffer->arr, "enum") == -1) {
+    if (starts_with_ips(buffer->data, "enum") == -1) {
         puts(Error("FLAG.c", ": enum not found after //%%XXXX ENUM%%"));
     }
-    fputs(buffer->arr, nfile);
+    fputs(buffer->data, nfile);
 
     while (get_line(file, buffer)) {
-        int pos = starts_with_ips(buffer->arr, prefix);
+        int pos = starts_with_ips(buffer->data, prefix);
         if (pos == -1) {
             break;
         }
 
-        fputs(buffer->arr, nfile);
+        fputs(buffer->data, nfile);
 
-        uint tot_length = len_from_to(buffer->arr, pos, ',') + 1;
+        uint tot_length = len_from_to(buffer->data, pos, ',') + 1;
 
         char* s_enum = malloc(tot_length * sizeof(char));
-        memcpy(s_enum, &buffer->arr[pos], tot_length);
+        memcpy(s_enum, &buffer->data[pos], tot_length);
         s_enum[tot_length - 1] = '\0';
 
         charp_vec_add(enum_vec, s_enum);
