@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "SharedIncludes/Vector.h"
+#include "SharedIncludes/Buffer.h"
 #include "SharedIncludes/Helper_File.h"
 
 #include "Tokens.h"
@@ -21,6 +22,6 @@
 #define BUFF_SIZE 100
 
 void lex(FILE* file, Token_vec* tokens, charp_vec* lines);
-void line_to_tokens(char_vec* line, Token_vec* tokens);
+void line_to_tokens(Buffer* line, Token_vec* tokens);
 
 #endif //ATOMIC_LEXER_H

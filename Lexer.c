@@ -10,16 +10,16 @@ void lex(FILE* file, Token_vec* tokens, charp_vec* lines) {
      */
 
     /* Streaming tokens? not at the moment just store all the lines in a buffer and then store information on the position and size of a token */
-    char_vec buffer = char_vec_create(BUFF_SIZE);
+    Buffer buffer = buffer_create(BUFF_SIZE);
 
     while (get_line(file, &buffer)) {
         line_to_tokens(&buffer, tokens);
 
-        char* line = char_vec_steal(&buffer);
+        char* line = buffer_steal(&buffer, BUFF_SIZE);
         charp_vec_add(lines, line);
     }
 
-    char_vec_destroy(&buffer);
+    buffer_destroy(&buffer);
 }
 
 
@@ -31,6 +31,6 @@ void lex(FILE* file, Token_vec* tokens, charp_vec* lines) {
  * Strings/chars
  * Operators
  */
-void line_to_tokens(char_vec* line, Token_vec* tokens) {
+void line_to_tokens(Buffer* line, Token_vec* tokens) {
 
 }
