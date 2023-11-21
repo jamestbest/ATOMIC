@@ -144,6 +144,5 @@ bool typename##_vec_add(typename##_vec* vector, type toAdd);
     }
 
 VEC_PROTO(char*, charp)
-VEC_PROTO(char, char)
 
 #endif //ATOMIC_VECTOR_H

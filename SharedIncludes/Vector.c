@@ -5,4 +5,3 @@
 #include "Vector.h"
 
 VEC_ADD(char*, charp)
-VEC_ADD(char, char)
