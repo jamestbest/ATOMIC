@@ -4,6 +4,20 @@
 
 #include "Helper_File.h"
 
+FILE* open_file(const char* cwd, const char* filename, const char* mode) {
+    FILE* fp = fopen(filename, mode);
+
+    if (fp != NULL) return fp;
+
+    const char* path = get_path(cwd, filename);
+
+    fp = fopen(path, mode);
+
+    free((char*) path);
+
+    return fp;
+}
+
 char* get_dir(char* file) {
     // /dir/dir2/dir3/file
 

@@ -39,7 +39,9 @@ int main(int argc, char** argv) {
         printf("File: %s\n", filename);
     }
 
-    CompileRet ret = compile(ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME, ATOM_VR__CLI_FILES);
+    char* cwd = get_dir(argv[0]); //get the current working directory
+
+    CompileRet ret = compile(ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME, cwd, ATOM_VR__CLI_FILES);
 
     putchar('\n');
     parse_compile_ret(ret);

@@ -8,8 +8,24 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <string.h>
 
 typedef unsigned int uint;
+
+typedef struct Vector {
+    void** arr;
+    size_t size;
+    size_t pos;
+} Vector;
+
+bool vector_grow(Vector* vector, size_t new_size);
+bool vector_add(Vector* vector, void* data);
+void* vector_get(Vector* vector, size_t index);
+Vector vector_create(size_t size);
+void vector_destroy(Vector* vector);
+void** vector_steal(Vector* vector);
+void** vector_copy(Vector* vector);
+void* vector_pop(Vector* vector);
 
 #define VEC_ADD(type, typename)                                     \
     VEC_FN_ADD(type, typename)                                      \

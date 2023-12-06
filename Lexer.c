@@ -22,6 +22,14 @@ void lex(FILE* file, Token_vec* tokens, charp_vec* lines) {
     buffer_destroy(&buffer);
 }
 
+enum test {
+    TEST,
+    TEST2
+};
+
+struct test2 {
+    void* data;
+};
 
 /*
  * convert a char* to vec of tokens
@@ -32,5 +40,7 @@ void lex(FILE* file, Token_vec* tokens, charp_vec* lines) {
  * Operators
  */
 void line_to_tokens(Buffer* line, Token_vec* tokens) {
+    struct test2 t = {(void *) TEST};
 
+    printf("%d", (enum test)t.data);
 }

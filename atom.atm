@@ -1,0 +1,11 @@
+¬ This is a test script for the atom lang
+
+func main(argc: i4, argv: char[][]) : i4 {
+    a: i4 = 0
+
+    times 10 {
+        print("Hello world!"); a++;
+    }
+
+    ret a - a;
+}

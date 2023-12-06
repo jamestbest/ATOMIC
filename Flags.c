@@ -108,9 +108,3 @@ void print_flags() {
     }
     printf("`-%s : %s" C_RST "\n\n", flag_index_to_string(ATOM_CT__FLAG_COUNT - 1), flag_get(ATOM_CT__FLAG_COUNT - 1) == 1 ? C_GRN "True" : C_RED "False");
 }
-}
-}
-}
-}
-}
-}

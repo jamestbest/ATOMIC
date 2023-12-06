@@ -17,9 +17,10 @@
 
 typedef struct CompileRet {
     int code;
-    char* info;
+    const char* info;
 } CompileRet;
 
-CompileRet compile(const char* entry_point, const char* out_format, charp_vec files);
+CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, charp_vec files);
+CompileRet compile_file(const char* entry_point, const char* out_format, FILE* fp);
 
 #endif //ATOMIC_COMPILER_H
