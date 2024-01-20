@@ -21,19 +21,31 @@
  */
 
 //ATOM__FLAG_ is a prefix
-//THE NEXT 8 CHARACTERS ARE USED IN THE UNIQUE HASH
+//THE NEXT 8 CHARACTERS (BAR '-') ARE USED IN THE UNIQUE HASH
 //64 bit number - 8 characters in a row
 
-/*
- * Go through each flag defined and create a struct that stores the hash and the index?
- */
+//%%OPTION ENUM%%
+enum ATOM_CT__OPTIONS {
+    ATOM_CT__OPTION_E,
+    ATOM_CT__OPTION_O,
+    ATOM_CT__OPTION_OUT,
+};
+//%%END%%
 
-/* [[NOTE]]
- * Must have the options enums and defines before the flags as they share the same internal buffer for the enums
- */
-
-enum ATOM_CT__OPTIONS;
-enum ATOM_CT__FLAGS;
+//%%FLAG ENUM%%
+enum ATOM_CT__FLAGS {
+    ATOM_CT__FLAG_TOK_OUT,
+    ATOM_CT__FLAG_VTOK_OUT,
+    ATOM_CT__FLAG_VLTOK_OUT,
+    ATOM_CT__FLAG_AST_OUT,
+    ATOM_CT__FLAG_TESTER_OUT,
+    ATOM_CT__FLAG_TEST,
+    ATOM_CT__FLAG_ANOTHER_FLAG,
+    ATOM_CT__FLAG_TEST_FLAG,
+    ATOM_CT__FLAG_TEST_FOUR,
+    ATOM_CT__FLAG_COUNT,
+};
+//%%END%%
 
 //%%OPTION DEFINE%%
 #define ATOM_CT__OPTION_E_HASH 0x45
@@ -42,17 +54,21 @@ enum ATOM_CT__FLAGS;
 //%%END%%
 
 //%%FLAG DEFINE%% FLAG PREPROCESSOR GENERATED DEFINES SHOULD APPEAR HERE
-#define ATOM_CT__FLAG_TOK_OUT_HASH 0x54554f0d4b4f54
-#define ATOM_CT__FLAG_AST_OUT_HASH 0x54554f0d545341
-#define ATOM_CT__FLAG_TESTER_OUT_HASH 0x4f0d524554534554
+#define ATOM_CT__FLAG_TOK_OUT_HASH 0x54554f004b4f54
+#define ATOM_CT__FLAG_VTOK_OUT_HASH 0x54554f004b4f5456
+#define ATOM_CT__FLAG_VLTOK_OUT_HASH 0x554f004b4f544c56
+#define ATOM_CT__FLAG_AST_OUT_HASH 0x54554f00545341
+#define ATOM_CT__FLAG_TESTER_OUT_HASH 0x4f00524554534555
 #define ATOM_CT__FLAG_TEST_HASH 0x54534554
-#define ATOM_CT__FLAG_ANOTHER_FLAG_HASH 0xd524548544f4e41
-#define ATOM_CT__FLAG_TEST_FLAG_HASH 0x414c460d54534554
-#define ATOM_CT__FLAG_TEST_FOUR_HASH 0x554f460d54534554
+#define ATOM_CT__FLAG_ANOTHER_FLAG_HASH 0x524548544f4e47
+#define ATOM_CT__FLAG_TEST_FLAG_HASH 0x414c460054534557
+#define ATOM_CT__FLAG_TEST_FOUR_HASH 0x554f460054534556
 //%%END%%
 
 //%%FLAG STRINGS%%
 #define ATOM_CT__FLAG_TOK_OUT_STR "TOK_OUT"
+#define ATOM_CT__FLAG_VTOK_OUT_STR "VTOK_OUT"
+#define ATOM_CT__FLAG_VLTOK_OUT_STR "VLTOK_OUT"
 #define ATOM_CT__FLAG_AST_OUT_STR "AST_OUT"
 #define ATOM_CT__FLAG_TESTER_OUT_STR "TESTER_OUT"
 #define ATOM_CT__FLAG_TEST_STR "TEST"
@@ -70,7 +86,7 @@ enum ATOM_CT__FLAGS;
 int flag_int_to_index(long long int fi);
 char* flag_index_to_string(int index);
 
-void print_flags();
+void print_flags(void);
 bool flag_get(enum ATOM_CT__FLAGS flag);
 bool flag_set(char* flagName, bool enable);
 bool flag_set_from_idx(int index, bool enable);
