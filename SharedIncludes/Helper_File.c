@@ -48,7 +48,7 @@ char* get_path(const char* dir, const char* file) {
 }
 
 bool get_line(FILE* file, Buffer* buffer) {
-    uint pos;
+    uint pos = 0;
     char temp_buff[BUFF_MIN];
 
     temp_buff[0] = '\0';
@@ -66,7 +66,7 @@ bool get_line(FILE* file, Buffer* buffer) {
 
         pos = buffer->pos;
 
-        int res = buffer_concat(buffer, temp_buff, BUFF_MIN);
+        int res = buffer_concat(buffer, temp_buff);
 
         if (res != 0) return false;
 
