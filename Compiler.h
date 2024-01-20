@@ -8,7 +8,8 @@
 #include <stdio.h>
 
 #include "SharedIncludes/Vector.h"
-#include "Lexer.h"
+#include "Flags.h"
+#include "LexerTwo.h"
 
 #define SUCCESS 0
 #define ERR_NO_SUCH_FILE 1
@@ -22,5 +23,9 @@ typedef struct CompileRet {
 
 CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, charp_vec files);
 CompileRet compile_file(const char* entry_point, const char* out_format, FILE* fp);
+
+void print_tokens_with_flag_check(Token_vec* tokens, Vector* lines);
+
+void free_tokens(Token_vec* tokens);
 
 #endif //ATOMIC_COMPILER_H
