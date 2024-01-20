@@ -12,10 +12,17 @@
 typedef unsigned int uint;
 
 #define SPACE_C ' '
+#define NUM_DIGITS 10
+#define NUM_ALPH 26 //just in case :)
+
+#define ASCII_ALPH_LOW_MIN 97
+#define ASCII_ALPH_CAP_MIN 65
+#define ASCII_DIGIT_MIN 48
 
 int find_last(char* string, char pattern);
 int starts_with_ips(const char* string, const char* pattern);
 int starts_with(const char* string, const char* pattern);
+int starts_with_ic(const char* string, const char* pattern);
 bool str_eq(const char* stra, const char* strb);
 uint len(const char* string);
 uint len_with(const char* string, uint offset);
@@ -25,5 +32,15 @@ bool str_contains(const char* str, uint from, uint to, char c);
 
 char* str_cpy(const char* string);
 char* str_cpy_replace(const char* string, char find, char replace);
+
+bool is_digit(u_int32_t a);
+bool is_digit_base(u_int32_t a, uint base);
+bool is_alph_cap(u_int32_t a);
+bool is_alph_low(u_int32_t a);
+bool is_alph(u_int32_t a);
+bool is_alph_numeric(u_int32_t a);
+bool is_whitespace(char a);
+bool is_newline(char a);
+
 
 #endif //ATOMIC_HELPER_STRING_H
