@@ -27,9 +27,9 @@ int buffer_resize(Buffer* buffer, uint new_size) {
     return 0;
 }
 
-int buffer_concat(Buffer* buffer, char* to_add, uint size_to_add) {
-    if (buffer->pos + size_to_add + 1 >= buffer->size) {
-        uint new_size = buffer->size + size_to_add + 1;
+int buffer_nconcat(Buffer* buffer, char* to_add, u_int32_t d_size) {
+    if (buffer->pos + d_size + 1 >= buffer->size) {
+        uint new_size = buffer->size + d_size + 1;
 
         new_size += BUFF_MIN;
         new_size &= ~BUFF_MIN;
@@ -43,14 +43,17 @@ int buffer_concat(Buffer* buffer, char* to_add, uint size_to_add) {
         buffer->pos--;
     }
 
-    uint to_add_len = strlen(to_add);
+    memcpy(&buffer->data[buffer->pos], to_add, d_size + 1);
 
-    memcpy(&buffer->data[buffer->pos], to_add, to_add_len + 1);
-
-    buffer->pos += to_add_len;
+    buffer->pos += d_size;
     buffer->data[buffer->pos++] = 0;
 
     return 0;
+}
+
+int buffer_concat(Buffer *buffer, char *to_add) {
+    uint size_to_add = len(to_add);
+    return buffer_nconcat(buffer, to_add, size_to_add);
 }
 
 char* buffer_steal(Buffer* buffer, uint new_size) {

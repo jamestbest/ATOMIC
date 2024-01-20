@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "Helper_String.h"
+
 #define BUFF_MIN 100
 
 typedef unsigned int uint;
@@ -20,7 +22,8 @@ typedef struct Buffer {
 
 Buffer buffer_create(uint size);
 int buffer_resize(Buffer* buffer, uint size);
-int buffer_concat(Buffer* buffer, char* to_add, uint size_to_add);
+int buffer_concat(Buffer *buffer, char *to_add);
+int buffer_nconcat(Buffer* buffer, char* to_add, u_int32_t d_size);
 char* buffer_steal(Buffer* buffer, uint new_size);
 void buffer_clear(Buffer* buffer);
 void buffer_destroy(Buffer* buffer);
