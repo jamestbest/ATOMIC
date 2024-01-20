@@ -38,19 +38,46 @@ bool str_eq(const char* stra, const char* strb) {
     return stra[i] == strb[i]; //have both strings ended?
 }
 
+char lower_unsafe(char a) {
+    return (char)(a | 32);
+}
+
+char lower(char a) {
+    if (is_alph(a)) {
+        return lower_unsafe(a);
+    }
+    return a;
+}
+
 //returns -1 for false, otherwise it returns the position in the string that it ended at (len(pattern))
 int starts_with(const char* string, const char* pattern) {
     //does the string start with pattern
+    int i = 0;
 
-    uint lp = len(pattern);
-    uint ls = len(string);
-
-    if (lp > ls) return -1;
-
-    for (int i = 0; i < lp; i++){
+    while (string[i] != '\0' && pattern[i] != '\0') {
         if (string[i] != pattern[i]) return -1;
+
+        i++;
     }
-    return (int) lp;
+
+    if (pattern[i] == '\0') return i;
+
+    return -1;
+}
+
+//ignore case
+int starts_with_ic(const char* string, const char* pattern) {
+    int i = 0;
+
+    while (string[i] != '\0' && pattern[i] != '\0') {
+        if (lower(string[i]) != lower(pattern[i])) return -1;
+
+        i++;
+    }
+
+    if (pattern[i] == '\0') return i;
+
+    return -1;
 }
 
 //ignore preceding space
@@ -66,8 +93,8 @@ int starts_with_ips(const char* string, const char* pattern) {
 
     if (lp > ls) return -1;
 
-    int string_p = 0; //string pointer
-    for (int i = 0; i < lp;) {
+    uint string_p = 0; //string pointer
+    for (uint i = 0; i < lp;) {
         if (string_p > ls) return -1;
         if (is) {
             if (string[string_p] == SPACE_C) {
@@ -83,7 +110,7 @@ int starts_with_ips(const char* string, const char* pattern) {
             i++;
         }
     }
-    return string_p;
+    return (int)string_p;
 }
 
 bool str_contains(const char* str, uint from, uint to, char c) {
@@ -99,7 +126,7 @@ int find_last(char* string, char pattern) {
 
     uint ls = len(string);
 
-    for (int i = 0; i < ls; i++) {
+    for (uint i = 0; i < ls; i++) {
         if (string[i] == pattern) out = i;
     }
 
@@ -127,7 +154,7 @@ char* str_cpy_replace(const char* string, char find, char replace) {
 
     if (out == NULL) return NULL;
 
-    for (int i = 0; i < length; i++) {
+    for (uint i = 0; i < length; i++) {
         if (string[i] == find) out[i] = replace;
         else out[i] = string[i];
     }
@@ -135,4 +162,45 @@ char* str_cpy_replace(const char* string, char find, char replace) {
     out[length] = '\0';
 
     return out;
+}
+
+bool is_digit(u_int32_t a) {
+    return ((u_int32_t)(a - ASCII_DIGIT_MIN)) < NUM_DIGITS;
+}
+
+bool is_digit_base(u_int32_t a, uint base) {
+    if (base == 0) return false;
+    if (base <= 10) {
+        return ((u_int32_t)(a - ASCII_DIGIT_MIN)) < base;
+    }
+
+    if (is_digit(a)) return true;
+
+    uint alph_count = base - 10;
+    return ((u_int32_t)(a - ASCII_ALPH_CAP_MIN)) < alph_count ||
+            ((u_int32_t)(a - ASCII_ALPH_LOW_MIN)) < alph_count;
+}
+
+bool is_alph_cap(u_int32_t a) {
+    return ((u_int32_t)(a - ASCII_ALPH_CAP_MIN)) < NUM_ALPH;
+}
+
+bool is_alph_low(u_int32_t a) {
+    return ((u_int32_t)(a - ASCII_ALPH_LOW_MIN)) < NUM_ALPH;
+}
+
+bool is_alph(u_int32_t a) {
+    return is_alph_low(a) || is_alph_cap(a);
+}
+
+bool is_alph_numeric(u_int32_t a) {
+    return is_alph(a) || is_digit(a);
+}
+
+bool is_whitespace(char a) {
+    return a == ' ' || a == '\t';
+}
+
+bool is_newline(char a) {
+    return a == '\n';
 }
