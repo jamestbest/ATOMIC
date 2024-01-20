@@ -23,6 +23,7 @@ bool vector_add(Vector* vector, void* data);
 void* vector_get(Vector* vector, size_t index);
 Vector vector_create(size_t size);
 void vector_destroy(Vector* vector);
+void vector_disseminate_destruction(Vector* vector);
 void** vector_steal(Vector* vector);
 void** vector_copy(Vector* vector);
 void* vector_pop(Vector* vector);
@@ -35,6 +36,7 @@ void* vector_pop(Vector* vector);
     VEC_FN_DESTROY(type, typename)                                  \
     VEC_FN_STEAL(type, typename)                                    \
     VEC_FN_POP(type, typename)
+//    VEC_FN_DISSEMINATE_DESTRUCTION(type, typename)
 
 
 #define VEC_DEF(type, typename)                                     \
@@ -53,6 +55,7 @@ void* vector_pop(Vector* vector);
     VEC_FN_PROTO_DESTROY(type, typename)                            \
     VEC_FN_PROTO_STEAL(type, typename)                              \
     VEC_FN_PROTO_POP(type, typename)
+//  VEC_FN_PROTO_DISSEMINATE_DESTRUCTION(type, typename)
 
 
 #define VEC_FN_PROTO_GROW(type, typename)                           \
@@ -62,11 +65,9 @@ void* vector_pop(Vector* vector);
     int typename##_vec_grow(typename##_vec* vector, uint n_size) {  \
         if (n_size < vector->size) return -1;                       \
                                                                     \
-        type* out = realloc(vector->arr, n_size);                   \
+        type* out = realloc(vector->arr, n_size * sizeof(type));    \
                                                                     \
         if (out == NULL) return -1;                                 \
-                                                                    \
-        free(vector->arr);                                          \
                                                                     \
         vector->size = n_size;                                      \
         vector->arr = out;                                          \
@@ -81,16 +82,11 @@ bool typename##_vec_add(typename##_vec* vector, type toAdd);
     bool typename##_vec_add(typename##_vec* vector, type toAdd) {   \
         if (vector->pos == vector->size) {                          \
             int new_size = (int) ((double) vector->size * 1.5);     \
-            type* out = realloc(vector->arr, new_size);             \
+            int out = typename##_vec_grow(vector, new_size);        \
                                                                     \
-            if (out == NULL) {                                      \
+            if (out == -1) {                                        \
                 return false;                                       \
             }                                                       \
-                                                                    \
-            free(vector->arr);                                      \
-                                                                    \
-            vector->size = new_size;                                \
-            vector->arr = out;                                      \
         }                                                           \
         vector->arr[vector->pos++] = toAdd;                         \
                                                                     \
@@ -128,6 +124,17 @@ bool typename##_vec_add(typename##_vec* vector, type toAdd);
         free(vector->arr);                                          \
         vector->size = -1;                                          \
         vector->pos = -1;                                           \
+    }
+
+#define VEC_FN_PROTO_DISSEMINATE_DESTRUCTION(type, typename)        \
+    void typename##_vec_disseminate_destruction(typename##_vec*vec);
+
+#define VEC_FN_DISSEMINATE_DESTRUCTION(type, typename)              \
+    void typename##_vec_disseminate_destruction(typename##_vec*vec){\
+        for (uint i = 0; i < vec->pos; i++) {                       \
+            free(vec->arr[i]);                                      \
+        }                                                           \
+        typename##_vec_destroy(vec);                                \
     }
 
 #define VEC_FN_PROTO_STEAL(type, typename)                          \

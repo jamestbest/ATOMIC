@@ -55,6 +55,14 @@ void vector_destroy(Vector* vector) {
     *vector = (Vector) {NULL, -1, -1};
 }
 
+void vector_disseminate_destruction(Vector* vector) {
+    if (vector == NULL) return;
+    for (uint i = 0; i < vector->pos; i++) {
+        free(vector->arr[i]);
+    }
+    vector_destroy(vector);
+}
+
 void** vector_steal(Vector* vector) {
     if (vector == NULL) return NULL;
 
