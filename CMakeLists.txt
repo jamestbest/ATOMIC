@@ -3,10 +3,11 @@ project(ATOMIC C)
 
 set(CMAKE_C_STANDARD 17)
 
+add_compile_options(-Wall -Wextra -pedantic-errors -Wswitch-enum)
+
 add_executable(ATOMICLI
         Compiler.c
         Flags.c
-        Lexer.c
         CLI.c
 
         SharedIncludes/Flag_shared.c
@@ -17,8 +18,8 @@ add_executable(ATOMICLI
         SharedIncludes/Helper_Math.c
         SharedIncludes/Helper_File.c
 
-        Errors.h
-        Tokens.h
+        Tokens.c
+        LexerTwo.c
 )
 
 add_executable(Flag_preprocessor
@@ -34,4 +35,4 @@ add_executable(Flag_preprocessor
         SharedIncludes/Helper_File.c
 )
 
-# todo need to create a lib from these
+# [[todo]] need to create a lib from these
