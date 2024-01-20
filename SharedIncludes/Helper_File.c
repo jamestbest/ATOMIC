@@ -2,16 +2,46 @@
 // Created by jamescoward on 11/11/2023.
 //
 
+#include <unistd.h>
+#include <assert.h>
 #include "Helper_File.h"
 
-FILE* open_file(const char* cwd, const char* filename, const char* mode) {
+FILE* validate_file(const char* filename, const char* mode) {
+    //need some way to allow checks for a file's existence
+    uint mode_length = len(mode);
+
+    for (uint i = 0; i < mode_length; i++) {
+        int dec;
+        switch (mode[i]) {
+            case 'r':
+                dec = R_OK;
+                break;
+            case 'w':
+                dec = W_OK;
+                break;
+            default:
+                assert(false);
+                break;
+        }
+
+        uint res = access(filename, dec);
+
+        if (res != 0) return NULL;
+    }
+
     FILE* fp = fopen(filename, mode);
+
+    return fp;
+}
+
+FILE* open_file(const char* cwd, const char* filename, const char* mode) {
+    FILE* fp = validate_file(filename, mode);
 
     if (fp != NULL) return fp;
 
     const char* path = get_path(cwd, filename);
 
-    fp = fopen(path, mode);
+    fp = validate_file(path, mode);
 
     free((char*) path);
 
@@ -19,11 +49,11 @@ FILE* open_file(const char* cwd, const char* filename, const char* mode) {
 }
 
 char* get_dir(char* file) {
-    // /dir/dir2/dir3/file
+    // /dir/dir2/dir3/file = /dir/dir2/dir3/
 
     int loc = find_last(file, path_sep_c);
 
-    uint length = loc;
+    uint length = loc + 1;
 
     char* dir = malloc((length + 1) * sizeof(char));
 

@@ -33,7 +33,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     //Or that the (data/type) of a structure is access more? - Printing will do this
     //For now it will stay as AOS
 
-    Vector lines = vector_create(BUFF_MIN);
+    Vector lines = vector_create(BUFF_MIN, CHAR_P);
 
     uint lexRet = lex(fp, &tokens, &lines);
 

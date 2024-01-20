@@ -9,11 +9,11 @@ VEC_ADD(char*, charp)
 bool vector_grow(Vector* vector, size_t new_size) {
     if (new_size < vector->size) return false;
 
-    void* array = realloc(vector->arr, new_size * sizeof(void*));
+    void** array = realloc(vector->arr, new_size * sizeof(void*));
 
     if (array == NULL) return false;
 
-    *vector = (Vector){array, new_size, vector->pos};
+    *vector = (Vector){array, new_size, vector->pos, vector->type};
 
     return true;
 }
@@ -30,21 +30,21 @@ bool vector_add(Vector* vector, void* data) {
     return true;
 }
 
-void* vector_get(Vector* vector, size_t index) {
+VecRet vector_get(Vector* vector, size_t index) {
     //if you store NULL in the vector then you cannot do error checking, should this include an error code as well?
-    if (vector == NULL) return NULL;
+    if (vector == NULL) return (VecRet) {NULL, 1};
 
-    if (index > vector->pos) return NULL;
+    if (index > vector->pos) return (VecRet) {NULL, 1};
 
-    return vector->arr[index];
+    return (VecRet) {vector->arr[index], 0};
 }
 
-Vector vector_create(size_t size) {
+Vector vector_create(size_t size, TYPE_ASSERTION type) {
     void* arr = malloc(size * sizeof(void*));
 
-    if (arr == NULL) return (Vector) {NULL, -1, -1};
+    if (arr == NULL) return (Vector) {NULL, -1, -1, CORRUPT_DATA};
 
-    return (Vector){arr, size, 0};
+    return (Vector){arr, size, 0, type};
 }
 
 void vector_destroy(Vector* vector) {
@@ -52,7 +52,7 @@ void vector_destroy(Vector* vector) {
 
     free(vector->arr);
 
-    *vector = (Vector) {NULL, -1, -1};
+    *vector = (Vector) {NULL, -1, -1, CORRUPT_DATA};
 }
 
 void vector_disseminate_destruction(Vector* vector) {
@@ -63,34 +63,42 @@ void vector_disseminate_destruction(Vector* vector) {
     vector_destroy(vector);
 }
 
-void** vector_steal(Vector* vector) {
-    if (vector == NULL) return NULL;
+VecRet vector_data_steal(Vector* vector) {
+    if (vector == NULL) return (VecRet) {NULL, 1};
 
-    void** ret = vector->arr;
+    Vector new_vec = vector_create(vector->size, vector->type);
 
-    Vector new_vec = vector_create(vector->size);
-
-    if (new_vec.arr == NULL) return NULL;
+    if (new_vec.arr == NULL) return (VecRet) {NULL, 1};
 
     *vector = new_vec;
 
-    return ret;
+    return (VecRet) {vector->arr, 0};
 }
 
-void** vector_copy(Vector* vector) {
-    Vector vec2 = vector_create(vector->size);
+VecRet vector_data_copy(Vector* vector) {
+    Vector vec2 = vector_create(vector->size, vector->type);
 
-    if (vec2.arr == NULL) return NULL;
+    if (vec2.arr == NULL) return (VecRet) {NULL, 1};
 
     memcpy(vec2.arr, vector->arr, vector->size * sizeof(void*));
 
-    return vec2.arr;
+    return (VecRet) {vec2.arr, 0};
 }
 
-void* vector_pop(Vector* vector) {
-    if (vector == NULL) return NULL;
+Vector vector_copy(Vector* vector) {
+    VecRet ret = vector_data_copy(vector);
 
-    if (vector->pos == 0) return NULL;
+    if (ret.retCode != 0) {
+        return (Vector){NULL, -1, -1, CORRUPT_DATA};
+    }
 
-    return vector->arr[--(vector->pos)];
+    return (Vector){ret.data, vector->size, vector->pos, vector->type};
+}
+
+VecRet vector_pop(Vector* vector) {
+    if (vector == NULL) return (VecRet) {NULL, 1};
+
+    if (vector->pos == 0) return (VecRet) {NULL, 1};
+
+    return (VecRet) {vector->arr[--(vector->pos)], 0};
 }

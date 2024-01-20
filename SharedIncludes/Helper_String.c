@@ -83,7 +83,7 @@ int starts_with_ic(const char* string, const char* pattern) {
 //ignore preceding space
 /*
  * RETURNS -1 for string doesn't start with pattern
- * RETURNS position in string where in the string the pattern ends
+ * RETURNS position in string where the pattern ends
  */
 int starts_with_ips(const char* string, const char* pattern) {
     bool is = true; //ignore space
@@ -164,36 +164,36 @@ char* str_cpy_replace(const char* string, char find, char replace) {
     return out;
 }
 
-bool is_digit(u_int32_t a) {
-    return ((u_int32_t)(a - ASCII_DIGIT_MIN)) < NUM_DIGITS;
+bool is_digit(uint32_t a) {
+    return ((uint32_t)(a - ASCII_DIGIT_MIN)) < NUM_DIGITS;
 }
 
-bool is_digit_base(u_int32_t a, uint base) {
+bool is_digit_base(uint32_t a, uint base) {
     if (base == 0) return false;
     if (base <= 10) {
-        return ((u_int32_t)(a - ASCII_DIGIT_MIN)) < base;
+        return ((uint32_t)(a - ASCII_DIGIT_MIN)) < base;
     }
 
     if (is_digit(a)) return true;
 
     uint alph_count = base - 10;
-    return ((u_int32_t)(a - ASCII_ALPH_CAP_MIN)) < alph_count ||
-            ((u_int32_t)(a - ASCII_ALPH_LOW_MIN)) < alph_count;
+    return ((uint32_t)(a - ASCII_ALPH_CAP_MIN)) < alph_count ||
+            ((uint32_t)(a - ASCII_ALPH_LOW_MIN)) < alph_count;
 }
 
-bool is_alph_cap(u_int32_t a) {
-    return ((u_int32_t)(a - ASCII_ALPH_CAP_MIN)) < NUM_ALPH;
+bool is_alph_cap(uint32_t a) {
+    return ((uint32_t)(a - ASCII_ALPH_CAP_MIN)) < NUM_ALPH;
 }
 
-bool is_alph_low(u_int32_t a) {
-    return ((u_int32_t)(a - ASCII_ALPH_LOW_MIN)) < NUM_ALPH;
+bool is_alph_low(uint32_t a) {
+    return ((uint32_t)(a - ASCII_ALPH_LOW_MIN)) < NUM_ALPH;
 }
 
-bool is_alph(u_int32_t a) {
+bool is_alph(uint32_t a) {
     return is_alph_low(a) || is_alph_cap(a);
 }
 
-bool is_alph_numeric(u_int32_t a) {
+bool is_alph_numeric(uint32_t a) {
     return is_alph(a) || is_digit(a);
 }
 

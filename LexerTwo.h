@@ -5,10 +5,12 @@
 #ifndef ATOMIC_LEXERTWO_H
 #define ATOMIC_LEXERTWO_H
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #include "Tokens.h"
 #include "LexErrors.h"
@@ -25,6 +27,7 @@ typedef struct PosCharp{
 #define COMMENT_START_ASCII_CODE 172
 
 typedef long long int llint;
+typedef unsigned char uchar;
 
 uint lex(FILE *file, Token_vec *token_vec, Vector *lines);
 uint lex_line(Buffer* line);
@@ -36,25 +39,25 @@ uint lex_number(void);
 int lex_comment(void);
 int lex_multiline_comment(void);
 
-Token create_token(TokenType type, void* data, u_int64_t d_size, u_int32_t start_col, u_int32_t end_col);
-Token create_multiline_token(TokenType type, void* data, u_int64_t d_size, u_int32_t start_col, u_int32_t end_col, u_int32_t start_line);
-Token construct_multiline_token(TokenType type, void* made_data, u_int32_t start_col, u_int32_t end_col, u_int32_t start_line);
-Token create_token_and_term(TokenType type, void* data, u_int64_t d_size, u_int32_t start_col, u_int32_t end_col);
-Token construct_token(TokenType type, void* made_data, u_int32_t start_col, u_int32_t end_col);
-Token create_simple_token(TokenType type, u_int32_t start_col, u_int32_t end_col);
+Token create_token(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col);
+Token create_multiline_token(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col, uint32_t start_line);
+Token construct_multiline_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col, uint32_t start_line);
+Token create_token_and_term(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col);
+Token construct_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col);
+Token create_simple_token(TokenType type, uint32_t start_col, uint32_t end_col);
 void add_token(Token t);
 
 void print_tokens(Token_vec* token_vec);
 void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels);
 
-u_int32_t current_char(void);
-u_int32_t peek(void);
+uint32_t current_char(void);
+uint32_t peek(void);
 char* consume(void);
 char* gourge(uint amount);
 int carridge_next_line(void);
 char* consume_with_carridge(void);
 void update_line_count(void);
-u_int32_t consume_utf_char(char *start, bool consume, char** next_char);
+uint32_t consume_utf_char(char *start, bool consume, char** next_char);
 
 void highlight_line_err(Position pos, const char* line);
 void highlight_current_line_err(Position pos);

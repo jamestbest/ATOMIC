@@ -53,10 +53,8 @@ Welcome to the 4th rendition of ATOM lang, 4th times the charm though right?
 </details>
 
 ## Description
-this is my attempt at a compiler!
-it will be a language similar to C, a great idea, of course,
-considering the limited time I've spent coding C,
-but nevertheless that's the style I'm going for.
+this is my (4th) attempt at a compiler!
+it will be a language similar to C, written in C!
 
 Current timeline estimate: 5 years (that may be a bit generous)
 
@@ -102,7 +100,7 @@ I have not yet decided how strings should be represented
 to define a string, it could be something like this:  
 `<varName> : string = "Hello World"`  
 or maybe  
-`<varName> : s<bytes> = 'Hello World'`
+`<varName> : s<bytes>`
 
 #### Boolean
 Boolean values are either `true` or `false`  
@@ -128,14 +126,14 @@ Throughout the types I've used `<size>` alot this is would be a
 numerical value to show how many bytes the type uses e.g. `i4`
 is a 4-byte integer and `r8` is an 8-byte floating point number
 
-| bytes | i   | n   | r   | q   |
-|-------|-----|-----|-----|-----|
-| 1     | ✅   | ✅   | ❌   | ❌   |
-| 2     | ✅   | ✅   | ❌   | ❌   |
-| 4     | ✅   | ✅   | ✅   | ✅   |
-| 8     | ✅   | ✅   | ✅   | ✅   |
-| 10    | ❌   | ❌   | ✅   | ❌   |
-| 16    | ❌   | ❌   | ❌   | ✅   |
+| bytes | i   | n   | r   | q   | b |
+|-------|-----|-----|-----|-----|---|
+| 1     | ❌   | ❌   | ❌   | ❌   | ✅ |
+| 2     | ✅   | ✅   | ❌   | ❌   | ✅ |
+| 4     | ✅   | ✅   | ✅   | ✅   | ✅ |
+| 8     | ✅   | ✅   | ✅   | ✅   | ✅ |
+| 10    | ❌   | ❌   | ✅   | ❌   | ❌ |
+| 16    | ❌   | ❌   | ❌   | ✅   | ❌ |
 
 ### Type casting
 Type casting uses the `as` keyword

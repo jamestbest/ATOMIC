@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 typedef unsigned int uint;
 
@@ -33,14 +34,13 @@ bool str_contains(const char* str, uint from, uint to, char c);
 char* str_cpy(const char* string);
 char* str_cpy_replace(const char* string, char find, char replace);
 
-bool is_digit(u_int32_t a);
-bool is_digit_base(u_int32_t a, uint base);
-bool is_alph_cap(u_int32_t a);
-bool is_alph_low(u_int32_t a);
-bool is_alph(u_int32_t a);
-bool is_alph_numeric(u_int32_t a);
+bool is_digit(uint32_t a);
+bool is_digit_base(uint32_t a, uint base);
+bool is_alph_cap(uint32_t a);
+bool is_alph_low(uint32_t a);
+bool is_alph(uint32_t a);
+bool is_alph_numeric(uint32_t a);
 bool is_whitespace(char a);
 bool is_newline(char a);
-
 
 #endif //ATOMIC_HELPER_STRING_H

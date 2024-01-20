@@ -37,6 +37,8 @@ typedef enum State {
 void cleanup_write(FILE* file, FILE* nfile, Buffer* buffer);
 void cleanup_skip(FILE* file, FILE* nfile, Buffer* buffer);
 
+void close_files(uint count, ...);
+
 void collect_enums(FILE* file, FILE* nfile, const char* prefix,
                    Buffer* buffer, charp_vec* enum_vec);
 void free_enums(charp_vec* enums);

@@ -28,19 +28,21 @@ int main(int argc, char** argv) {
     char* nhpath = get_path(dir_buff, path_sep_s "FlagsTemp.h");
     char* ncpath = get_path(dir_buff, path_sep_s "FlagsTemp.c");
 
-    FILE* hptr = fopen(hpath, "r");
-    FILE* cptr = fopen(cpath, "r");
+    FILE* hptr = validate_file(hpath, "r");
+    FILE* cptr = validate_file(cpath, "r");
 
     if (hptr == NULL || cptr == NULL) {
         printf(Error("FILE", ": Unable to open Flags.h or Flags.c. Current Dir: %s"), dir_buff);
+        close_files(2, hptr, cptr);
         exit(2);
     }
 
-    FILE* nhptr = fopen(nhpath, "w");
-    FILE* ncptr = fopen(ncpath, "w");
+    FILE* nhptr = validate_file(nhpath, "w");
+    FILE* ncptr = validate_file(ncpath, "w");
 
     if (nhptr == NULL || ncptr == NULL) {
         printf(Error("FILE", ": Unable to create temp files. Current Dir: %s"), dir_buff);
+        close_files(4, hptr, cptr, nhptr, ncptr);
         exit(2);
     }
 
@@ -53,12 +55,7 @@ int main(int argc, char** argv) {
     free_enums(&flag_enums);
     free_enums(&option_enums);
 
-    //cleanup_write
-    fclose(hptr);
-    fclose(cptr);
-
-    fclose(nhptr);
-    fclose(ncptr);
+    close_files(4, hptr, cptr, nhptr, ncptr);
 
     int remh = remove(hpath);
     int remc = remove(cpath);

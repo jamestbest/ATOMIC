@@ -27,7 +27,7 @@ int buffer_resize(Buffer* buffer, uint new_size) {
     return 0;
 }
 
-int buffer_nconcat(Buffer* buffer, char* to_add, u_int32_t d_size) {
+int buffer_nconcat(Buffer* buffer, char* to_add, uint32_t d_size) {
     if (buffer->pos + d_size + 1 >= buffer->size) {
         uint new_size = buffer->size + d_size + 1;
 

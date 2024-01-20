@@ -5,6 +5,9 @@ set(CMAKE_C_STANDARD 17)
 
 add_compile_options(-Wall -Wextra -pedantic-errors -Wswitch-enum)
 
+add_compile_options(-pedantic-errors -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self
+        -Wno-unused-parameter)
+
 add_executable(ATOMICLI
         Compiler.c
         Flags.c

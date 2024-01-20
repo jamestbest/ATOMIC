@@ -74,9 +74,11 @@ bool verify_args(int argc, char** argv) {
         return false;
     }
 
-    if (argv[1] == 0) {
-        PError(ATOM_CT__CLI_ERR_ARG_NULL);
-        return false;
+    for (int i = 0; i < argc; i++) {
+        if (argv[i] == NULL) {
+            PError(ATOM_CT__CLI_ERR_ARG_NULL, i);
+            return false;
+        }
     }
 
     return true;
@@ -194,7 +196,7 @@ charp_vec get_option_args(char** argv, int* argp, int argc) {
 
 void parse_flag(char* arg) {
     //turn the flag into an int from past --
-    //this should be based on the next 8 characters of the flag
+    //this should be based on the next 8 characters (bar '-') of the flag
     //e.g. --!AST-OUT
     bool enabled = true;
     uint start = 2;

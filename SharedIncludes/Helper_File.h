@@ -27,5 +27,6 @@ char* get_path(const char* dir, const char* file);
 bool get_line(FILE* file, Buffer* buffer);
 
 FILE* open_file(const char* cwd, const char* filename, const char* mode);
+FILE* validate_file(const char* filename, const char* mode);
 
 #endif //ATOMIC_HELPER_FILE_H

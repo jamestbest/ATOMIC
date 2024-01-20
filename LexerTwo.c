@@ -2,7 +2,6 @@
 // Created by james on 25/12/23.
 //
 
-#include <stdarg.h>
 #include "LexerTwo.h"
 
 uint line_num, col_num;
@@ -15,8 +14,8 @@ Buffer line_buffer;
 bool in_multiline_comment;
 Buffer multiline_buffer;
 
-static u_int32_t start_line;
-static u_int32_t start_col; //ik ik
+static uint32_t global_start_line;
+static uint32_t global_start_col; //ik ik
 
 //new plan for the lexer
 //it will print out any errors it finds, makes more sense to use the information held inside
@@ -50,7 +49,7 @@ uint lex(FILE* file, Token_vec* token_vec, Vector *lines) {
     }
 
     if (in_multiline_comment) {
-        lexerr(LEXERR_COMMENT_MULTILINE_NO_END, (Position){start_line, start_col, start_line, start_col});
+        lexerr(LEXERR_COMMENT_MULTILINE_NO_END, (Position){global_start_line, global_start_col, global_start_line, global_start_col});
         retCode = LEXERR_COMMENT_MULTILINE_NO_END;
     }
 
@@ -67,7 +66,7 @@ uint lex_line(Buffer* line) {
     }
 
     while (c_char < line->data + line->pos && current_char() != '\0') {
-        u_int32_t c = current_char();
+        uint32_t c = current_char();
 
         TokenType type;
         switch (current_char()) {
@@ -231,8 +230,8 @@ int lex_comment(void) {
 
 int lex_multiline_comment(void) {
     if (!in_multiline_comment) {
-        start_line = line_num;
-        start_col = col_num;
+        global_start_line = line_num;
+        global_start_col = col_num;
         buffer_resize(&multiline_buffer, BUFF_MIN);
         buffer_clear(&multiline_buffer);
 
@@ -246,14 +245,14 @@ int lex_multiline_comment(void) {
     }
     else {
         in_multiline_comment = false;
-        u_int32_t d_size = comment_end - c_char + sizeof("*¬") - 1;
+        uint32_t d_size = comment_end - c_char + sizeof("*¬") - 1;
         buffer_nconcat(&multiline_buffer, c_char, d_size);
 
         *(comment_end) = '\0'; //[[todo]] fix
         gourge(strlen(line_buffer.data) + 2);
         *(comment_end) = '*';
 
-        add_token(construct_multiline_token(COMMENT, buffer_steal(&multiline_buffer, 0), start_col, col_num, start_line));
+        add_token(construct_multiline_token(COMMENT, buffer_steal(&multiline_buffer, 0), global_start_col, col_num, global_start_line));
     }
 
     return SUCCESS;
@@ -391,8 +390,8 @@ void lex_word(void) {
     }
 
     if (info.arr_pos != -1) {
-        u_int64_t char_count = info.last_char - c_char;
-        u_int64_t d_byte = char_count * sizeof(char);
+        uint64_t char_count = info.last_char - c_char;
+        uint64_t d_byte = (char_count + 1) * sizeof(char);
         add_token(create_token(type, c_char, d_byte, col_num, col_num + char_count - 1));
 
         gourge(info.last_char - c_char);
@@ -400,9 +399,9 @@ void lex_word(void) {
     }
 
     if (info = word_in_arr(c_char, ATOM_CT__LEX_CONS_IDENTIFIERS), info.arr_pos != -1) {
-        u_int64_t char_count =  strlen(ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos]);
+        uint64_t char_count =  strlen(ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos]);
         add_token(create_token(LIT_BOOL, ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos],
-                               char_count * sizeof(char), col_num, col_num + char_count - 1));
+                               (char_count + 1) * sizeof(char), col_num, col_num + char_count - 1));
         gourge(info.last_char - c_char);
         return;
     }
@@ -444,7 +443,7 @@ void lex_word(void) {
 }
 
 void lex_identifier(void) {
-    u_int32_t start_col = col_num;
+    uint32_t start_col = col_num;
 
     char* start = c_char;
     consume(); //we know that the first character is alph() as that's why we're here
@@ -454,11 +453,11 @@ void lex_identifier(void) {
         end = consume();
     }
 
-    u_int32_t num_chars = (end - start);
-    add_token(create_token(IDENTIFIER, start, num_chars * sizeof(char), start_col, start_col + num_chars - 1));
+    uint32_t num_chars = (end - start);
+    add_token(create_token(IDENTIFIER, start, (num_chars + 1) * sizeof(char), start_col, start_col + num_chars - 1));
 }
 
-Token create_simple_token(TokenType type, u_int32_t start_col, u_int32_t end_col) {
+Token create_simple_token(TokenType type, uint32_t start_col, uint32_t end_col) {
     Token t;
 
     t.type = type;
@@ -468,14 +467,14 @@ Token create_simple_token(TokenType type, u_int32_t start_col, u_int32_t end_col
     return t;
 }
 
-Token construct_token(TokenType type, void* made_data, u_int32_t start_col, u_int32_t end_col) {
+Token construct_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col) {
     Token ret = create_simple_token(type, start_col, end_col);
     ret.data = made_data;
 
     return ret;
 }
 
-Token create_token_and_term(TokenType type, void* data, u_int64_t d_size, u_int32_t start_col, u_int32_t end_col) {
+Token create_token_and_term(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col) {
     Token t = create_token(type, data, d_size + 1, start_col, end_col);
 
     if (t.data == NULL) return t;
@@ -485,7 +484,7 @@ Token create_token_and_term(TokenType type, void* data, u_int64_t d_size, u_int3
     return t;
 }
 
-Token construct_multiline_token(TokenType type, void* made_data, u_int32_t start_col, u_int32_t end_col, u_int32_t start_line) {
+Token construct_multiline_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col, uint32_t start_line) {
     Token ret = create_simple_token(type, start_col, end_col);
     ret.data = made_data;
     ret.pos.start_line = start_line;
@@ -493,7 +492,7 @@ Token construct_multiline_token(TokenType type, void* made_data, u_int32_t start
     return ret;
 }
 
-Token create_multiline_token(TokenType type, void* data, u_int64_t d_size, u_int32_t start_col, u_int32_t end_col, u_int32_t start_line) {
+Token create_multiline_token(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col, uint32_t start_line) {
     Token ret = create_token(type, data, d_size, start_col, end_col);
     ret.pos.start_line = start_line;
     return ret;
@@ -505,7 +504,7 @@ Token create_multiline_token(TokenType type, void* data, u_int64_t d_size, u_int
  * The data size is just for the malloc
  * start and end col e.g. 123, <1:3>
  */
-Token create_token(TokenType type, void* data, u_int64_t d_size, u_int32_t start_col, u_int32_t end_col) {
+Token create_token(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col) {
     Token t;
 
     t.type = type;
@@ -525,9 +524,30 @@ Token create_token(TokenType type, void* data, u_int64_t d_size, u_int32_t start
         case TYPE:
         case LIT_BOOL:
         case LIT_STR:
-            ((char*)t.data)[d_size] = '\0';
+            ((char*)t.data)[d_size - 1] = '\0';
             break;
-        default:
+        case LIT_INT:
+        case LIT_FLOAT:
+        case LIT_NAV:
+        case OP_BIN:
+        case OP_UN_PRE:
+        case OP_UN_POST:
+        case OP_TRINARY:
+        case BRACKET_OPEN:
+        case BRACKET_CLOSE:
+        case CURLY_OPEN:
+        case CURLY_CLOSE:
+        case PAREN_OPEN:
+        case PAREN_CLOSE:
+        case COMMA:
+        case TYPE_SET:
+        case TYPE_INFER:
+        case COMMENT:
+        case DELIMITER:
+        case WS_S:
+        case WS_T:
+        case NEWLINE:
+        case EOTS:
             break;
     }
 
@@ -538,11 +558,11 @@ void add_token(Token t) {
     Token_vec_add(tokens, t);
 }
 
-u_int32_t current_char(void) {
+uint32_t current_char(void) {
     return consume_utf_char(c_char, false, NULL);
 }
 
-u_int32_t peek(void) {
+uint32_t peek(void) {
     char* current_end;
     consume_utf_char(c_char, false, &current_end);
     return consume_utf_char(current_end, false, NULL);
@@ -574,7 +594,7 @@ char* consume_with_carridge(void) {
 }
 
 char* consume(void) {
-    u_int32_t character = consume_utf_char(c_char, true, NULL);
+    uint32_t character = consume_utf_char(c_char, true, NULL);
 
     if (character == '\n') {
         update_line_count();
@@ -585,9 +605,9 @@ char* consume(void) {
     return c_char;
 }
 
-u_int32_t consume_utf_char(char *start, bool consume, char** next_char) {
-    u_char fbyte = *start;
-    u_int32_t ret = fbyte;
+uint32_t consume_utf_char(char *start, bool consume, char** next_char) {
+    uchar fbyte = *start;
+    uint32_t ret = fbyte;
 
     uint inc = 1;
 
@@ -633,7 +653,7 @@ char* lexerr_process_char(char a, char buff[2]) {
     return buff;
 }
 
-uint lexerr(Lexerrors errorCode, Position pos, ...) {
+uint lexerr(const Lexerrors errorCode, const Position pos, ...) {
     va_list args;
 
     va_start(args, pos);

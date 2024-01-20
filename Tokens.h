@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "SharedIncludes/Vector.h"
 #include "SharedIncludes/Colours.h"
@@ -66,10 +67,10 @@ typedef enum TokenType {
  */
 
 typedef struct Position {
-    u_int32_t start_line;
-    u_int32_t start_col;
-    u_int32_t end_line;
-    u_int32_t end_col;
+    uint32_t start_line;
+    uint32_t start_col;
+    uint32_t end_line;
+    uint32_t end_col;
 } Position;
 
 //a tokens value is the |func mainfunction () : i4|
