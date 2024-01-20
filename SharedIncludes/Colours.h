@@ -14,10 +14,7 @@
 #define C_CYN  "\x1B[36m"
 #define C_WHT  "\x1B[37m"
 
-#define ERROR_BASE C_RED"ERROR"C_RST": "
-#define WARN_BASE C_YLW"Warning"C_RST": "
-
-#define INFO_BASE C_BLU"Info"C_RST": "
-#define SUCC_BASE C_GRN"SUCCESS"C_RST": "
+#define F_UND  "\033[4m"
+#define F_CLR  "\033[0m"
 
 #endif //ATOMIC_COLOURS_H
