@@ -6,12 +6,21 @@
 #define ATOMIC_TOKENS_H
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "SharedIncludes/Vector.h"
+#include "SharedIncludes/Colours.h"
+#include "SharedIncludes/Helper_String.h"
+
+typedef struct Arr {
+    char** arr;
+    uint size;
+} Arr;
 
 typedef enum TokenType {
     IDENTIFIER,
     KEYWORD,
+    TYPE,
 
     LIT_STR,
     LIT_INT,
@@ -32,6 +41,12 @@ typedef enum TokenType {
     PAREN_CLOSE,
 
     COMMA,
+    TYPE_SET,
+    TYPE_INFER,
+
+    COMMENT,
+
+    DELIMITER,
 
     WS_S,                   //White space single/tab
     WS_T,
@@ -49,15 +64,41 @@ typedef enum TokenType {
  *
  *   [[maybe]] For now this will not store the positions
  */
+
+typedef struct Position {
+    u_int32_t start_line;
+    u_int32_t start_col;
+    u_int32_t end_line;
+    u_int32_t end_col;
+} Position;
+
 //a tokens value is the |func mainfunction () : i4|
 //                            ^----------^
 //                            |           `line + size
 //                            `line
 typedef struct Token {
     TokenType type;
-    char* start;
-    size_t size;
+    void* data; //now going to be some data, could point to a string, or a number, or a single character
+
+    Position pos;
 } Token;
+
+extern Arr ATOM_CT__LEX_OP_IDENTIFIERS;
+extern char* ATOM_CT__LEX_OP_IDENTIFIERS_RAW[];
+extern Arr ATOM_CT__LEX_KEYWORDS;
+extern char* ATOM_CT__LEX_KEYWORDS_RAW[];
+extern Arr ATOM_CT__LEX_TYPES;
+extern char* ATOM_CT__LEX_TYPES_RAW[];
+extern Arr ATOM_CT__LEX_CONS_IDENTIFIERS;
+extern char* ATOM_CT__LEX_CONS_IDENTIFIERS_RAW[];
+
+
+const char* get_token_color(TokenType type);
+const char* cons_token_type_colored(TokenType type);
+
+int print_position(Position pos);
+void print_token_value(Token* token);
+void print_token(Token* token);
 
 VEC_PROTO(Token, Token)
 
