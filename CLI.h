@@ -27,6 +27,8 @@ typedef long long int llint;
 #define ATOM_CT__CLI_ERR_NO_SUCH_FILE           ERROR_BASE"No such file found: %s\n"
 #define ATOM_CT__CLI_ERR_UNKNOWN                ERROR_BASE"Unknown error code %d\n"
 
+#define ATOM_CT__CLI_ERR_LEXERR                 ERROR_BASE"Lexer exited with code: %d. Unable to compile other files\n"
+
 bool verify_args(int argc, char** argv);
 void parse_args(int argc, char** argv);
 

@@ -39,9 +39,11 @@ int main(int argc, char** argv) {
         printf("File: %s\n", filename);
     }
 
-    char* cwd = get_dir(argv[0]); //get the current working directory
+    char* cwd = get_dir(argv[0]); //get the c_char working directory
 
     CompileRet ret = compile(ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME, cwd, ATOM_VR__CLI_FILES);
+
+    free(cwd);
 
     putchar('\n');
     parse_compile_ret(ret);
@@ -56,6 +58,9 @@ void parse_compile_ret(CompileRet ret) {
             break;
         case ERR_NO_SUCH_FILE:
             printf(ATOM_CT__CLI_ERR_NO_SUCH_FILE, ret.info);
+            break;
+        case LEXERR:
+            printf(ATOM_CT__CLI_ERR_LEXERR, ret.code); // - BASE_ERR?
             break;
         default:
             printf(ATOM_CT__CLI_ERR_UNKNOWN, ret.code);
