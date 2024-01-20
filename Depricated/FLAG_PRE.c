@@ -182,7 +182,7 @@ void cleanup(FILE* fptr, FILE* nfile, char* buff) {
 }
 
 void parseStrings(FILE* nfile, Enums enums, char* prefix) {
-    for (int i = 0; i < enums.count; i++) {
+    for (uint i = 0; i < enums.count; i++) {
         char* enumName = enums.enumNames[i];
 
         fprintf(nfile, "#define %s%s%s \"%s\"\n", prefix, enumName, "_STR", enumName);
@@ -191,7 +191,7 @@ void parseStrings(FILE* nfile, Enums enums, char* prefix) {
 
 void parseIdxSwitch(FILE* nfile, Enums enums) {
     fputs("\tswitch (fi) {\n", nfile);
-    for (int i = 0; i < enums.count; i++) {
+    for (uint i = 0; i < enums.count; i++) {
         char* enumName = enums.enumNames[i];
 
         fprintf(nfile, "\t\tcase %s%s%s:\n"
@@ -204,7 +204,7 @@ void parseIdxSwitch(FILE* nfile, Enums enums) {
 
 void parseStrSwitch(FILE* nfile, Enums enums) {
     fputs("\tswitch(index) {\n", nfile);
-    for (int i = 0; i < enums.count; i++) {
+    for (uint i = 0; i < enums.count; i++) {
         char *enumName = enums.enumNames[i];
 
         fprintf(nfile, "\t\tcase %s%s:\n"
@@ -224,7 +224,7 @@ void parseDefs(FILE* nfile, Enums enums, char* prefix) {
         exit(1);
     }
 
-    for (int i = 0; i < enums.count; i++) {
+    for (uint i = 0; i < enums.count; i++) {
         //need to replace `_` with `-`
         const char* enumName = enums.enumNames[i];
 
