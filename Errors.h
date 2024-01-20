@@ -8,16 +8,24 @@
 #include "SharedIncludes/Colours.h"
 
 #define SUCCESS 0
-#define ARGERR 1
-#define ENOMEM 12
+#define FAIL    1
+#define ARGERR  2
+#define ENOMEM  12
 
 
-//https://gcc.gnu.org/onlinedocs/gcc/Variadic-Macros.html
+#define BASEERR 256
+#define LEXERR (BASEERR + 1)
+
+#define ERROR_BASE C_RED"ERROR"C_RST": "
+#define WARN_BASE C_YLW"Warning"C_RST": "
+
+#define INFO_BASE C_BLU"Info"C_RST": "
+#define SUCC_BASE C_GRN"SUCCESS"C_RST": "
+
+//https://gcc.gnu.org/onlinedocs/gcc/Variadic-Macros.html  -- gave error changed a bit
 //and if the variable arguments are omitted or empty, the ‘##’ operator causes the preprocessor to remove the comma before it.
-#define VA_ARGS(...) , ##__VA_ARGS__
-
 //Errros
-#define PError(ErrorMsg, ...) printf(ERROR_BASE ErrorMsg VA_ARGS(__VA_ARGS__))
+#define PError(ErrorMsg, ...) printf(ERROR_BASE ErrorMsg , ##__VA_ARGS__)
 
 #define ATOM_CT__CLI_ERR_ARG_NONE       "The ATOMIC compiler requires at least one argument (file to compile)\n"
 #define ATOM_CT__CLI_ERR_ARG_NULL       "Error with argv, null pointer in first argument (bar program name)\n"
@@ -25,14 +33,11 @@
 #define ATOM_CT__CLI_ERR_OPT_ARG        "Option \"%s\" require at least 1 argument\n"
 
 //Warnings
-#define PWarn(WarningMsg, ...) printf(WARN_BASE WarningMsg VA_ARGS(__VA_ARGS__))
+#define PWarn(WarningMsg, ...) printf(WARN_BASE WarningMsg , ##__VA_ARGS__)
 
 #define ATOM_CT__CLI_WRN_OPT_FLG_INVLD  "Invalid flag given \"%s\"\n"
 
 #define ATOM_CT__CLI_WRN_OPT_ARG_COUNT  "Option \"-%s\" only acts on 1 argument, ignoring others\n"
 #define ATOM_CT__CLI_WRN_OPT_ARG_INVLD  "Option \"-%s\" given invalid argument \"%s\". Ignoring\n"
-
-//Strings
-#define ATOM_CT__CLI_OPT_OUT_TOK "tok"
 
 #endif //ATOMIC_ERRORS_H
