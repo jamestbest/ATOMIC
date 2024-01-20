@@ -1,0 +1,18 @@
+entry func main(argc: i4, argv: string[]): i4 {
+	my_arr: i4[]' = my_func(10)
+	
+	free(my_arr')
+	
+	print(my_arr[0]) ¬ error, use after free
+	
+	ret 0;
+}
+
+func my_func(count: i4): i4[]' {
+	ret_val: i4[..] = []
+	times count {
+		ret_val += 1
+	}
+	ret ret_val'
+}
+
