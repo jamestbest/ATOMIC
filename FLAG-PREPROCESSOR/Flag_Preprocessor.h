@@ -41,7 +41,7 @@ void collect_enums(FILE* file, FILE* nfile, const char* prefix,
                    Buffer* buffer, charp_vec* enum_vec);
 void free_enums(charp_vec* enums);
 
-void parse_c(FILE* cptr, FILE* ncptr, charp_vec* flag_enums, charp_vec* option_enums);
+void parse_c(FILE* cptr, FILE* ncptr, charp_vec* flag_enums);
 void parse_h(FILE* hptr, FILE* nhptr, charp_vec* flag_enums, charp_vec* option_enums);
 
 void parse_switch(FILE* file, FILE* nfile, const char* prefix,
