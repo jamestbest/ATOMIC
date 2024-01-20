@@ -1,11 +1,30 @@
 ¬ This is a test script for the atom lang
 
-func main(argc: i4, argv: char[][]) : i4 {
+¬*
+    behold the elusive multiline comment
+    gaze upon its ability to traverse multiple lines
+*¬
+
+func main(argc: i4, argv: char[][]): i4 {
     a: i4 = 0
 
     times 10 {
         print("Hello world!"); a++;
     }
 
+    b: i4 = 0b1102
+
+    c, d, e, f: i4 = 0xFFFC, 0o7723, 0d9876, 0t2112
+
+    g: i8 = 0x7762
+
+    r: r4 = 12.1123
+
+    test: bool = true and false
+
     ret a - a;
 }
+
+¬*
+    comment
+*¬
