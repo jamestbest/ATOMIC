@@ -10,6 +10,8 @@
 
 typedef long long int llint;
 
+#define MAX_FLAG_SYMBOLS 8
+
 llint flag_to_int(const char* flag);
 llint flag_split_to_int(const char* flag_a, const char* flag_b);
 
