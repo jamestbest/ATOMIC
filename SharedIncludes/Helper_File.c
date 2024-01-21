@@ -21,7 +21,6 @@ FILE* validate_file(const char* filename, const char* mode) {
                 break;
             default:
                 assert(false);
-                break;
         }
 
         uint res = access(filename, dec);
