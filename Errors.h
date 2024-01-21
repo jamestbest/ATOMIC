@@ -28,7 +28,7 @@
 #define PError(ErrorMsg, ...) printf(ERROR_BASE ErrorMsg , ##__VA_ARGS__)
 
 #define ATOM_CT__CLI_ERR_ARG_NONE       "The ATOMIC compiler requires at least one argument (file to compile)\n"
-#define ATOM_CT__CLI_ERR_ARG_NULL       "Error with argv, null pointer in first argument (bar program name)\n"
+#define ATOM_CT__CLI_ERR_ARG_NULL       "Error with argv, null pointer in argument %d\n"
 
 #define ATOM_CT__CLI_ERR_OPT_ARG        "Option \"%s\" require at least 1 argument\n"
 
