@@ -107,6 +107,8 @@ const char* get_token_color(TokenType type) {
         case DELIMITER:
             return C_WHT;
         case EOTS:
+        case INVALID:
+        default:
             return C_RED;
     }
 }
@@ -114,7 +116,7 @@ const char* get_token_color(TokenType type) {
 //this is dynamically allocated memory so be sure to free
 const char* cons_token_type_colored(TokenType type) {
     const char* colour = get_token_color(type);
-    const char* title;
+    const char* title = "INVALID";
     const char* end = C_RST;
     switch (type) {
         case IDENTIFIER:
@@ -190,6 +192,9 @@ const char* cons_token_type_colored(TokenType type) {
         case EOTS:
             title = "END OF TOKEN STREAM";
             break;
+        case INVALID:
+            title = "INVALID";
+            break;
     }
     uint length = len(colour) + len(title) + len(end) + 1;
     char* ret = malloc(sizeof(char) * length);
@@ -220,7 +225,7 @@ void print_token_value(Token* token) {
             break;
 
         case LIT_INT:
-            printf("%ld", *(int64_t*)token->data);
+            printf("%lld", *(int64_t*)token->data);
             break;
         case LIT_FLOAT:
             printf("%Lf", *(long double*)token->data);
@@ -275,6 +280,9 @@ void print_token_value(Token* token) {
             break;
         case EOTS:
             printf("\\EOTS\\");
+            break;
+        case INVALID:
+            printf("\\INVALID\\");
             break;
     }
 }

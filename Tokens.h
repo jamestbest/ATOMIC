@@ -19,6 +19,8 @@ typedef struct Arr {
 } Arr;
 
 typedef enum TokenType {
+    INVALID,
+
     IDENTIFIER,
     KEYWORD,
     TYPE,
