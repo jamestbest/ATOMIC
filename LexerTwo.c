@@ -11,35 +11,30 @@ Token_vec* tokens;
 FILE* c_file;
 Buffer line_buffer;
 
-bool in_multiline_comment;
-Buffer multiline_buffer;
-
-static uint32_t global_start_line;
-static uint32_t global_start_col; //ik ik
+bool load_line(void) {
+    update_line_count();
+    c_char = line_buffer.data;
+    return get_line(c_file, &line_buffer);
+}
 
 //new plan for the lexer
 //it will print out any errors it finds, makes more sense to use the information held inside
 //it will not return an error code as multiple errors could have occurred so just err code 1
 uint lex(FILE* file, Token_vec* token_vec, Vector *lines) {
-    line_num = 1;
-    col_num = 0;
+    line_num = 0;
+    col_num = 1;
     c_char = NULL;
 
     tokens = token_vec;
 
     line_buffer = buffer_create(BUFF_MIN);
 
-    multiline_buffer = buffer_create(BUFF_MIN);
-    in_multiline_comment = false;
-
     c_file = file;
 
     uint retCode = SUCCESS;
 
-    while (get_line(file, &line_buffer)) {
-        c_char = line_buffer.data;
-
-        uint errcode = lex_line(&line_buffer);
+    while (load_line()) {
+        const uint errcode = lex_line(&line_buffer);
 
         if (errcode != SUCCESS) {
             retCode = errcode;
@@ -48,25 +43,21 @@ uint lex(FILE* file, Token_vec* token_vec, Vector *lines) {
         vector_add(lines, buffer_steal(&line_buffer, BUFF_MIN));
     }
 
-    if (in_multiline_comment) {
-        lexerr(LEXERR_COMMENT_MULTILINE_NO_END, (Position){global_start_line, global_start_col, global_start_line, global_start_col});
-        retCode = LEXERR_COMMENT_MULTILINE_NO_END;
-    }
-
     Token_vec_add(tokens, create_simple_token(EOTS, col_num, col_num));
 
     buffer_destroy(&line_buffer);
     return retCode;
 }
 
-uint lex_line(Buffer* line) {
-    if (in_multiline_comment) {
-        lex_multiline_comment();
-        return SUCCESS;
-    }
-
+uint lex_line(const Buffer* line) {
     while (c_char < line->data + line->pos && current_char() != '\0') {
-        uint32_t c = current_char();
+        const uint32_t c = current_char();
+
+        if (current_char() == '\n') {
+            add_token((Token){NEWLINE, NULL, (Position){line_num, col_num, line_num + 1, 0}});
+            consume();
+            continue;
+        }
 
         TokenType type;
         switch (current_char()) {
@@ -103,9 +94,6 @@ uint lex_line(Buffer* line) {
             case '\t':
                 type = WS_T;
                 break;
-            case '\n':
-                type = NEWLINE;
-                break;
 
             default:
                 goto lex_line_cont;
@@ -120,10 +108,13 @@ uint lex_line(Buffer* line) {
             case COMMENT_START_ASCII_CODE:
                 lex_comment();
                 break;
+            case '"':
+                lex_string_lit();
+                break;
             default:
                 goto lex_line_cont_two;
         }
-        return SUCCESS;
+        continue;
 
     lex_line_cont_two:
         if (is_alph(c)) {
@@ -198,9 +189,9 @@ char* create_heap_copy_of_static_string(const char* string){
 
 PosCharp word_in_arr(const char *word, Arr arr) {
     for (uint i = 0; i < arr.size; i++) {
-        char* w_arr = arr.arr[i];
+        const char* w_arr = arr.arr[i];
 
-        int final_pos = starts_with_ic(word, w_arr);
+        const int final_pos = starts_with_ic(word, w_arr);
         if (final_pos != -1) {
             return (PosCharp) {(int)i, (char*)(word + final_pos)};
         }
@@ -209,6 +200,63 @@ PosCharp word_in_arr(const char *word, Arr arr) {
     return (PosCharp){-1, NULL};
 }
 
+int create_multiline_value(const char* starter, const char* delimiter, const TokenType type, const bool include_delimiter) {
+    Buffer ml_comment_buff = buffer_create(BUFF_MIN);
+
+    const uint32_t start_line = line_num;
+    const uint32_t start_col = col_num;
+
+    if (!include_delimiter) gourge(len(starter));
+
+    const char* starting_pos = c_char + strlen(starter);
+
+    const char* comment_end = strstr(starting_pos, delimiter);
+    if (comment_end == NULL) {
+        do {
+            buffer_concat(&ml_comment_buff, c_char);
+
+            //A new line needs to be loaded into the line_buffer
+            const bool ret = load_line();
+
+            if (!ret) goto create_multiline_value_fail;
+
+            comment_end = strstr(c_char, delimiter);
+        } while (comment_end == NULL);
+    }
+    //the current line contains the comment end
+
+    if (include_delimiter) comment_end += strlen(delimiter);
+
+    const uint32_t d_size = comment_end - c_char;
+    buffer_nconcat(&ml_comment_buff, c_char, d_size);
+
+    uint end_col = 0;
+
+    while (c_char < comment_end) {
+        end_col++;
+        c_char += get_utf_char_bytes(c_char);
+    }
+
+    col_num = end_col;
+
+    add_token(construct_multiline_token(type, buffer_steal(&ml_comment_buff, 0), start_col, end_col, start_line));
+
+    if (!include_delimiter) gourge(len(delimiter));
+
+    buffer_destroy(&ml_comment_buff);
+    return SUCCESS;
+
+create_multiline_value_fail:
+    buffer_destroy(&ml_comment_buff);
+    return FAIL;
+}
+
+int lex_string_lit(void) {
+    return create_multiline_value("\"", "\"", LIT_STR, false);
+}
+
+//[[todo]] need to have error checking for multiline comment not ending
+//         can only happen if reach EOF
 int lex_comment(void) {
     if (peek() == '*') {
         return lex_multiline_comment();
@@ -219,7 +267,9 @@ int lex_comment(void) {
 
     consume(); //eat the ¬
 
-    while (current_char() != '\n') consume();
+    while (current_char() != '\n') {
+        consume();
+    }
 
     uint bytes = c_char - comment_start;
 
@@ -229,33 +279,7 @@ int lex_comment(void) {
 }
 
 int lex_multiline_comment(void) {
-    if (!in_multiline_comment) {
-        global_start_line = line_num;
-        global_start_col = col_num;
-        buffer_resize(&multiline_buffer, BUFF_MIN);
-        buffer_clear(&multiline_buffer);
-
-        in_multiline_comment = true;
-    }
-
-    char* comment_end = strstr(c_char, "*¬");
-    if (comment_end == NULL) {
-        buffer_concat(&multiline_buffer, c_char);
-        update_line_count();
-    }
-    else {
-        in_multiline_comment = false;
-        uint32_t d_size = comment_end - c_char + sizeof("*¬") - 1;
-        buffer_nconcat(&multiline_buffer, c_char, d_size);
-
-        *(comment_end) = '\0'; //[[todo]] fix
-        gourge(strlen(line_buffer.data) + 2);
-        *(comment_end) = '*';
-
-        add_token(construct_multiline_token(COMMENT, buffer_steal(&multiline_buffer, 0), global_start_col, col_num, global_start_line));
-    }
-
-    return SUCCESS;
+    return create_multiline_value("¬*", "*¬", COMMENT, true);
 }
 
 uint lex_number(void) {
@@ -380,7 +404,7 @@ void lex_word(void) {
      */
 
     PosCharp info;
-    TokenType type;
+    TokenType type = INVALID;
 
     if (info = word_in_arr(c_char, ATOM_CT__LEX_KEYWORDS), info.arr_pos != -1) {
         type = KEYWORD;
@@ -390,8 +414,8 @@ void lex_word(void) {
     }
 
     if (info.arr_pos != -1) {
-        uint64_t char_count = info.last_char - c_char;
-        uint64_t d_byte = (char_count + 1) * sizeof(char);
+        const uint64_t char_count = info.last_char - c_char;
+        const uint64_t d_byte = (char_count + 1) * sizeof(char);
         add_token(create_token(type, c_char, d_byte, col_num, col_num + char_count - 1));
 
         gourge(info.last_char - c_char);
@@ -399,7 +423,7 @@ void lex_word(void) {
     }
 
     if (info = word_in_arr(c_char, ATOM_CT__LEX_CONS_IDENTIFIERS), info.arr_pos != -1) {
-        uint64_t char_count =  strlen(ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos]);
+        const uint64_t char_count =  strlen(ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos]);
         add_token(create_token(LIT_BOOL, ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos],
                                (char_count + 1) * sizeof(char), col_num, col_num + char_count - 1));
         gourge(info.last_char - c_char);
@@ -447,17 +471,17 @@ void lex_identifier(void) {
 
     char* start = c_char;
     consume(); //we know that the first character is alph() as that's why we're here
-    char* end = c_char;
+    const char* end = c_char;
 
     while (is_alph_numeric(current_char())) {
         end = consume();
     }
 
-    uint32_t num_chars = (end - start);
+    const uint32_t num_chars = (end - start);
     add_token(create_token(IDENTIFIER, start, (num_chars + 1) * sizeof(char), start_col, start_col + num_chars - 1));
 }
 
-Token create_simple_token(TokenType type, uint32_t start_col, uint32_t end_col) {
+Token create_simple_token(const TokenType type, const uint32_t start_col, const uint32_t end_col) {
     Token t;
 
     t.type = type;
@@ -467,7 +491,7 @@ Token create_simple_token(TokenType type, uint32_t start_col, uint32_t end_col) 
     return t;
 }
 
-Token construct_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col) {
+Token construct_token(const TokenType type, void* made_data, const uint32_t start_col, const uint32_t end_col) {
     Token ret = create_simple_token(type, start_col, end_col);
     ret.data = made_data;
 
@@ -548,6 +572,7 @@ Token create_token(TokenType type, void* data, uint64_t d_size, uint32_t start_c
         case WS_T:
         case NEWLINE:
         case EOTS:
+        case INVALID:
             break;
     }
 
@@ -568,6 +593,13 @@ uint32_t peek(void) {
     return consume_utf_char(current_end, false, NULL);
 }
 
+char* gourge_unsafe(const uint32_t bytes, const uint32_t new_col) {
+    c_char += bytes;
+    col_num = new_col;
+
+    return c_char;
+}
+
 char* gourge(uint amount) {
     for (uint i = 0; i < amount; i++) consume();
 
@@ -576,37 +608,39 @@ char* gourge(uint amount) {
 
 void update_line_count(void) {
     line_num++;
-    col_num = 0;
-}
-
-char* consume_with_carridge(void) {
-    if (*c_char == '\n') {
-        update_line_count();
-
-        if (!carridge_next_line()) return NULL;
-        c_char = line_buffer.data;
-        col_num++;
-    } else {
-        consume();
-    }
-
-    return c_char;
+    col_num = 1;
 }
 
 char* consume(void) {
-    uint32_t character = consume_utf_char(c_char, true, NULL);
-
-    if (character == '\n') {
-        update_line_count();
-    }
+    consume_utf_char(c_char, true, NULL);
 
     col_num++;
 
     return c_char;
 }
 
+uint32_t get_utf_char_bytes(const char* character) {
+    const uchar fbyte = *character;
+    uint byte_count = 1;
+
+    if ((fbyte & 0xE0) == 0xC0) {
+        byte_count = 2;
+    }
+    else if ((fbyte & 0xf0) == 0xe0) {
+        byte_count = 3;
+    }
+    else if ((fbyte & 0xf8) == 0xf0 && (fbyte <= 0xf4)) {
+        byte_count = 4;
+    }
+    else {
+        byte_count = 1;
+    }
+
+    return byte_count;
+}
+
 uint32_t consume_utf_char(char *start, bool consume, char** next_char) {
-    uchar fbyte = *start;
+    const uchar fbyte = *start;
     uint32_t ret = fbyte;
 
     uint inc = 1;
@@ -639,10 +673,6 @@ uint32_t consume_utf_char(char *start, bool consume, char** next_char) {
     if (consume) c_char += inc;
     if (next_char) *next_char = start + inc;
     return ret;
-}
-
-int carridge_next_line(void) {
-    return get_line(c_file, &line_buffer);
 }
 
 char* lexerr_process_char(char a, char buff[2]) {
