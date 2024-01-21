@@ -23,6 +23,10 @@ add_executable(ATOMICLI
 
         Tokens.c
         LexerTwo.c
+        Parser.c
+        Parser.h
+        Node.c
+        Node.h
 )
 
 add_executable(Flag_preprocessor
