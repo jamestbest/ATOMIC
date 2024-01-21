@@ -52,7 +52,7 @@ int buffer_nconcat(Buffer* buffer, char* to_add, uint32_t d_size) {
 }
 
 int buffer_concat(Buffer *buffer, char *to_add) {
-    uint size_to_add = len(to_add);
+    const uint size_to_add = strlen(to_add);
     return buffer_nconcat(buffer, to_add, size_to_add);
 }
 
@@ -60,8 +60,8 @@ char* buffer_steal(Buffer* buffer, uint new_size) {
     //can no longer assume that buffer.data is not NULL as a theft from buffer can leave realloced result as null
     //alt - could return NULL from steal - ?
     //multiple thefts would pick up issue as NULL returned but not the last
-
-    char* new_data = malloc(new_size);
+    char* new_data = NULL;
+    if (new_size > 0) new_data = malloc(new_size);
 
     char* ret = buffer->data;
 
