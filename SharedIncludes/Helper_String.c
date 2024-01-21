@@ -4,28 +4,30 @@
 
 #include "Helper_String.h"
 
+uint len_basic(const char* string, const int from, const int offset, const char delimiter) {
+    int i = from;
+    int length = offset;
+    while (string[i] != '\0' && string[i] != delimiter) {
+        if ((string[i] & 0xC0) != 0x80) length++;
+        i++;
+    }
+    return length;
+}
+
 uint len(const char* string) {
-    int i = 0;
-    while (string[i] != '\0') {i++;};
-    return i;
+    return len_basic(string, 0, 0, '\0');
 }
 
-uint len_with(const char* string, uint offset) {
-    uint i = 0;
-    while (string[i] != '\0') {i++;};
-    return i + offset;
+uint len_with(const char* string, const uint offset) {
+    return len_basic(string, 0, offset, '\0');
 }
 
-uint len_from(const char* string, uint offset) {
-    uint i = offset;
-    while (string[i] != '\0') {i++;};
-    return i - offset;
+uint len_from(const char* string, const uint offset) {
+    return len_basic(string, offset, 0, '\0');
 }
 
-uint len_from_to(const char* string, uint offset, char to) {
-    uint i = offset;
-    while (string[i] != '\0' && string[i] != to) {i++;};
-    return i - offset;
+uint len_from_to(const char* string, const uint offset, const char to) {
+    return len_basic(string, offset, 0, to);
 }
 
 bool str_eq(const char* stra, const char* strb) {
@@ -104,13 +106,11 @@ int starts_with_ips(const char* string, const char* pattern) {
             }
         } else {
             if (string[string_p] != pattern[i]) return -1;
-            else {
-                string_p++;
-            }
+            else string_p++;
             i++;
         }
     }
-    return (int)string_p;
+    return string_p;
 }
 
 bool str_contains(const char* str, uint from, uint to, char c) {
