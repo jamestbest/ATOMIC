@@ -4,6 +4,45 @@
 
 #include "LexerTwo.h"
 
+static uint lex_line(const Buffer *line);
+
+static PosCharp longest_word_in_arr(const char* word, Arr arr);
+static ArrPosCharp longest_word_in_arrs(const char* word, uint arr_count, ...);
+static PosCharp word_in_arr(const char* word, Arr arr);
+static void lex_word(void);
+static void lex_identifier(void);
+static uint lex_number(void);
+static int create_multiline_value(const char* starter, const char* delimiter, TokenType type, bool include_delimiter);
+static int lex_string_lit(void);
+static int lex_character_lit(void);
+static uint lex_operator(PosCharp operator);
+static int lex_comment(void);
+static int lex_multiline_comment(void);
+
+static Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col);
+static Token create_multiline_token(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col, uint32_t start_line);
+static Token construct_multiline_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col, uint32_t start_line);
+static Token construct_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col);
+static Token create_simple_token(TokenType type, uint32_t start_col, uint32_t end_col);
+static void add_token(Token t);
+
+static uint32_t current_char(void);
+static uint32_t peer(int amount);
+static uint32_t peek(void);
+static void update_line_count(void);
+
+static char* consume(void);
+static char* gourge_unsafe(uint32_t bytes, uint32_t new_col);
+static char* gourge(uint amount);
+static uint32_t get_utf_char_bytes(const char* character);
+static uint32_t consume_utf_char(char *start, bool consume, char** next_char);
+
+static void highlight_line_err(Position pos, const char* line);
+static void highlight_current_line_err(Position pos);
+static char* lexerr_process_char(char a, char buff[2]);
+static void lexwarn(Lexwarns warnCode, Position pos, ...);
+static uint lexerr(Lexerrors errorCode, Position pos, ...);
+
 uint line_num, col_num;
 char* c_char;
 
@@ -104,12 +143,15 @@ uint lex_line(const Buffer* line) {
         continue;
 
     lex_line_cont:
-        switch (consume_utf_char(c_char, false, NULL)) {
+        switch (current_char()) {
             case COMMENT_START_ASCII_CODE:
                 lex_comment();
                 break;
             case '"':
                 lex_string_lit();
+                break;
+            case '\'':
+                lex_character_lit();
                 break;
             default:
                 goto lex_line_cont_two;
@@ -121,22 +163,30 @@ uint lex_line(const Buffer* line) {
             lex_word();
         }
         else if (is_digit(c)) {
-            uint errcode = lex_number();
+            const uint errcode = lex_number();
             if (errcode != SUCCESS) return errcode;
         }
         else {
-//            lex_operator();
-            consume();
+            const PosCharp op_pos = longest_word_in_arr(c_char, ATOM_CT__LEX_OPERATORS);
+            if (op_pos.arr_pos != -1){
+                lex_operator(op_pos);
+            } else {
+                consume();
+            }
         }
-
     }
 
     return SUCCESS;
 }
 
-void print_tokens(Token_vec* token_vec) {
+void print_tokens(Token_vec* token_vec, bool include_ws, bool include_comments) {
     puts("TOKENS");
     for (uint i = 0; i < token_vec->pos; i++) {
+        TokenType type = token_vec->arr[i].type;
+
+        if ((type == WS_S || type == WS_T) && !include_ws) continue;
+        if ((type == COMMENT) && !include_comments) continue;
+
         print_token(&token_vec->arr[i]);
     }
 }
@@ -153,7 +203,7 @@ void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels
             C_CYN"CONSTANT\n"
             C_MGN"TYPE\n"
             C_WHT"WHITESPACE/COMMENTS\n"
-            C_GRN"OPERATORS\n");
+            C_GRN"OPERATORS\n\n");
 
     //[[todo]] perhaps change to errors
     if (token_vec->pos == 0) {
@@ -177,18 +227,55 @@ void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels
     }
 }
 
-char* create_heap_copy_of_static_string(const char* string){
-    size_t length = len(string) + 1;
-    char* data = malloc(length * sizeof(char));
-    memcpy(data, string, length);
+ArrPosCharp longest_word_in_arrs(const char* word, const uint arr_count, ...) {
+    va_list vl;
 
-    data[length - 1] = '\0';
+    va_start(vl, arr_count);
 
-    return data;
+    ArrPosCharp ret = (ArrPosCharp){NULL, (PosCharp){-1, NULL}};
+    for (uint i = 0; i < arr_count; ++i) {
+        const Arr array = va_arg(vl, Arr);
+
+        const PosCharp res = longest_word_in_arr(word, array);
+
+        if (res.arr_pos == -1) continue;
+
+        if (ret.array == NULL || ret.posCharp.arr_pos == -1) {
+            ret.posCharp = res;
+            ret.array = array.arr;
+            continue;
+        }
+
+        if (len(ret.array[ret.posCharp.arr_pos]) < len(array.arr[res.arr_pos])) {
+            ret.posCharp = res;
+            ret.array = array.arr;
+        }
+    }
+
+    va_end(vl);
+
+    return ret;
+}
+
+PosCharp longest_word_in_arr(const char* word, const Arr arr) {
+    PosCharp ret = {-1, NULL};
+
+    for (uint i = 0; i < arr.elem_count; ++i) {
+        const char* w_arr = arr.arr[i];
+
+        const int final_pos = starts_with(word, w_arr);
+        if (final_pos != -1) {
+            if (ret.arr_pos != -1 && len(w_arr) < len(arr.arr[ret.arr_pos])) continue;
+
+            ret = (PosCharp){i, (char*)(word + final_pos)};
+        }
+    }
+
+    return ret;
 }
 
 PosCharp word_in_arr(const char *word, Arr arr) {
-    for (uint i = 0; i < arr.size; i++) {
+    for (uint i = 0; i < arr.elem_count; i++) {
         const char* w_arr = arr.arr[i];
 
         const int final_pos = starts_with_ic(word, w_arr);
@@ -255,6 +342,33 @@ int lex_string_lit(void) {
     return create_multiline_value("\"", "\"", LIT_STR, false);
 }
 
+int lex_character_lit(void) {
+    /* This could either be a character or just the ' symbol
+     * The ' won't be used in ATOM lang for the moment but I'll still lex it here
+     */
+
+    uint32_t possible_end = peer(2);
+
+    if (possible_end != '\'') {
+        add_token(create_simple_token(CARROT, col_num, col_num));
+        consume();
+        return SUCCESS;
+    }
+
+    consume(); //eat the '
+    char* c_start = c_char;
+    uint32_t start_col = col_num;
+
+    consume(); //eat the character
+    char* c_end = c_char;
+    uint32_t end_col = col_num;
+
+    consume(); //eat the '
+
+    add_token(create_token(LIT_CHR, c_start, c_end - c_start, start_col, end_col));
+    return SUCCESS;
+}
+
 //[[todo]] need to have error checking for multiline comment not ending
 //         can only happen if reach EOF
 int lex_comment(void) {
@@ -262,7 +376,7 @@ int lex_comment(void) {
         return lex_multiline_comment();
     }
 
-    uint col_start = col_num;
+    const uint col_start = col_num;
     char* comment_start = c_char;
 
     consume(); //eat the ¬
@@ -271,15 +385,24 @@ int lex_comment(void) {
         consume();
     }
 
-    uint bytes = c_char - comment_start;
+    const uint bytes = c_char - comment_start;
 
-    add_token(create_token_and_term(COMMENT, comment_start, bytes * sizeof(char), col_start, col_num - 1));
+    add_token(create_token(COMMENT, comment_start, bytes * sizeof(char), col_start, col_num - 1));
 
     return SUCCESS;
 }
 
 int lex_multiline_comment(void) {
     return create_multiline_value("¬*", "*¬", COMMENT, true);
+}
+
+uint lex_operator(const PosCharp operator) {
+    const uint32_t op_size = strlen(ATOM_CT__LEX_OPERATORS.arr[operator.arr_pos]);
+
+    add_token(create_token(operator_to_type(operator.arr_pos), (void*)&(operator.arr_pos), sizeof(int), col_num, col_num + op_size));
+
+    gourge(op_size);
+    return SUCCESS;
 }
 
 uint lex_number(void) {
@@ -327,7 +450,7 @@ uint lex_number(void) {
 
     start_col = start_col + 0; //silence compiler
 
-    char* start_char = c_char;
+    const char* start_char = c_char;
     //we know that the first character is valid
     char* end_char = consume();
 
@@ -336,7 +459,7 @@ uint lex_number(void) {
     }
 
     if (current_char() == '.') {
-        char* decimal_pos = c_char;
+        const char* decimal_pos = c_char;
         consume();
 
         while (is_digit_base(current_char(), base)) {
@@ -356,10 +479,7 @@ uint lex_number(void) {
             return FAIL;
         }
 
-        long double* data = malloc(sizeof(long double));
-        *data = value;
-
-        add_token(construct_token(LIT_FLOAT, data, start_col, col_num - 1));
+        add_token(construct_token(LIT_FLOAT, &value, start_col, col_num - 1));
 
         return SUCCESS;
     } else {
@@ -371,9 +491,9 @@ uint lex_number(void) {
             return FAIL;
         }
 
-        uint end_col = col_num;
+        const uint end_col = col_num;
 
-        char* error_end_char = end_char;
+        const char* error_end_char = end_char;
         while (is_alph_numeric(current_char())) {
             error_end_char = consume();
         }
@@ -385,10 +505,7 @@ uint lex_number(void) {
             return FAIL;
         }
 
-        llint* data = malloc(sizeof(llint));
-        *data = value;
-
-        add_token(construct_token(LIT_INT, data, start_col, col_num - 1));
+        add_token(construct_token(LIT_INT, &value, start_col, col_num - 1));
 
         return SUCCESS;
     }
@@ -404,7 +521,7 @@ void lex_word(void) {
      */
 
     PosCharp info;
-    TokenType type = INVALID;
+    TokenType type = TOKEN_INVALID;
 
     if (info = word_in_arr(c_char, ATOM_CT__LEX_KEYWORDS), info.arr_pos != -1) {
         type = KEYWORD;
@@ -414,11 +531,11 @@ void lex_word(void) {
     }
 
     if (info.arr_pos != -1) {
-        const uint64_t char_count = info.last_char - c_char;
-        const uint64_t d_byte = (char_count + 1) * sizeof(char);
-        add_token(create_token(type, c_char, d_byte, col_num, col_num + char_count - 1));
+        const uint64_t char_count = info.next_char - c_char;
 
-        gourge(info.last_char - c_char);
+        add_token(create_token(type, &info.arr_pos, -1, col_num, col_num + char_count - 1));
+
+        gourge(info.next_char - c_char);
         return;
     }
 
@@ -426,7 +543,7 @@ void lex_word(void) {
         const uint64_t char_count =  strlen(ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos]);
         add_token(create_token(LIT_BOOL, ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos],
                                (char_count + 1) * sizeof(char), col_num, col_num + char_count - 1));
-        gourge(info.last_char - c_char);
+        gourge(info.next_char - c_char);
         return;
     }
 
@@ -438,17 +555,17 @@ void lex_word(void) {
         token.pos.end_col = col_num;
 
         switch (info.arr_pos) {
-            case 0:
-                token.data = create_heap_copy_of_static_string("&&");
+            case AND:
+                token.data.integer = LAND;
                 break;
-            case 1:
-                token.data = create_heap_copy_of_static_string("||");
+            case OR:
+                token.data.integer = LOR;
                 break;
-            case 2:
-                token.data = create_heap_copy_of_static_string("|-|");
+            case XOR:
+                token.data.integer = LXOR;
                 break;
-            case 3:
-                token.data = create_heap_copy_of_static_string("!");
+            case NOT:
+                token.data.integer = LNOT;
                 token.type = OP_UN_PRE;
                 break;
             default:
@@ -456,29 +573,37 @@ void lex_word(void) {
         }
 
         token.pos.start_col = col_num;
-        token.pos.end_col = col_num + len(token.data);
+        token.pos.end_col = col_num + len(ATOM_CT__LEX_OP_IDENTIFIERS.arr[info.arr_pos]);
 
         add_token(token);
-        gourge(info.last_char - c_char);
+        gourge(info.next_char - c_char);
         return;
     }
 
     lex_identifier();
 }
 
+bool is_valid_identifier_end(uint32_t chr) {
+    if (is_alph_numeric(chr)) return true;
+
+    if (chr == '_') return true;
+
+    return false;
+}
+
 void lex_identifier(void) {
-    uint32_t start_col = col_num;
+    const uint32_t start_col = col_num;
 
     char* start = c_char;
     consume(); //we know that the first character is alph() as that's why we're here
     const char* end = c_char;
 
-    while (is_alph_numeric(current_char())) {
+    while (is_valid_identifier_end(current_char())) {
         end = consume();
     }
 
     const uint32_t num_chars = (end - start);
-    add_token(create_token(IDENTIFIER, start, (num_chars + 1) * sizeof(char), start_col, start_col + num_chars - 1));
+    add_token(create_token(IDENTIFIER, start, num_chars * sizeof(char), start_col, start_col + num_chars - 1));
 }
 
 Token create_simple_token(const TokenType type, const uint32_t start_col, const uint32_t end_col) {
@@ -486,77 +611,68 @@ Token create_simple_token(const TokenType type, const uint32_t start_col, const 
 
     t.type = type;
     t.pos = (Position){line_num, start_col, line_num, end_col};
-    t.data = NULL;
-
-    return t;
-}
-
-Token construct_token(const TokenType type, void* made_data, const uint32_t start_col, const uint32_t end_col) {
-    Token ret = create_simple_token(type, start_col, end_col);
-    ret.data = made_data;
-
-    return ret;
-}
-
-Token create_token_and_term(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col) {
-    Token t = create_token(type, data, d_size + 1, start_col, end_col);
-
-    if (t.data == NULL) return t;
-
-    ((char*)(t.data))[d_size] = '\0';
+    t.data.ptr = NULL;
 
     return t;
 }
 
 Token construct_multiline_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col, uint32_t start_line) {
     Token ret = create_simple_token(type, start_col, end_col);
-    ret.data = made_data;
+    ret.data.ptr = made_data; //assume its a ptr value for multiline [[todo]] affirm
     ret.pos.start_line = start_line;
 
     return ret;
 }
 
-Token create_multiline_token(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col, uint32_t start_line) {
-    Token ret = create_token(type, data, d_size, start_col, end_col);
-    ret.pos.start_line = start_line;
-    return ret;
+static Token construct_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col) {
+    return create_token(type, made_data, -1, start_col, end_col);
 }
 
 /* Token type is self-explanatory, the list is in the Tokens.h file
  * Data is a pointer to anything that may need to be stored e.g. for identifiers or keywords its a char* to
  * the word, for a number its a pointer to a 64 bit number, for a float a pointer to a double, ect
- * The data size is just for the malloc
+ * The data elem_count is just for the malloc
  * start and end col e.g. 123, <1:3>
  */
-Token create_token(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col) {
+Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col) {
     Token t;
 
     t.type = type;
     t.pos = (Position){line_num, start_col, line_num, end_col};
-    t.data = NULL;
+    t.data.ptr = NULL;
 
     if (data == NULL) {
         return t;
     }
 
-    t.data = malloc(d_size);
-    memcpy(t.data, data, d_size);
-
     switch (type) {
         case IDENTIFIER:
-        case KEYWORD:
-        case TYPE:
         case LIT_BOOL:
         case LIT_STR:
-            ((char*)t.data)[d_size - 1] = '\0';
+        case LIT_CHR:
+        case COMMENT:
+            t.data.ptr = malloc(d_size + 1);
+            memcpy(t.data.ptr, data, d_size);
+            ((char*)t.data.ptr)[d_size] = '\0';
             break;
         case LIT_INT:
+            t.data.integer = *(llint*)data;
+            break;
         case LIT_FLOAT:
-        case LIT_NAV:
+            t.data.real = *(long double*)data;
+            break;
         case OP_BIN:
         case OP_UN_PRE:
         case OP_UN_POST:
         case OP_TRINARY:
+        case OP_BIN_OR_UN:
+        case OP_UN_UNDERT:
+        case ARITH_ASSIGN:
+        case KEYWORD:
+        case TYPE:
+            t.data.enum_pos = *(int *)data;
+            break;
+        case ASSIGN:
         case BRACKET_OPEN:
         case BRACKET_CLOSE:
         case CURLY_OPEN:
@@ -564,15 +680,16 @@ Token create_token(TokenType type, void* data, uint64_t d_size, uint32_t start_c
         case PAREN_OPEN:
         case PAREN_CLOSE:
         case COMMA:
+        case CARROT:
         case TYPE_SET:
         case TYPE_INFER:
-        case COMMENT:
         case DELIMITER:
+        case LIT_NAV:
         case WS_S:
         case WS_T:
         case NEWLINE:
         case EOTS:
-        case INVALID:
+        case TOKEN_INVALID:
             break;
     }
 
@@ -587,10 +704,23 @@ uint32_t current_char(void) {
     return consume_utf_char(c_char, false, NULL);
 }
 
+uint32_t peer(int amount) {
+    char* current_start = c_char;
+    char* current_end; //could prob be the same
+
+    uint32_t ret = 0;
+
+    while (amount >= 0) {
+        ret = consume_utf_char(current_start, false, &current_end);
+        current_start = current_end;
+        amount--;
+    }
+
+    return ret;
+}
+
 uint32_t peek(void) {
-    char* current_end;
-    consume_utf_char(c_char, false, &current_end);
-    return consume_utf_char(current_end, false, NULL);
+    return peer(1);
 }
 
 char* gourge_unsafe(const uint32_t bytes, const uint32_t new_col) {
@@ -655,14 +785,14 @@ uint32_t consume_utf_char(char *start, bool consume, char** next_char) {
     }
     else if ((fbyte & 0xf0) == 0xe0) {
         ret = ((fbyte & 0x0f) << 12)            |
-                ((start[1] & 0x3f) << 6)       |
+                ((start[1] & 0x3f) << 6)        |
                 (start[2] & 0x3f);
         inc = 3;
     }
     else if ((fbyte & 0xf8) == 0xf0 && (fbyte <= 0xf4)) {
         ret = ((fbyte & 0x07) << 18)            |
-                ((start[1] & 0x3f) << 12)      |
-                ((start[2] & 0x3f) << 6)       |
+                ((start[1] & 0x3f) << 12)       |
+                ((start[2] & 0x3f) << 6)        |
                 ((start[3] & 0x3f));
         inc = 4;
     }
