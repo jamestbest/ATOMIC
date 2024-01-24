@@ -5,12 +5,21 @@
 #include "Compiler.h"
 
 VEC_ADD(Token, Token)
+VEC_ADD(Node, Node)
+
+//[[todo]] better to use something like a block allocator(? is that the name)
+// where a large part of memory is allocated and then the data for the tokens
+// and nodes are stored there instead of having then spread out with
+// rounding of allocation. They would also all have the same life time.
 
 CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, charp_vec files) {
 
+    assert(ATOM_CT__LEX_KEYWORD_ENUM_COUNT == ATOM_CT__LEX_KEYWORDS.elem_count);
+    assert(strcmp(ATOM_CT__LEX_KEYWORDS_RAW[IF], "if") == 0);
+
     //for each file
     for (uint i = 0; i < files.pos; i++) {
-        char* filename = charp_vec_get(&files, i);
+        const char* filename = charp_vec_get(&files, i);
 
         FILE* fp = open_file(cwd, filename, "r");
 
@@ -56,7 +65,9 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 
 void free_tokens(Token_vec* tokens) {
     for (uint i = 0; i < tokens->pos; i++) {
-        free(Token_vec_get(tokens, i).data);
+        if (type_needs_free(tokens->arr[i].type)) {
+            free(tokens->arr[i].data.ptr);
+        }
     }
     Token_vec_destroy(tokens);
 }
@@ -71,7 +82,7 @@ void print_tokens_with_flag_check(Token_vec* tokens, Vector* lines) {
         return;
     }
     if (flag_get(ATOM_CT__FLAG_TOK_OUT)) {
-        print_tokens(tokens);
+        print_tokens(tokens, false, false); //[[todo]] have white space and comments included in flag set
         return;
     }
 

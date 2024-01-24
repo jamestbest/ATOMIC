@@ -10,6 +10,8 @@
 #include "SharedIncludes/Vector.h"
 #include "Flags.h"
 #include "LexerTwo.h"
+#include "Parser.h"
+#include "Tokens.h"
 
 #define SUCCESS 0
 #define ERR_NO_SUCH_FILE 1
