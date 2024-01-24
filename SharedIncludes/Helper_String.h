@@ -20,15 +20,24 @@ typedef unsigned int uint;
 #define ASCII_ALPH_CAP_MIN 65
 #define ASCII_DIGIT_MIN 48
 
+typedef struct LenSize {
+    uint32_t len; //glyph count
+    uint32_t size; //byte count
+} LenSize;
+
 int find_last(char* string, char pattern);
 int starts_with_ips(const char* string, const char* pattern);
 int starts_with(const char* string, const char* pattern);
 int starts_with_ic(const char* string, const char* pattern);
 bool str_eq(const char* stra, const char* strb);
+
 uint len(const char* string);
 uint len_with(const char* string, uint offset);
 uint len_from(const char* string, uint offset);
 uint len_from_to(const char* string, uint offset, char to);
+
+LenSize len_size(const char* string);
+
 bool str_contains(const char* str, uint from, uint to, char c);
 
 char* str_cpy(const char* string);
@@ -40,7 +49,7 @@ bool is_alph_cap(uint32_t a);
 bool is_alph_low(uint32_t a);
 bool is_alph(uint32_t a);
 bool is_alph_numeric(uint32_t a);
-bool is_whitespace(char a);
-bool is_newline(char a);
+bool is_whitespace(uint32_t a);
+bool is_newline(uint32_t a);
 
 #endif //ATOMIC_HELPER_STRING_H

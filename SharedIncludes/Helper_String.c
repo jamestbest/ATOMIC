@@ -4,30 +4,34 @@
 
 #include "Helper_String.h"
 
-uint len_basic(const char* string, const int from, const int offset, const char delimiter) {
+LenSize len_basic(const char *string, const int from, const int offset, const char delimiter) {
     int i = from;
     int length = offset;
     while (string[i] != '\0' && string[i] != delimiter) {
         if ((string[i] & 0xC0) != 0x80) length++;
         i++;
     }
-    return length;
+    return (LenSize){length, i};
 }
 
 uint len(const char* string) {
-    return len_basic(string, 0, 0, '\0');
+    return len_basic(string, 0, 0, '\0').len;
 }
 
 uint len_with(const char* string, const uint offset) {
-    return len_basic(string, 0, offset, '\0');
+    return len_basic(string, 0, offset, '\0').len;
 }
 
 uint len_from(const char* string, const uint offset) {
-    return len_basic(string, offset, 0, '\0');
+    return len_basic(string, offset, 0, '\0').len;
 }
 
 uint len_from_to(const char* string, const uint offset, const char to) {
-    return len_basic(string, offset, 0, to);
+    return len_basic(string, offset, 0, to).len;
+}
+
+LenSize len_size(const char* string) {
+    return len_basic(string, 0, 0, '\0');
 }
 
 bool str_eq(const char* stra, const char* strb) {
@@ -197,10 +201,10 @@ bool is_alph_numeric(uint32_t a) {
     return is_alph(a) || is_digit(a);
 }
 
-bool is_whitespace(char a) {
+bool is_whitespace(const uint32_t a) {
     return a == ' ' || a == '\t';
 }
 
-bool is_newline(char a) {
+bool is_newline(const uint32_t a) {
     return a == '\n';
 }
