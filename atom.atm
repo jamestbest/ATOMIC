@@ -12,7 +12,7 @@ func main(argc: i4, argv: char[][]): i4 {
         print("Hello world!"); a++;
     }
 
-    b: i4 = 0b1102
+    b: i4 = 0b110
 
     c, d, e, f: i4 = 0xFFFC, 0o7723, 0d9876, 0t2112
 
@@ -22,9 +22,27 @@ func main(argc: i4, argv: char[][]): i4 {
 
     test: bool = true and false
 
+    for i: i4 to 10 do i++ {
+
+    }
+
+    my_arr: >i4 = malloc(10);
+
+    if my_arr == nav; ret -1;
+
+    for i: i4 to 10 do i++ {
+        my_arr[i] = i * 2
+    }
+
+    *(my_arr + 9) = *my_arr * 2
+
+    my_arr_ptr: >>i4 = &my_arr
+
+    chr my_char = 'c'
+
     ret a - a;
 }
 
 ¬*
     comment
-*¬
+part of a comment*¬
