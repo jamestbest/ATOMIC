@@ -15,6 +15,7 @@ typedef unsigned int uint;
 typedef enum TYPE_ASSERTION { //used to assert
     CHAR_P,
     TOKEN_P,
+    NODE,
     CORRUPT_DATA,
 } TYPE_ASSERTION;
 
