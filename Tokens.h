@@ -15,7 +15,7 @@
 
 typedef struct Arr {
     char** arr;
-    uint size;
+    uint elem_count;
 } Arr;
 
 typedef enum TokenType {
