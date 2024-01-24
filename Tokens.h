@@ -19,13 +19,14 @@ typedef struct Arr {
 } Arr;
 
 typedef enum TokenType {
-    INVALID,
+    TOKEN_INVALID,
 
     IDENTIFIER,
     KEYWORD,
     TYPE,
 
     LIT_STR,
+    LIT_CHR,
     LIT_INT,
     LIT_FLOAT,
     LIT_BOOL,
@@ -34,7 +35,12 @@ typedef enum TokenType {
     OP_BIN,
     OP_UN_PRE,
     OP_UN_POST,
+    OP_UN_UNDERT, //undetermined
     OP_TRINARY,
+    OP_BIN_OR_UN,
+
+    ASSIGN,
+    ARITH_ASSIGN,
 
     BRACKET_OPEN,
     BRACKET_CLOSE,
@@ -46,6 +52,7 @@ typedef enum TokenType {
     COMMA,
     TYPE_SET,
     TYPE_INFER,
+    CARROT,
 
     COMMENT,
 
@@ -56,6 +63,70 @@ typedef enum TokenType {
     NEWLINE,
     EOTS,                   //End of token stream
 } TokenType;
+
+typedef enum ATOM_CT__LEX_KEYWORD_ENUM {
+    FOR, TO, DO,
+    WHILE,
+    FOREACH, IN, WITH,
+    TIMES,
+    IF, ELIF, ELSE,
+    RET,
+    FUNC, PROC, ENTRY,
+    CONT, BRK,
+    REC, HEADER,
+
+    ATOM_CT__LEX_KEYWORD_ENUM_COUNT
+} ATOM_CT__LEX_KEYWORD_ENUM;
+
+typedef enum ATOM_CT__LEX_TYPES_ENUM {
+    I1, I2, I4, I8,
+    N1, N2, N4, N8,
+    R4, R8, R10,
+    Q4, Q8, Q16,
+    STR, CHR,
+    BOOL,
+    NAV
+} ATOM_CT__LEX_TYPES_ENUM;
+
+typedef enum ATOM_CT__LEX_OP_IDENTIFIERS_ENUM {
+    AND, OR, XOR,
+    NOT
+} ATOM_CT__LEX_OP_IDENTIFIERS_ENUM;
+
+typedef enum ATOM_CT__LEX_OPERATORS_ENUM {
+    PLUS, MINUS,
+    MULT, DIV,
+    MOD, POW,
+
+    BAND, BOR,
+
+    SHL, SHR,
+
+    ASS_PLUS, ASS_MINUS,
+    ASS_MULT, ASS_DIV,
+    ASS_MOD, ASS_POW,
+
+    ASS_BAND, ASS_BOR,
+
+    ASS_SHL, ASS_SHR,
+
+    LAND, LOR, LXOR,
+    BXOR,
+
+    LNOT, BNOT,
+    INC, DEC,
+
+    QUESTION,
+
+    AMPERSAND,
+
+    ASSIGNMENT,
+
+    EQU, NEQ, LESS, MORE, LESSEQ, MOREEQ,
+
+    SWAP,
+    RANGE
+} ATOM_CT__LEX_OPERATORS_ENUM;
 
 /* Should the tokens store their location?
  *   It would make printing their information easier
@@ -77,11 +148,17 @@ typedef struct Position {
 
 //a tokens value is the |func mainfunction () : i4|
 //                            ^----------^
-//                            |           `line + size
+//                            |           `line + elem_count
 //                            `line
 typedef struct Token {
     TokenType type;
-    void* data; //now going to be some data, could point to a string, or a number, or a single character
+    union { //not sure if this is a good idea
+        void* ptr;
+        int64_t integer;
+        uint64_t natural;
+        long double real;
+        int enum_pos;
+    } data;
 
     Position pos;
 } Token;
@@ -94,10 +171,15 @@ extern Arr ATOM_CT__LEX_TYPES;
 extern char* ATOM_CT__LEX_TYPES_RAW[];
 extern Arr ATOM_CT__LEX_CONS_IDENTIFIERS;
 extern char* ATOM_CT__LEX_CONS_IDENTIFIERS_RAW[];
+extern Arr ATOM_CT__LEX_OPERATORS;
+extern char* ATOM_CT__LEX_OPERATORS_RAW[];
 
+TokenType operator_to_type(ATOM_CT__LEX_OPERATORS_ENUM op);
 
 const char* get_token_color(TokenType type);
 const char* cons_token_type_colored(TokenType type);
+
+bool type_needs_free(TokenType type);
 
 int print_position(Position pos);
 void print_token_value(Token* token);
