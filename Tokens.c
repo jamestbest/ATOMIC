@@ -56,6 +56,45 @@ Arr ATOM_CT__LEX_CONS_IDENTIFIERS = {
         sizeof(ATOM_CT__LEX_CONS_IDENTIFIERS_RAW) / sizeof(char*)
 };
 
+//These ops can be followed by a = to make it an assignment
+char* ATOM_CT__LEX_OPERATORS_RAW[] = {
+    "+", "-",
+    "*", "/",
+    "%", "^",
+
+    "&", "|",
+
+    "<<", ">>",
+
+    "+=", "-=",
+    "*=", "/=",
+    "%=", "^=",
+    "&=", "|=",
+    "<<=", ">>=",
+
+    "&&","||", "|-|",
+    "|-",
+
+    "!", "~",
+    "++", "--",
+
+    "?",
+
+    "&",
+
+    "=",
+
+    "==", "!=", "<", ">", "<=", ">=",
+
+    "<>",
+    "..",
+};
+
+Arr ATOM_CT__LEX_OPERATORS = {
+        ATOM_CT__LEX_OPERATORS_RAW,
+    sizeof(ATOM_CT__LEX_OPERATORS_RAW) / sizeof(char*)
+};
+
 int print_position(Position pos) {
     int ret = 0;
     ret += printf("<%d:%d", pos.start_line, pos.start_col);
@@ -79,6 +118,7 @@ const char* get_token_color(TokenType type) {
         case LIT_FLOAT:
         case LIT_BOOL:
         case LIT_STR:
+        case LIT_CHR:
         case LIT_NAV:
             return C_CYN;
         case BRACKET_CLOSE:
@@ -96,7 +136,12 @@ const char* get_token_color(TokenType type) {
         case OP_UN_PRE:
         case OP_UN_POST:
         case OP_TRINARY:
+        case OP_BIN_OR_UN:
+        case OP_UN_UNDERT:
+        case ASSIGN:
+        case ARITH_ASSIGN:
         case COMMA:
+        case CARROT:
         case TYPE_SET:
         case TYPE_INFER:
             return C_GRN;
@@ -107,7 +152,7 @@ const char* get_token_color(TokenType type) {
         case DELIMITER:
             return C_WHT;
         case EOTS:
-        case INVALID:
+        case TOKEN_INVALID:
         default:
             return C_RED;
     }
@@ -131,6 +176,9 @@ const char* cons_token_type_colored(TokenType type) {
         case LIT_STR:
             title = "STR";
             break;
+        case LIT_CHR:
+            title = "CHR";
+            break;
         case LIT_INT:
             title = "INT";
             break;
@@ -143,6 +191,15 @@ const char* cons_token_type_colored(TokenType type) {
         case LIT_NAV:
             title = "NAV";
             break;
+        case ASSIGN:
+            title = "ASSIGN";
+            break;
+        case ARITH_ASSIGN:
+            title = "ARITHMETIC_ASSIGN";
+            break;
+        case OP_BIN_OR_UN:
+            title = "BIN_OR_UN_OP";
+            break;
         case OP_BIN:
             title = "BIN_OP";
             break;
@@ -151,6 +208,9 @@ const char* cons_token_type_colored(TokenType type) {
             break;
         case OP_UN_POST:
             title = "POST_UN_OP";
+            break;
+        case OP_UN_UNDERT:
+            title = "UN_OP";
             break;
         case OP_TRINARY:
             title = "TRINARY_OP";
@@ -169,6 +229,9 @@ const char* cons_token_type_colored(TokenType type) {
             break;
         case COMMA:
             title = "COMMA";
+            break;
+        case CARROT:
+            title = "CARROT";
             break;
         case COMMENT:
             title = "COMMENT";
@@ -192,11 +255,11 @@ const char* cons_token_type_colored(TokenType type) {
         case EOTS:
             title = "END OF TOKEN STREAM";
             break;
-        case INVALID:
+        case TOKEN_INVALID:
             title = "INVALID";
             break;
     }
-    uint length = len(colour) + len(title) + len(end) + 1;
+    const uint length = strlen(colour) + strlen(title) + strlen(end) + 1;
     char* ret = malloc(sizeof(char) * length);
     snprintf(ret, length, "%s%s%s", colour, title, end);
 
@@ -224,26 +287,39 @@ void print_token_value(Token* token) {
             putchar('}');
             break;
 
+        case CARROT:
+            putchar('\'');
+            break;
+
         case LIT_INT:
-            printf("%lld", *(int64_t*)token->data);
+            printf("%lld", token->data.integer);
             break;
         case LIT_FLOAT:
-            printf("%Lf", *(long double*)token->data);
+            printf("%Lf", token->data.real);
+            break;
+
+        case KEYWORD:
+            printf("%s", ATOM_CT__LEX_KEYWORDS.arr[token->data.integer]);
+            break;
+        case TYPE:
+            printf("%s", ATOM_CT__LEX_TYPES.arr[token->data.integer]);
             break;
 
         case IDENTIFIER:
-        case KEYWORD:
-        case TYPE:
         case LIT_BOOL:
-            printf("%s", (char*)token->data);
+            printf("%s", (char*)token->data.ptr);
             break;
 
         case LIT_STR:
-            printf("\"%s\"", (char*)token->data);
+            printf("\"%s\"", (char*)token->data.ptr);
+            break;
+
+        case LIT_CHR:
+            printf("\'%s\'", (char*)token->data.ptr);
             break;
 
         case COMMENT:
-            printf("%s", (char*)token->data);
+            printf("%s", (char*)token->data.ptr);
             break;
 
         case LIT_NAV:
@@ -254,9 +330,15 @@ void print_token_value(Token* token) {
         case OP_UN_PRE:
         case OP_UN_POST:
         case OP_TRINARY:
-            printf("%s", (char*)token->data);
+        case OP_UN_UNDERT:
+        case OP_BIN_OR_UN:
+        case ARITH_ASSIGN:
+            printf("%s", ATOM_CT__LEX_OPERATORS_RAW[token->data.integer]);
             break;
 
+        case ASSIGN:
+            putchar('=');
+            break;
         case COMMA:
             putchar(',');
             break;
@@ -281,7 +363,7 @@ void print_token_value(Token* token) {
         case EOTS:
             printf("\\EOTS\\");
             break;
-        case INVALID:
+        case TOKEN_INVALID:
             printf("\\INVALID\\");
             break;
     }
@@ -300,4 +382,81 @@ void print_token(Token* token) {
 
     print_token_value(token);
     printf("'}\n");
+}
+
+TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
+    switch (op) {
+        case PLUS:
+        case MINUS:
+        case MULT:
+            return OP_BIN_OR_UN;
+
+        case DIV:
+        case MOD:
+        case POW:
+        case BAND:
+        case BOR:
+        case SHL:
+        case SHR:
+            return OP_BIN;
+
+        case ASS_PLUS:
+        case ASS_MINUS:
+        case ASS_MULT:
+        case ASS_DIV:
+        case ASS_MOD:
+        case ASS_POW:
+        case ASS_BAND:
+        case ASS_BOR:
+        case ASS_SHL:
+        case ASS_SHR:
+            return ARITH_ASSIGN;
+
+        case LAND:
+        case LOR:
+        case LXOR:
+        case BXOR:
+            return OP_BIN;
+
+        case LNOT:
+        case BNOT:
+        case AMPERSAND:
+            return OP_UN_PRE;
+
+        case INC:
+        case DEC:
+            return OP_UN_UNDERT;
+
+        case QUESTION:
+            return OP_TRINARY;
+
+        case ASSIGNMENT:
+            return ASSIGN;
+
+        case EQU:
+        case NEQ:
+        case LESS:
+        case MORE:
+        case LESSEQ:
+        case MOREEQ:
+        case SWAP:
+        case RANGE:
+            return OP_BIN;
+
+        default:
+            return TOKEN_INVALID;
+    }
+}
+
+bool type_needs_free(TokenType type) {
+    switch (type) {
+        case IDENTIFIER:
+        case LIT_STR:
+        case LIT_CHR:
+        case LIT_BOOL:
+        case COMMENT:
+            return true;
+        default:
+            return false;
+    }
 }
