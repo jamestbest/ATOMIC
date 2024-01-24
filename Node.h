@@ -5,8 +5,10 @@
 #ifndef NODE_H
 #define NODE_H
 
+#include "SharedIncludes/Vector.h"
+
 typedef enum NodeType {
-    INVALID,
+    NODE_INVALID,
 
     ST_BLOCK,
 
@@ -26,5 +28,15 @@ typedef enum NodeType {
 
     EX_LIT_
 } NodeType;
+
+typedef struct Node {
+    NodeType type;
+    union {
+        void* data;
+        struct Node* children;
+    } info;
+} Node;
+
+VEC_PROTO(Node, Node)
 
 #endif //NODE_H
