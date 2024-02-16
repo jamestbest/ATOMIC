@@ -86,10 +86,10 @@ This is a variable assignment, it must have already been declared
 ### Types
 #### Numerical
 Numerical types are named (somewhat) based on their fancy set name
-* For example, all +ve integers are in the set of natural numbers, so they are called `n<size>`
-* All floating point numbers are in the set of real numbers, so they are called `r<size>`
-* Integers break the rule as I don't want to use `z` so instead its `i<size>`
-* There is also an experimental type called `q<size>` which is a rational number,
+* For example, all +ve integers are in the set of natural numbers, so they are called `n<elem_count>`
+* All floating point numbers are in the set of real numbers, so they are called `r<elem_count>`
+* Integers break the rule as I don't want to use `z` so instead its `i<elem_count>`
+* There is also an experimental type called `q<elem_count>` which is a rational number,
     * it would be used to represent numbers as a ratio of two numbers that would then not
       use floating point arithmetic but some kind of fraction arithmetic to try and mitigate
       floating point errors
@@ -109,10 +109,10 @@ Boolean values are either `true` or `false`
 #### Arrays
 There are three types of arrays, static, dynamic, and dynamicLink
 ##### Static
-Static arrays are arrays that have a fixed size they are defined like this:  
-`<varName> : i4[<size>?] = [<value1>, <value2>, ...]`
+Static arrays are arrays that have a fixed elem_count they are defined like this:  
+`<varName> : i4[<elem_count>?] = [<value1>, <value2>, ...]`
 ##### Dynamic
-Dynamic arrays are arrays that can change size they are defined like this:  
+Dynamic arrays are arrays that can change elem_count they are defined like this:  
 `<varName> : i4[..] = [<value1>, <value2>, ...]`
 ##### DynamicLink
 see [link](./Info/dynamicLink.md)  
@@ -122,7 +122,7 @@ see [link](./Info/dynamicLink.md)
 In ATOM lang null is called `nav` which means `not a value`
 
 ### Type Sizes
-Throughout the types I've used `<size>` alot this is would be a
+Throughout the types I've used `<elem_count>` alot this is would be a
 numerical value to show how many bytes the type uses e.g. `i4`
 is a 4-byte integer and `r8` is an 8-byte floating point number
 
@@ -473,15 +473,23 @@ Keywords `Attempt`, `Ack`, and `Always`
 
 
 ### Pointers
-I'm just going to steal C's pointer syntax
+Mostly based on C's style of pointers
 
-`*` is the pointer dereferencing operator as well as the pointer declaration symbol.  
+`>` is the pointer type modifier
+`*` is the pointer dereferencing operator
 `&` is the address operator.
+
+The pointer modifier is tied to the type
+
+```atom
+    i,j: >i4;   //both are i4 pointers
+    i,>j: i4;   //not valid
+```
 
 example
 ```atom
     i : i4 = 10  
-    p : i4*      // p is a pointer to an i4
+    p : >i4      // p is a pointer to an i4
     p = &i       // p is a pointer to i
     *p = 20      // i is now 20
     print(*p)    // prints 20
