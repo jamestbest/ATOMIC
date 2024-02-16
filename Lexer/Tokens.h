@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "SharedIncludes/Vector.h"
-#include "SharedIncludes/Colours.h"
-#include "SharedIncludes/Helper_String.h"
+#include "../SharedIncludes/Vector.h"
+#include "../SharedIncludes/Colours.h"
+#include "../SharedIncludes/Helper_String.h"
 
 typedef struct Arr {
     char** arr;
@@ -33,9 +33,7 @@ typedef enum TokenType {
     LIT_NAV,
 
     OP_BIN,
-    OP_UN_PRE,
-    OP_UN_POST,
-    OP_UN_UNDERT, //undetermined
+    OP_UN,
     OP_TRINARY,
     OP_BIN_OR_UN,
 
@@ -50,8 +48,8 @@ typedef enum TokenType {
     PAREN_CLOSE,
 
     COMMA,
-    TYPE_SET,
-    TYPE_INFER,
+    TYPE_SET,   //:
+    TYPE_IMPL_CAST, //::
     CARROT,
 
     COMMENT,
@@ -124,8 +122,11 @@ typedef enum ATOM_CT__LEX_OPERATORS_ENUM {
 
     EQU, NEQ, LESS, MORE, LESSEQ, MOREEQ,
 
+    DEREFERENCE,
+
     SWAP,
-    RANGE
+    RANGE,
+    ARROW,
 } ATOM_CT__LEX_OPERATORS_ENUM;
 
 /* Should the tokens store their location?

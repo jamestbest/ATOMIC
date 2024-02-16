@@ -56,7 +56,6 @@ Arr ATOM_CT__LEX_CONS_IDENTIFIERS = {
         sizeof(ATOM_CT__LEX_CONS_IDENTIFIERS_RAW) / sizeof(char*)
 };
 
-//These ops can be followed by a = to make it an assignment
 char* ATOM_CT__LEX_OPERATORS_RAW[] = {
     "+", "-",
     "*", "/",
@@ -86,8 +85,11 @@ char* ATOM_CT__LEX_OPERATORS_RAW[] = {
 
     "==", "!=", "<", ">", "<=", ">=",
 
+    "*",
+
     "<>",
     "..",
+    "->",
 };
 
 Arr ATOM_CT__LEX_OPERATORS = {
@@ -133,17 +135,15 @@ const char* get_token_color(TokenType type) {
         case TYPE:
             return C_MGN;
         case OP_BIN:
-        case OP_UN_PRE:
-        case OP_UN_POST:
+        case OP_UN:
         case OP_TRINARY:
         case OP_BIN_OR_UN:
-        case OP_UN_UNDERT:
         case ASSIGN:
         case ARITH_ASSIGN:
         case COMMA:
         case CARROT:
         case TYPE_SET:
-        case TYPE_INFER:
+        case TYPE_IMPL_CAST:
             return C_GRN;
         case WS_S:
         case WS_T:
@@ -203,13 +203,7 @@ const char* cons_token_type_colored(TokenType type) {
         case OP_BIN:
             title = "BIN_OP";
             break;
-        case OP_UN_PRE:
-            title = "PRE_UN_OP";
-            break;
-        case OP_UN_POST:
-            title = "POST_UN_OP";
-            break;
-        case OP_UN_UNDERT:
+        case OP_UN:
             title = "UN_OP";
             break;
         case OP_TRINARY:
@@ -239,7 +233,7 @@ const char* cons_token_type_colored(TokenType type) {
         case TYPE_SET:
             title = "TYPE SET";
             break;
-        case TYPE_INFER:
+        case TYPE_IMPL_CAST:
             title = "TYPE INFER";
             break;
         case WS_S:
@@ -327,10 +321,8 @@ void print_token_value(Token* token) {
             break;
 
         case OP_BIN:
-        case OP_UN_PRE:
-        case OP_UN_POST:
+        case OP_UN:
         case OP_TRINARY:
-        case OP_UN_UNDERT:
         case OP_BIN_OR_UN:
         case ARITH_ASSIGN:
             printf("%s", ATOM_CT__LEX_OPERATORS_RAW[token->data.integer]);
@@ -345,7 +337,7 @@ void print_token_value(Token* token) {
         case TYPE_SET:
             putchar(':');
             break;
-        case TYPE_INFER:
+        case TYPE_IMPL_CAST:
             printf("::"); //[[todo]] there is no check for `::`
             break;
         case DELIMITER:
@@ -421,11 +413,9 @@ TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
         case LNOT:
         case BNOT:
         case AMPERSAND:
-            return OP_UN_PRE;
-
         case INC:
         case DEC:
-            return OP_UN_UNDERT;
+            return OP_UN;
 
         case QUESTION:
             return OP_TRINARY;
@@ -441,6 +431,7 @@ TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
         case MOREEQ:
         case SWAP:
         case RANGE:
+        case ARROW:
             return OP_BIN;
 
         default:
