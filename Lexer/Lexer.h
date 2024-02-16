@@ -2,8 +2,8 @@
 // Created by james on 25/12/23.
 //
 
-#ifndef ATOMIC_LEXERTWO_H
-#define ATOMIC_LEXERTWO_H
+#ifndef ATOMIC_LEXER_H
+#define ATOMIC_LEXER_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -15,9 +15,9 @@
 #include "Tokens.h"
 #include "LexErrors.h"
 
-#include "SharedIncludes/Buffer.h"
-#include "SharedIncludes/Helper_File.h"
-#include "SharedIncludes/Helper_String.h"
+#include "../SharedIncludes/Buffer.h"
+#include "../SharedIncludes/Helper_File.h"
+#include "../SharedIncludes/Helper_String.h"
 
 typedef struct PosCharp{
     int arr_pos;
@@ -39,4 +39,4 @@ uint lex(FILE *file, Token_vec *token_vec, Vector *lines);
 void print_tokens(Token_vec* token_vec, bool include_ws, bool include_comments);
 void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels);
 
-#endif //ATOMIC_LEXERTWO_H
+#endif //ATOMIC_LEXER_H

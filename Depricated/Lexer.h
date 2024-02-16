@@ -18,9 +18,9 @@
 #include "../SharedIncludes/Vector.h"
 #include "../SharedIncludes/Buffer.h"
 #include "../SharedIncludes/Helper_File.h"
-#include "../LexErrors.h"
+#include "../Lexer/LexErrors.h"
 
-#include "../Tokens.h"
+#include "../Lexer/Tokens.h"
 
 #define BUFF_SIZE 100
 

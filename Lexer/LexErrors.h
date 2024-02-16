@@ -5,7 +5,7 @@
 #ifndef ATOMIC_LEXERRORS_H
 #define ATOMIC_LEXERRORS_H
 
-#include "Errors.h"
+#include "../Errors.h"
 
 typedef enum Lexerrors {
     LEXERR_INT_INVALID_BASE,

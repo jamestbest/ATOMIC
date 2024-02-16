@@ -2,7 +2,7 @@
 // Created by james on 25/12/23.
 //
 
-#include "LexerTwo.h"
+#include "Lexer.h"
 
 static uint lex_line(const Buffer *line);
 
@@ -37,7 +37,6 @@ static char* gourge(uint amount);
 static uint32_t get_utf_char_bytes(const char* character);
 static uint32_t consume_utf_char(char *start, bool consume, char** next_char);
 
-static void highlight_line_err(Position pos, const char* line);
 static void highlight_current_line_err(Position pos);
 static char* lexerr_process_char(char a, char buff[2]);
 static void lexwarn(Lexwarns warnCode, Position pos, ...);
@@ -124,9 +123,16 @@ uint lex_line(const Buffer* line) {
             case ';':
                 type = DELIMITER;
                 break;
-            case ':':
-                type = TYPE_SET;
+            case ':': {
+                uint32_t next = peek();
+                if (next == ':') {
+                    consume();
+                    type = TYPE_IMPL_CAST;
+                } else {
+                    type = TYPE_SET;
+                }
                 break;
+            }
             case ' ':
                 type = WS_S;
                 break;
@@ -459,6 +465,7 @@ uint lex_number(void) {
     }
 
     if (current_char() == '.') {
+        //FLOAT
         const char* decimal_pos = c_char;
         consume();
 
@@ -483,6 +490,7 @@ uint lex_number(void) {
 
         return SUCCESS;
     } else {
+        //INTEGER
         char* value_end;
         llint value = strtoll(start_char, &value_end, base);
 
@@ -566,7 +574,7 @@ void lex_word(void) {
                 break;
             case NOT:
                 token.data.integer = LNOT;
-                token.type = OP_UN_PRE;
+                token.type = OP_UN;
                 break;
             default:
                 assert(false);
@@ -662,11 +670,9 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
             t.data.real = *(long double*)data;
             break;
         case OP_BIN:
-        case OP_UN_PRE:
-        case OP_UN_POST:
+        case OP_UN:
         case OP_TRINARY:
         case OP_BIN_OR_UN:
-        case OP_UN_UNDERT:
         case ARITH_ASSIGN:
         case KEYWORD:
         case TYPE:
@@ -682,7 +688,7 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
         case COMMA:
         case CARROT:
         case TYPE_SET:
-        case TYPE_INFER:
+        case TYPE_IMPL_CAST:
         case DELIMITER:
         case LIT_NAV:
         case WS_S:
@@ -890,25 +896,6 @@ void lexwarn(Lexwarns warnCode, Position pos, ...) {
             break;
     }
     highlight_current_line_err(pos);
-}
-
-void highlight_line_err(Position pos, const char* line) {
-    int position_length = print_position(pos);
-    printf("|\t\t%s", line);
-
-    if (position_length < 0) goto skip_position_offset;
-    for (uint i = 0; i < (uint)position_length; i++) {
-        putchar(' ');
-    }
-
-    skip_position_offset:
-    printf(" \t\t");
-
-    for (uint i = 1; i <= pos.end_col; i++) {
-        if (i < pos.start_col) putchar(' ');
-        else printf(C_RED"^");
-    }
-    puts(C_RST);
 }
 
 void highlight_current_line_err(Position pos) {
