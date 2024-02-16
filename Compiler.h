@@ -9,9 +9,9 @@
 
 #include "SharedIncludes/Vector.h"
 #include "Flags.h"
-#include "LexerTwo.h"
-#include "Parser.h"
-#include "Tokens.h"
+#include "Lexer/Lexer.h"
+#include "Parser/Parser.h"
+#include "Lexer/Tokens.h"
 
 #define SUCCESS 0
 #define ERR_NO_SUCH_FILE 1
@@ -29,5 +29,6 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 void print_tokens_with_flag_check(Token_vec* tokens, Vector* lines);
 
 void free_tokens(Token_vec* tokens);
+void free_nodes(Node_vec *nodes);
 
 #endif //ATOMIC_COMPILER_H

@@ -42,7 +42,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     //Or that the (data/type) of a structure is access more? - Printing will do this
     //For now it will stay as AOS
 
-    Vector lines = vector_create(BUFF_MIN, CHAR_P);
+    Vector lines = vector_create(BUFF_MIN);
 
     uint lexRet = lex(fp, &tokens, &lines);
 
@@ -55,6 +55,16 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     }
 
     //parse
+    Node_vec nodes = Node_vec_create(BUFF_MIN);
+
+    uint parseRet = parse(&tokens, &nodes, &lines);
+
+    if (parseRet != SUCCESS) {
+        free_nodes(&nodes);
+        free_tokens(&tokens); //[[todo]] do the nodes take over control & responsibility of the tokens
+
+        return (CompileRet){PARSERR, NULL};
+    }
 
     //...
     vector_disseminate_destruction(&lines);
@@ -72,6 +82,10 @@ void free_tokens(Token_vec* tokens) {
     Token_vec_destroy(tokens);
 }
 
+void free_nodes(Node_vec* nodes) {
+    Node_vec_destroy(nodes);
+}
+
 void print_tokens_with_flag_check(Token_vec* tokens, Vector* lines) {
     if (flag_get(ATOM_CT__FLAG_VLTOK_OUT)) {
         print_verbose_tokens(tokens, lines, true);
@@ -85,5 +99,4 @@ void print_tokens_with_flag_check(Token_vec* tokens, Vector* lines) {
         print_tokens(tokens, false, false); //[[todo]] have white space and comments included in flag set
         return;
     }
-
 }
