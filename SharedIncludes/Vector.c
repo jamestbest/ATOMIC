@@ -13,7 +13,7 @@ bool vector_grow(Vector* vector, size_t new_size) {
 
     if (array == NULL) return false;
 
-    *vector = (Vector){array, new_size, vector->pos, vector->type};
+    *vector = (Vector){array, new_size, vector->pos};
 
     return true;
 }
@@ -39,12 +39,12 @@ VecRet vector_get(Vector* vector, size_t index) {
     return (VecRet) {vector->arr[index], 0};
 }
 
-Vector vector_create(size_t size, TYPE_ASSERTION type) {
+Vector vector_create(size_t size) {
     void* arr = malloc(size * sizeof(void*));
 
-    if (arr == NULL) return (Vector) {NULL, -1, -1, CORRUPT_DATA};
+    if (arr == NULL) return (Vector) {NULL, -1, -1};
 
-    return (Vector){arr, size, 0, type};
+    return (Vector){arr, size, 0};
 }
 
 void vector_destroy(Vector* vector) {
@@ -52,7 +52,7 @@ void vector_destroy(Vector* vector) {
 
     free(vector->arr);
 
-    *vector = (Vector) {NULL, -1, -1, CORRUPT_DATA};
+    *vector = (Vector) {NULL, -1, -1};
 }
 
 void vector_disseminate_destruction(Vector* vector) {
@@ -66,7 +66,7 @@ void vector_disseminate_destruction(Vector* vector) {
 VecRet vector_data_steal(Vector* vector) {
     if (vector == NULL) return (VecRet) {NULL, 1};
 
-    Vector new_vec = vector_create(vector->size, vector->type);
+    Vector new_vec = vector_create(vector->size);
 
     if (new_vec.arr == NULL) return (VecRet) {NULL, 1};
 
@@ -76,7 +76,7 @@ VecRet vector_data_steal(Vector* vector) {
 }
 
 VecRet vector_data_copy(Vector* vector) {
-    Vector vec2 = vector_create(vector->size, vector->type);
+    Vector vec2 = vector_create(vector->size);
 
     if (vec2.arr == NULL) return (VecRet) {NULL, 1};
 
@@ -89,10 +89,10 @@ Vector vector_copy(Vector* vector) {
     VecRet ret = vector_data_copy(vector);
 
     if (ret.retCode != 0) {
-        return (Vector){NULL, -1, -1, CORRUPT_DATA};
+        return (Vector){NULL, -1, -1};
     }
 
-    return (Vector){ret.data, vector->size, vector->pos, vector->type};
+    return (Vector){ret.data, vector->size, vector->pos};
 }
 
 VecRet vector_pop(Vector* vector) {

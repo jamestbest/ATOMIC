@@ -12,18 +12,10 @@
 
 typedef unsigned int uint;
 
-typedef enum TYPE_ASSERTION { //used to assert
-    CHAR_P,
-    TOKEN_P,
-    NODE,
-    CORRUPT_DATA,
-} TYPE_ASSERTION;
-
 typedef struct Vector {
     void** arr;
     size_t size;
     size_t pos;
-    TYPE_ASSERTION type;
 } Vector;
 
 typedef struct VecRet {
@@ -34,7 +26,7 @@ typedef struct VecRet {
 bool vector_grow(Vector* vector, size_t new_size);
 bool vector_add(Vector* vector, void* data);
 VecRet vector_get(Vector* vector, size_t index);
-Vector vector_create(size_t size, TYPE_ASSERTION type);
+Vector vector_create(size_t size);
 void vector_destroy(Vector* vector);
 void vector_disseminate_destruction(Vector* vector);
 VecRet vector_data_steal(Vector* vector);
