@@ -6,6 +6,9 @@
 #define ATOMIC_ERRORS_H
 
 #include "SharedIncludes/Colours.h"
+#include "Lexer/Tokens.h"
+
+void highlight_line_err(Position pos, const char* line);
 
 #define SUCCESS 0
 #define FAIL    1
@@ -15,6 +18,8 @@
 
 #define BASEERR 256
 #define LEXERR (BASEERR + 1)
+#define LEXERR_MAX (LEXERR + 1024)
+#define PARSERR (LEXERR_MAX + 1)
 
 #define ERROR_BASE C_RED"ERROR"C_RST": "
 #define WARN_BASE C_YLW"Warning"C_RST": "
