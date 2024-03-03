@@ -1,0 +1,34 @@
+entry func main(): i4 {
+	¬ return type of errorable function? `?`
+	
+	myNum: i8? = myFunc(12);
+	
+	¬ Java processor uses <R, T>
+	¬ Haskell has monads, maybe
+	¬ rust Result/Optional
+	
+	¬*
+		how to check on error? 
+		eval with `?` again?
+	*¬
+	
+	if (myNum?) { ¬¬ block from bool repr. of myNum
+		
+	}
+	
+	¬¬Is the return result attatched to the variable or the result of a function call
+	¬¬ i.e. does the variable represent the error aswell? or is the error another variable
+	
+	myNum: i8? ¬¬ how would this be unpacked for the type checking?
+	myNum: i8, i4 = myFunc()
+	myNum, myErr: i8, i4 = myFunc()
+}
+
+func myFunc(a: i4): i8? {
+	ret a * 2;
+}
+
+¬¬ default values for errors?
+¬¬ i.e. myNum: i8? = myFunc() ? 0   ¬¬ ? is used to unpack, alter-type and tertiary operator, are they all
+ 				          ¬¬ seperate enough for ambiguity?
+
