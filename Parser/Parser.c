@@ -115,7 +115,7 @@ NodeRet parse_keyword(Token* t) {
             return parse_if_statement(t);
         default:
             printf(C_RED"KEYWORD: EVal: `%d` SVal: `%s`\n"C_RST, t->data.enum_pos, ATOM_CT__LEX_KEYWORDS_RAW[t->data.enum_pos]);
-            assert(false);
+//            assert(false);
             consume();
         //[[todo]] throw error
             return construct_error_node(NULL);
@@ -180,20 +180,26 @@ NodeRet parse_for_statement(Token* t) {
      * [z] can be [expr]
      */
 
-
+    consume();
 
     return construct_error_node(t);
 }
 
 NodeRet parse_while_statement(Token* t) {
+    consume();
+
     return construct_error_node(t);
 }
 
 NodeRet parse_foreach_statement(Token* t) {
+    consume();
+
     return construct_error_node(t);
 }
 
 NodeRet parse_if_statement(Token* t) {
+    consume();
+
     return construct_error_node(t);
 }
 
