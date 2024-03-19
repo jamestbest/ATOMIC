@@ -1,0 +1,27 @@
+entry func main(args: str[]): i4 {
+    data': >i4 = malloc(100 i4s)     ¬¬ ?? does it cast to the type i.e. 100 (type) or does it go by the i4s
+
+    info: i4 = maintest(data)
+
+    if (info > 2) {
+        ret mainfail()
+    }
+
+    mainclean()
+    ret 0
+
+    ¬¬ it's harder to find the end of a funtion now
+
+    func maintest(point: >i4): i4 {
+        return *point >> 2
+    }
+
+    inner proc mainclean() { ¬¬ inner functions have access to the variables up to (their call? their declaration?)
+        free(data)
+    }
+
+    inner func mainfail(): i4 {
+        mainclean();
+        ret 1;
+    }
+}
