@@ -476,7 +476,7 @@ Keywords `Attempt`, `Ack`, and `Always`
 Mostly based on C's style of pointers
 
 `>` is the pointer type modifier
-`*` is the pointer dereferencing operator
+`*` is the pointer de-referencing operator
 `&` is the address operator.
 
 The pointer modifier is tied to the type
@@ -488,8 +488,8 @@ The pointer modifier is tied to the type
 
 example
 ```atom
-    i : i4 = 10  
-    p : >i4      // p is a pointer to an i4
+    i: i4 = 10  
+    p: >i4      // p is a pointer to an i4
     p = &i       // p is a pointer to i
     *p = 20      // i is now 20
     print(*p)    // prints 20

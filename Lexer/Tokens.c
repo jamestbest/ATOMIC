@@ -295,10 +295,12 @@ void print_token_value(Token* token) {
         case KEYWORD:
             printf("%s", ATOM_CT__LEX_KEYWORDS.arr[token->data.integer]);
             break;
-        case TYPE:
-            printf("%s", ATOM_CT__LEX_TYPES.arr[token->data.integer]);
+        case TYPE: {
+            uint64_t encoded_data = token->data.type;
+            uint16_t enum_position = encoded_data & 0xFFFF;
+            printf("%s", ATOM_CT__LEX_TYPES.arr[enum_position]);
             break;
-
+        }
         case IDENTIFIER:
         case LIT_BOOL:
             printf("%s", (char*)token->data.ptr);

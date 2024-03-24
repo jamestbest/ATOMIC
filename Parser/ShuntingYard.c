@@ -63,8 +63,100 @@ ASS get_ass(ATOM_CT__LEX_OPERATORS_ENUM operator) {
             return LEFT;
 
         case QUESTION:
+            return RIGHT;
+
+        case AMPERSAND:
+            return RIGHT;
+
+        case ASSIGNMENT:
+            return RIGHT;
+
+        case EQU:
+        case NEQ:
+            return LEFT;
+
+        case LESS:
+        case MORE:
+        case LESSEQ:
+        case MOREEQ:
+            return LEFT;
+
+        case SWAP:
+        case RANGE:
+            return LEFT; //[[todo]] check
+
+        case ARROW:
+            return LEFT;
+
+        case DEREFERENCE:
+            return RIGHT;
+    }
+}
+
+int get_pres(ATOM_CT__LEX_OPERATORS_ENUM operator) {
+    //precedence goes from 0- , and a lower value means it will be lower in the tree
+    switch (operator) {
+        case ARROW:
+        case INC:
+        case DEC:
+            return 0;
+
+        case MINUS:
+            return 1;
+        case PLUS:
+            break;
+        case MULT:
+            break;
+        case DIV:
+            break;
+        case MOD:
+            break;
+        case POW:
+            break;
+        case BAND:
+            break;
+        case BOR:
+            break;
+        case SHL:
+            break;
+        case SHR:
+            break;
+        case ASS_PLUS:
+            break;
+        case ASS_MINUS:
+            break;
+        case ASS_MULT:
+            break;
+        case ASS_DIV:
+            break;
+        case ASS_MOD:
+            break;
+        case ASS_POW:
+            break;
+        case ASS_BAND:
+            break;
+        case ASS_BOR:
+            break;
+        case ASS_SHL:
+            break;
+        case ASS_SHR:
+            break;
+        case LAND:
+            break;
+        case LOR:
+            break;
+        case LXOR:
+            break;
+        case BXOR:
+            break;
+        case LNOT:
+            break;
+        case BNOT:
+            break;
+        case QUESTION:
             break;
         case AMPERSAND:
+            break;
         case ASSIGNMENT:
             break;
         case EQU:
@@ -79,11 +171,11 @@ ASS get_ass(ATOM_CT__LEX_OPERATORS_ENUM operator) {
             break;
         case MOREEQ:
             break;
+        case DEREFERENCE:
+            break;
         case SWAP:
             break;
         case RANGE:
-            break;
-        case ARROW:
             break;
     }
 }

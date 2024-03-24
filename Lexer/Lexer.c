@@ -12,6 +12,7 @@ static PosCharp word_in_arr(const char* word, Arr arr);
 static void lex_word(void);
 static void lex_identifier(void);
 static uint lex_number(void);
+uint64_t lex_type_to_encoded_int(ATOM_CT__LEX_TYPES_ENUM enum_position);
 static int create_multiline_value(const char* starter, const char* delimiter, TokenType type, bool include_delimiter);
 static int lex_string_lit(void);
 static int lex_character_lit(void);
@@ -529,19 +530,22 @@ void lex_word(void) {
      */
 
     PosCharp info;
-    TokenType type = TOKEN_INVALID;
 
     if (info = word_in_arr(c_char, ATOM_CT__LEX_KEYWORDS), info.arr_pos != -1) {
-        type = KEYWORD;
-    }
-    else if (info = word_in_arr(c_char, ATOM_CT__LEX_TYPES), info.arr_pos != -1) {
-        type = TYPE;
-    }
-
-    if (info.arr_pos != -1) {
         const uint64_t char_count = info.next_char - c_char;
 
-        add_token(create_token(type, &info.arr_pos, -1, col_num, col_num + char_count - 1));
+        add_token(create_token(KEYWORD, &info.arr_pos, -1, col_num, col_num + char_count - 1));
+
+        gourge(info.next_char - c_char);
+        return;
+    }
+
+    if (info = word_in_arr(c_char, ATOM_CT__LEX_TYPES), info.arr_pos != -1) {
+        const uint64_t char_count = info.next_char - c_char;
+
+        uint64_t encoded_type = lex_type_to_encoded_int(info.arr_pos);
+
+        add_token(create_token(TYPE, &encoded_type, -1, col_num, col_num + char_count - 1));
 
         gourge(info.next_char - c_char);
         return;
@@ -614,6 +618,60 @@ void lex_identifier(void) {
     add_token(create_token(IDENTIFIER, start, num_chars * sizeof(char), start_col, start_col + num_chars - 1));
 }
 
+uint64_t lex_type_to_encoded_int(ATOM_CT__LEX_TYPES_ENUM enum_position) {
+    ATOM_CT__LEX_TYPES_ENUM general_type;
+    uint64_t size = 0;
+    uint64_t ptr_offset = 0;
+
+    char* type = ATOM_CT__LEX_TYPES.arr[enum_position];
+
+    if (strlen(type) < 1) {
+        return -1;
+    }
+
+    switch (*type) {
+        case 'i':
+            general_type = INTEGER;
+            break;
+        case 'n':
+            general_type = NATURAL;
+            break;
+        case 'r':
+            general_type = REAL;
+            break;
+        case 'q':
+            general_type = RATIONAL;
+            break;
+        case 's':
+            general_type = STR;
+            goto lex_type_to_encoded_int_ptr;
+        case 'c':
+            general_type = CHR;
+            goto lex_type_to_encoded_int_ptr;
+        case 'b':
+            general_type = BOOL;
+            goto lex_type_to_encoded_int_ptr;
+        default:
+            assert(false);
+    }
+
+    if (strlen(type) < 2) {
+        return -1;
+        //todo error
+    }
+
+    char* end;
+    llint type_size = strtoll(type + 1, &end, 10);
+    if (end != type + strlen(type) - 1) {
+        //todo error
+    }
+
+    size = type_size;
+
+lex_type_to_encoded_int_ptr:
+    return (((uint64_t)general_type & 0xFFFF) << 48) | ((size & 0xFFFF) << 32) | ((ptr_offset & 0xFFFF) << 16) | (enum_position & 0xFFFF);
+}
+
 Token create_simple_token(const TokenType type, const uint32_t start_col, const uint32_t end_col) {
     Token t;
 
@@ -675,8 +733,10 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
         case OP_BIN_OR_UN:
         case ARITH_ASSIGN:
         case KEYWORD:
-        case TYPE:
             t.data.enum_pos = *(int *)data;
+            break;
+        case TYPE:
+            t.data.type = *(uint64_t *)data;
             break;
         case ASSIGN:
         case BRACKET_OPEN:

@@ -4,7 +4,7 @@ entry func main(args: str[]): i4 {
     info: i4 = maintest(data)
 
     if (info > 2) {
-        ret mainfail()
+        ret mainfail(1)
     }
 
     mainclean()
@@ -20,8 +20,8 @@ entry func main(args: str[]): i4 {
         free(data)
     }
 
-    inner func mainfail(): i4 {
+    inner func mainfail(errCode: i4): i4 {
         mainclean();
-        ret 1;
+        ret errCode;
     }
 }

@@ -1,18 +1,18 @@
-entry func main () : i4 {
+entry func main (): i4 {
     ¬this is a program
 
-    a : i4
+    a: i4
     a += 3
 
     a<>b
 
-    a : i4 = 2; b : i4 = 13_00_12;
-    b : r4 = 12.5;
-    c : r8 = 24.5e12;
-    d : r4 = .123e-12;
-    e : bool = true;
+    a: i4 = 2; b : i4 = 13_00_12;
+    b: r4 = 12.5;
+    c: r8 = 24.5e12;
+    d: r4 = .123e-12;
+    e: bool = true;
 
-    ¬ alternative is a,b : i4 = 2, 13;
+    ¬¬ alternative is a,b: i4 = 2, 13;
 
     for a to b {
         print(a)
@@ -23,7 +23,7 @@ entry func main () : i4 {
         a = a + 1
     }
 
-    arr : i4[5] = [1, 2, 3, 4, 5]
+    arr: i4[5] = [1, 2, 3, 4, 5]
 
     foreach item in arr with index {
         print($"item {item} at index {index}")
@@ -34,26 +34,26 @@ entry func main () : i4 {
         testing 123
     *¬
 
-    c := a + b
+    c := a + b ¬¬ error as a and b are not the same type, cannot infer type from invalid expression
 
     if c > 10 {
         print("Success")
         ret 0
     }
 
-    test : bool = a == b
+    test: bool = a == b
 
-    a : i4 = 12
-    b : r4 = 12.5
+    a: i4 = 12
+    b: r4 = 12.5
 
-    str :: string = a + b
+    string:: str = a + b
 
     ret functionTwo(a, b, c)
 }
 
-rec func functionTwo (a : i4, b : i4, c : i4) : i4 {
+rec func functionTwo (a: i4, b: i4, c: i4): i4 {
     header {
-        message: string = "values are: "
+        message: str = "values are: "
     }
 
     if a > 100 {
@@ -62,7 +62,7 @@ rec func functionTwo (a : i4, b : i4, c : i4) : i4 {
     }
 
     a += b * (c |- 3)
-    message += a as string
+    message += a as str
 }
 
-c : char = 'a'
+c: chr = 'a'

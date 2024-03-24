@@ -1,33 +1,33 @@
 # ROADMAP
 
 ## MISC
- - [ ] Create a roadmap
- - [ ] Create a README
+ - [X] Create a roadmap
+ - [X] Create a README
 
 ## CLI
- - [ ] Create basic CLI
- - [ ] Allow changing output elements
- - [ ] Parse Flags
- - [ ] Parse Options
- - [ ] Parse input files
+ - [X] Create basic CLI
+ - [X] Allow changing output elements
+ - [X] Parse Flags
+ - [X] Parse Options
+ - [X] Parse input files
 
 ## CODE SCRAPER
 Used to read in the file, checking for I/O errors
 
- - [ ] Read in the file
- - [ ] Display/record any I/O errors
- - [ ] Split input into characters
- - [ ] Pass data to the lexer
+ - [X] Read in the file
+ - [X] Display/record any I/O errors
+ - [X] Split input into characters
+ - [X] Pass data to the lexer
 
 ## LEXER
 Process the characters to create tokens
 
- - [ ] Create tokens
- - [ ] lex comments
- - [ ] lex strings
- - [ ] lex numbers
- - [ ] lex identifiers
- - [ ] lex operators
+ - [X] Create tokens
+ - [X] lex comments
+ - [X] lex strings
+ - [X] lex numbers
+ - [X] lex identifiers
+ - [X] lex operators
 
 ## PARSER
  - [ ] generate an AST of the tokens

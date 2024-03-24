@@ -1,0 +1,30 @@
+struct myStruct {
+    errCode: i4;
+    data: >chr;
+    checksum: n1;
+}
+
+entry func main(args: str[]): i4 {
+    data: >chr = malloc(8 chrs)
+    info: str = args[0]
+    checksum: n1 = 0
+
+    for i to min(8, length(info)) {
+        data[i] = info[i] >> 1
+        checksum += data[i] >> 2
+    }
+
+    crate: myStruct = {checksum > 128, data, checksum}
+
+    dataEntry(&crate)
+
+    ret crate.errCode;
+}
+
+proc dataEntry(crate: >myStruct) {
+    count: n4 = 0
+    times crate->checksum {
+        count += crate->data[0] << 2
+    }
+    crate->errCode = count << 2
+}

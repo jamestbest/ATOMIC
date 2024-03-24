@@ -18,6 +18,7 @@ typedef struct Arr {
     uint elem_count;
 } Arr;
 
+//[[todo]] add `.`
 typedef enum TokenType {
     TOKEN_INVALID,
 
@@ -77,11 +78,12 @@ typedef enum ATOM_CT__LEX_KEYWORD_ENUM {
 } ATOM_CT__LEX_KEYWORD_ENUM;
 
 typedef enum ATOM_CT__LEX_TYPES_ENUM {
-    I1, I2, I4, I8,
-    N1, N2, N4, N8,
-    R4, R8, R10,
-    Q4, Q8, Q16,
-    STR, CHR,
+    INTEGER,
+    NATURAL,
+    REAL,
+    RATIONAL,
+    STR,
+    CHR,
     BOOL,
     NAV
 } ATOM_CT__LEX_TYPES_ENUM;
@@ -116,7 +118,7 @@ typedef enum ATOM_CT__LEX_OPERATORS_ENUM {
 
     QUESTION,
 
-    AMPERSAND,
+    AMPERSAND, // address of
 
     ASSIGNMENT,
 
@@ -158,6 +160,7 @@ typedef struct Token {
         int64_t integer;
         uint64_t natural;
         long double real;
+        uint64_t type;
         int enum_pos;
     } data;
 
