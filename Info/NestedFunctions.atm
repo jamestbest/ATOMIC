@@ -4,11 +4,10 @@ entry func main(args: str[]): i4 {
     info: i4 = maintest(data)
 
     if (info > 2) {
-        ret mainfail(1)
+        ret mainEnd(1)
     }
 
-    mainclean()
-    ret 0
+    ret mainEnd(0);
 
     ¬¬ it's harder to find the end of a funtion now
 
@@ -20,7 +19,7 @@ entry func main(args: str[]): i4 {
         free(data)
     }
 
-    inner func mainfail(errCode: i4): i4 {
+    inner func mainEnd(errCode: i4): i4 {
         mainclean();
         ret errCode;
     }

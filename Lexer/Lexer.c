@@ -4,6 +4,8 @@
 
 #include "Lexer.h"
 
+// [[todo]] nav is not a type it is a value like `true` or `false` it is a null ptr
+
 static uint lex_line(const Buffer *line);
 
 static PosCharp longest_word_in_arr(const char* word, Arr arr);
@@ -12,7 +14,7 @@ static PosCharp word_in_arr(const char* word, Arr arr);
 static void lex_word(void);
 static void lex_identifier(void);
 static uint lex_number(void);
-uint64_t lex_type_to_encoded_int(ATOM_CT__LEX_TYPES_ENUM enum_position);
+static encodedType lex_type_to_encoded_int(ATOM_CT__LEX_TYPES_ENUM enum_position);
 static int create_multiline_value(const char* starter, const char* delimiter, TokenType type, bool include_delimiter);
 static int lex_string_lit(void);
 static int lex_character_lit(void);
@@ -46,7 +48,7 @@ static uint lexerr(Lexerrors errorCode, Position pos, ...);
 uint line_num, col_num;
 char* c_char;
 
-Token_vec* tokens;
+Token_vec base_tokens;
 FILE* c_file;
 Buffer line_buffer;
 
@@ -59,18 +61,18 @@ bool load_line(void) {
 //new plan for the lexer
 //it will print out any errors it finds, makes more sense to use the information held inside
 //it will not return an error code as multiple errors could have occurred so just err code 1
-uint lex(FILE* file, Token_vec* token_vec, Vector *lines) {
+uint lex(FILE* file, Token_vec* folded_tokens, Vector *lines) {
     line_num = 0;
     col_num = 1;
     c_char = NULL;
-
-    tokens = token_vec;
 
     line_buffer = buffer_create(BUFF_MIN);
 
     c_file = file;
 
     uint retCode = SUCCESS;
+
+    base_tokens = Token_vec_create(folded_tokens->size);
 
     while (load_line()) {
         const uint errcode = lex_line(&line_buffer);
@@ -82,7 +84,11 @@ uint lex(FILE* file, Token_vec* token_vec, Vector *lines) {
         vector_add(lines, buffer_steal(&line_buffer, BUFF_MIN));
     }
 
-    Token_vec_add(tokens, create_simple_token(EOTS, col_num, col_num));
+    Token_vec_add(&base_tokens, create_simple_token(EOTS, col_num, col_num));
+
+    fold(&base_tokens, folded_tokens);
+
+    Token_vec_destroy(&base_tokens);
 
     buffer_destroy(&line_buffer);
     return retCode;
@@ -93,7 +99,7 @@ uint lex_line(const Buffer* line) {
         const uint32_t c = current_char();
 
         if (current_char() == '\n') {
-            add_token((Token){NEWLINE, NULL, (Position){line_num, col_num, line_num + 1, 0}});
+            add_token((Token){NEWLINE, .data.ptr = NULL, (Position){line_num, col_num, line_num + 1, 0}});
             consume();
             continue;
         }
@@ -222,7 +228,7 @@ void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels
     Token* current_tok = &token_vec->arr[current_tok_pos];
 
     for (uint i = 0; i < lines->pos; i++) {
-        while (current_tok->pos.start_line == i + 1) { //[[todo]] won't work with multiline tokens
+        while (current_tok->pos.start_line == i + 1) { //[[todo]] won't work with multiline base_tokens
             printf("%s", get_token_color(current_tok->type));
             print_token_value(current_tok);
             printf(C_RST);
@@ -543,7 +549,7 @@ void lex_word(void) {
     if (info = word_in_arr(c_char, ATOM_CT__LEX_TYPES), info.arr_pos != -1) {
         const uint64_t char_count = info.next_char - c_char;
 
-        uint64_t encoded_type = lex_type_to_encoded_int(info.arr_pos);
+        encodedType encoded_type = lex_type_to_encoded_int(info.arr_pos);
 
         add_token(create_token(TYPE, &encoded_type, -1, col_num, col_num + char_count - 1));
 
@@ -618,48 +624,67 @@ void lex_identifier(void) {
     add_token(create_token(IDENTIFIER, start, num_chars * sizeof(char), start_col, start_col + num_chars - 1));
 }
 
-uint64_t lex_type_to_encoded_int(ATOM_CT__LEX_TYPES_ENUM enum_position) {
-    ATOM_CT__LEX_TYPES_ENUM general_type;
+encodedType lex_type_to_encoded_int(ATOM_CT__LEX_TYPES_ENUM enum_position) {
+    ATOM_CT__LEX_TYPES_GENERAL_ENUM general_type = -1;
     uint64_t size = 0;
     uint64_t ptr_offset = 0;
 
-    char* type = ATOM_CT__LEX_TYPES.arr[enum_position];
-
-    if (strlen(type) < 1) {
-        return -1;
+    if (enum_position >= ATOM_CT__LEX_TYPES.elem_count != 0) {
+        return (encodedType){-1, -1, -1, -1};
     }
 
-    switch (*type) {
-        case 'i':
+    switch (enum_position) {
+        case I1:
+        case I2:
+        case I4:
+        case I8:
             general_type = INTEGER;
             break;
-        case 'n':
+
+        case N1:
+        case N2:
+        case N4:
+        case N8:
             general_type = NATURAL;
             break;
-        case 'r':
+
+        case R4:
+        case R8:
+        case R10:
             general_type = REAL;
             break;
-        case 'q':
+
+        case Q4:
+        case Q8:
+        case Q16:
             general_type = RATIONAL;
             break;
-        case 's':
-            general_type = STR;
+
+        case STR:
+            general_type = STRING;
             goto lex_type_to_encoded_int_ptr;
-        case 'c':
-            general_type = CHR;
+
+        case CHR:
+            general_type = CHAR;
             goto lex_type_to_encoded_int_ptr;
-        case 'b':
-            general_type = BOOL;
+
+        case BOOL:
+            general_type = BOOLEAN;
             goto lex_type_to_encoded_int_ptr;
-        default:
-            assert(false);
+
+        case NAV:
+            general_type = NOT_A_VALUE;
+            goto lex_type_to_encoded_int_ptr;
     }
 
+    char* type = ATOM_CT__LEX_TYPES.arr[enum_position];
+
     if (strlen(type) < 2) {
-        return -1;
+        return (encodedType){-1, -1, -1, -1};
         //todo error
     }
 
+    // e.g. i4, r8, n2, q16
     char* end;
     llint type_size = strtoll(type + 1, &end, 10);
     if (end != type + strlen(type) - 1) {
@@ -669,7 +694,12 @@ uint64_t lex_type_to_encoded_int(ATOM_CT__LEX_TYPES_ENUM enum_position) {
     size = type_size;
 
 lex_type_to_encoded_int_ptr:
-    return (((uint64_t)general_type & 0xFFFF) << 48) | ((size & 0xFFFF) << 32) | ((ptr_offset & 0xFFFF) << 16) | (enum_position & 0xFFFF);
+    return (encodedType) {
+        general_type,
+        size,
+        ptr_offset,
+        enum_position
+    };
 }
 
 Token create_simple_token(const TokenType type, const uint32_t start_col, const uint32_t end_col) {
@@ -736,7 +766,7 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
             t.data.enum_pos = *(int *)data;
             break;
         case TYPE:
-            t.data.type = *(uint64_t *)data;
+            t.data.type = *(encodedType *)data;
             break;
         case ASSIGN:
         case BRACKET_OPEN:
@@ -763,7 +793,7 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
 }
 
 void add_token(Token t) {
-    Token_vec_add(tokens, t);
+    Token_vec_add(&base_tokens, t);
 }
 
 uint32_t current_char(void) {

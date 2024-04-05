@@ -20,9 +20,9 @@ Used to read in the file, checking for I/O errors
  - [X] Pass data to the lexer
 
 ## LEXER
-Process the characters to create tokens
+Process the characters to create base_tokens
 
- - [X] Create tokens
+ - [X] Create base_tokens
  - [X] lex comments
  - [X] lex strings
  - [X] lex numbers
@@ -30,7 +30,7 @@ Process the characters to create tokens
  - [X] lex operators
 
 ## PARSER
- - [ ] generate an AST of the tokens
+ - [ ] generate an AST of the base_tokens
  - [ ] parse expressions
  - [ ] type checking
  - [ ] environments hold variables/functions 

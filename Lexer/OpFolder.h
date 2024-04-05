@@ -8,6 +8,6 @@
 #include "Tokens.h"
 #include "LexErrors.h"
 
-uint fold(Token_vec* tokens);
+uint fold(Token_vec* base_tokens, Token_vec* folded_tokens);
 
 #endif //ATOMIC_OPFOLDER_H

@@ -11,7 +11,7 @@
 #include "ParsErrors.h"
 
 typedef struct TypeInformation {
-    ATOM_CT__LEX_TYPES_ENUM type;
+    ATOM_CT__LEX_TYPES_GENERAL_ENUM type;
     uint16_t pointer_level;
 } TypeInformation;
 

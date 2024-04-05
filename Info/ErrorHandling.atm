@@ -6,7 +6,7 @@ entry func main(): i4 {
 	¬ Java processor uses <R, T>
 	¬ Haskell has monads, maybe
 	¬ rust Result/Optional
-	
+
 	¬*
 		how to check on error? 
 		eval with `?` again?

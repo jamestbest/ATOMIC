@@ -4,7 +4,7 @@
 
 #include "OpFolder.h"
 
-/* This is a lexing stage that will use the tokens around the operators to try and
+/* This is a lexing stage that will use the base_tokens around the operators to try and
  * find the correct version of an operator e.g. * could be multiply or dereference
  */
 
@@ -13,9 +13,9 @@ typedef struct TokenWrapper {
     Token token;
 } TokenWrapper;
 
+static Token_vec* btokens;
 static Token_vec* ftokens;
-static Token_vec ntokens;
-static uint t_pos;
+static int t_pos;
 
 static Token* justify(void);
 static Token* peek(void);
@@ -23,6 +23,7 @@ static Token* consume(void);
 static Token* current(void);
 
 static bool is_operator(TokenType type);
+static bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator);
 
 static void fold_operator(Token* operator);
 
@@ -31,22 +32,42 @@ static TokenWrapper fold_incdec(Token* operator);
 static TokenWrapper fold_plusminus(Token* operator);
 static TokenWrapper fold_pointer(Token* operator);
 
-uint fold(Token_vec* tokens) {
+uint fold(Token_vec* base_tokens, Token_vec* folded_tokens) {
     t_pos = 0;
-    ftokens = tokens;
-    ntokens = Token_vec_create(ftokens->size);
+    btokens = base_tokens;
+    ftokens = folded_tokens;
 
-    while (t_pos < tokens->pos) {
+    while (t_pos < base_tokens->pos) {
         Token* c = current();
 
-        if (is_operator(c->type)) {
+        if (is_operator(c->type) && is_foldable(c->data.enum_pos)) {
+            // [[maybe]] just pass the current token and then edit it within the function
+            //  and have it added here. Would add obsfuc.
             fold_operator(c);
         } else {
-            Token_vec_add(&ntokens, Token_vec_get(ftokens, t_pos));
+            Token_vec_add(ftokens, *c);
         }
+
+        consume();
     }
 
     return SUCCESS;
+}
+
+bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator) {
+    switch (operator) {
+        case MULT:
+        case DEREFERENCE:
+        case INC:
+        case DEC:
+        case PLUS:
+        case MINUS:
+        case SHR:
+        case MORE:
+            return true;
+        default:
+            return false;
+    }
 }
 
 bool is_operator(TokenType type) {
@@ -79,15 +100,15 @@ void fold_operator(Token* operator) {
             break;
         case SHR:
         case MORE:
-            toAdd = fold_pointer(NULL);
+            toAdd = fold_pointer(operator);
             break;
         default:
             assert(false);
     }
 
-    //todo check err code of toAdd
+    //[[todo]] check err code of toAdd
 
-    Token_vec_add(&ntokens, toAdd.token);
+    Token_vec_add(ftokens, toAdd.token);
 }
 
 bool is_lit(TokenType type) {
@@ -105,6 +126,10 @@ bool is_lit(TokenType type) {
     }
 }
 
+bool is_whitespace_tkn(TokenType type) {
+    return type == WS_S || type == WS_T;
+}
+
 TokenWrapper fold_mult(Token* operator) {
     /*
      *      Could be a dereference e.g.   *p
@@ -119,7 +144,7 @@ TokenWrapper fold_mult(Token* operator) {
 
     Token* past = justify();
 
-    if (is_lit(past->type) || past->type == PAREN_CLOSE) {
+    if (past && (is_lit(past->type) || past->type == PAREN_CLOSE)) {
         operator->type = OP_BIN;
         operator->data.enum_pos = MULT;
     }
@@ -137,17 +162,38 @@ TokenWrapper fold_incdec(Token* operator) {
      *      post e.g. myVar++
      *      pre e.g. ++myVar
      */
+
+    Token* next = peek();
+
+    // [[maybe]] currently this means that the prefix is of higher pres?
+
+    if (next && next->type == IDENTIFIER) {
+        operator->type = OP_UN_PRE;
+
+        return (TokenWrapper){SUCCESS, *operator};
+    }
+
+    operator->type = OP_UN_POST;
+    return (TokenWrapper){SUCCESS, *operator};
 }
 
 TokenWrapper fold_plusminus(Token* operator) {
     /*
      * This is the `-` and `+` operators could be
-     *      unary operator e.g. +myVar, -myVar, myVar + -myOtherVar
-     *      binary operator e.g. myVar + myOtherVar
+     *      unary operator e.g. +myVar, -myVar, myVar + /-/myOtherVar
+     *      binary operator e.g. myVar /+/ -myOtherVar
      */
+
+    Token* prev = justify();
+
+    bool is_un = !prev || is_operator(prev->type) || prev->type == EQU;
+
+    operator->type = is_un ? OP_UN : OP_BIN;
+
+    return (TokenWrapper){SUCCESS, *operator};
 }
 
-TokenWrapper fold_pointer(Token *operator) {
+TokenWrapper fold_pointer(Token* operator) {
     /*
      * This is the `>` value it could be
      *      pointer modifier e.g.  myVar: >>>i4;  //this would be 3 levels of pointer but two operators >> and >
@@ -159,32 +205,84 @@ TokenWrapper fold_pointer(Token *operator) {
 
     if (previous->type == TYPE_SET) {
         //This is a pointer modifier, calculate the level of
-        uint ptr_level = 1;
+        uint ptr_level = (operator->data.enum_pos == SHR) + 1;
 
         Token* next;
-        while (next = peek(), next->type == SHR || next->type == MORE) {
-            ptr_level += (next->type == SHR) + 1;
+        while (next = peek(), next->data.enum_pos == SHR || next->data.enum_pos == MORE) {
+            ptr_level += (next->data.enum_pos == SHR) + 1;
             consume();
+        }
+
+        if (ptr_level > 0xFFFF) {
+            //[[todo]] error out of range
         }
 
         //[[todo]] need an assertion that the next token is a type token, and to error if not
         Token* type = consume();
+        type->data.type.ptr_offset = ptr_level;
 
-
-
-        //[[todo]] need to have different tokens because now a collection of tokens
-        //      could be folded into one e.g. `>>``>`  -> `pointer level 3`
-    } else {
-
+        return (TokenWrapper){SUCCESS, *type};
     }
+
+    // [[maybe]] seems unnecessary
+    return (TokenWrapper){SUCCESS, *current()};
+}
+
+bool is_valid_index(int index) {
+    return index >= 0 && index < btokens->pos;
+}
+
+Token* confungry(int offset, bool consume, bool ignore_whitespace) {
+    if (offset == 0) {
+        return &btokens->arr[t_pos];
+    }
+
+    if (!ignore_whitespace) {
+        if (!is_valid_index(t_pos + offset)) {
+            if (consume) {
+                t_pos += offset;
+            }
+            return NULL;
+        }
+
+        if (consume) {
+            t_pos += offset;
+            return &btokens->arr[t_pos];
+        }
+
+        return &btokens->arr[t_pos + offset];
+    }
+
+    int valid_skipped = 0;
+    int diff = offset < 0 ? -1 : 1;
+    int current_offset = 0;
+
+    while (valid_skipped < abs(offset)) {
+        current_offset += diff;
+        if (!is_valid_index(t_pos + current_offset)) {
+            if (consume) {
+                t_pos += current_offset;
+            }
+            return NULL;
+        }
+
+        if (is_whitespace_tkn(btokens->arr[t_pos + current_offset].type)) {
+            continue;
+        }
+
+        valid_skipped += 1;
+    }
+
+    if (consume) {
+        t_pos += current_offset;
+        return &btokens->arr[t_pos];
+    }
+
+    return &btokens->arr[t_pos + current_offset];
 }
 
 Token* peer(int amount) {
-    if (t_pos + amount < 0 || t_pos + amount >= ftokens->pos) {
-        return NULL;
-    }
-
-    return &ftokens->arr[t_pos + amount];
+    return confungry(amount, false, true);
 }
 
 Token* peek(void) {
@@ -196,13 +294,9 @@ Token* justify(void) {
 }
 
 Token* consume(void) {
-    if (t_pos >= ftokens->pos) {
-        return NULL;
-    }
-
-    return &ftokens->arr[t_pos++];
+    return confungry(1, true, true);
 }
 
 Token* current(void) {
-    return &ftokens->arr[t_pos];
+    return &btokens->arr[t_pos];
 }

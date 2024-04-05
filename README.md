@@ -64,7 +64,7 @@ Current timeline estimate: 5 years (that may be a bit generous)
 this is the simplest command, and will just compile the file
 
 `atom compile <file> -o ast tok -e main`  
-this will compile the file and output (in some format) the AST and tokens  
+this will compile the file and output (in some format) the AST and base_tokens  
 It has also specified the entry function as main using `-e main`
 
 ## Language

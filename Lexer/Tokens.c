@@ -46,6 +46,22 @@ Arr ATOM_CT__LEX_TYPES = {
     sizeof(ATOM_CT__LEX_TYPES_RAW) / sizeof(char*)
 };
 
+char* ATOM_CT__LEX_TYPES_GENERAL_RAW[] = {
+        "INTEGER",
+        "NATURAL",
+        "REAL",
+        "RATIONAL",
+        "STRING",
+        "CHAR",
+        "BOOLEAN",
+        "NOT A VALUE"
+};
+
+Arr ATOM_CT__LEX_TYPES_GENERAL = {
+        ATOM_CT__LEX_TYPES_GENERAL_RAW,
+        sizeof(ATOM_CT__LEX_TYPES_GENERAL_RAW) / sizeof(char*)
+};
+
 char* ATOM_CT__LEX_CONS_IDENTIFIERS_RAW[] = {
         "true",
         "false"
@@ -138,6 +154,8 @@ const char* get_token_color(TokenType type) {
         case OP_UN:
         case OP_TRINARY:
         case OP_BIN_OR_UN:
+        case OP_UN_PRE:
+        case OP_UN_POST:
         case ASSIGN:
         case ARITH_ASSIGN:
         case COMMA:
@@ -205,6 +223,12 @@ const char* cons_token_type_colored(TokenType type) {
             break;
         case OP_UN:
             title = "UN_OP";
+            break;
+        case OP_UN_PRE:
+            title = "PRE_UN_OP";
+            break;
+        case OP_UN_POST:
+            title = "POST_UN_OP";
             break;
         case OP_TRINARY:
             title = "TRINARY_OP";
@@ -286,7 +310,7 @@ void print_token_value(Token* token) {
             break;
 
         case LIT_INT:
-            printf("%lld", token->data.integer);
+            printf("%ld", token->data.integer);
             break;
         case LIT_FLOAT:
             printf("%Lf", token->data.real);
@@ -296,9 +320,11 @@ void print_token_value(Token* token) {
             printf("%s", ATOM_CT__LEX_KEYWORDS.arr[token->data.integer]);
             break;
         case TYPE: {
-            uint64_t encoded_data = token->data.type;
-            uint16_t enum_position = encoded_data & 0xFFFF;
-            printf("%s", ATOM_CT__LEX_TYPES.arr[enum_position]);
+            encodedType encoded_data = token->data.type;
+            printf("%s (size: %d, ptr: %d)",
+                   ATOM_CT__LEX_TYPES_GENERAL.arr[encoded_data.general_type],
+                   encoded_data.size,
+                   encoded_data.ptr_offset);
             break;
         }
         case IDENTIFIER:
@@ -324,6 +350,8 @@ void print_token_value(Token* token) {
 
         case OP_BIN:
         case OP_UN:
+        case OP_UN_POST:
+        case OP_UN_PRE:
         case OP_TRINARY:
         case OP_BIN_OR_UN:
         case ARITH_ASSIGN:
@@ -383,6 +411,7 @@ TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
         case PLUS:
         case MINUS:
         case MULT:
+        case DEREFERENCE:
             return OP_BIN_OR_UN;
 
         case DIV:
@@ -415,6 +444,7 @@ TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
         case LNOT:
         case BNOT:
         case AMPERSAND:
+            return OP_UN_PRE;
         case INC:
         case DEC:
             return OP_UN;

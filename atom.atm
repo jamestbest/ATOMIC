@@ -1,3 +1,4 @@
+*a
 ¬ This is a test script for the atom lang
 
 ¬*
@@ -5,7 +6,7 @@
     gaze upon its ability to traverse multiple lines
 *¬
 
-func main(argc: i4, argv: char[][]): i4 {
+func main(argc: i4, argv: > >chr): i4 {
     a: i4 = 0
 
     times 10 {

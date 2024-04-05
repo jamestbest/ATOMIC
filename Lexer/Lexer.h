@@ -15,6 +15,8 @@
 #include "Tokens.h"
 #include "LexErrors.h"
 
+#include "OpFolder.h"
+
 #include "../SharedIncludes/Buffer.h"
 #include "../SharedIncludes/Helper_File.h"
 #include "../SharedIncludes/Helper_String.h"
@@ -34,7 +36,7 @@ typedef struct ArrPosCharp {
 typedef long long int llint;
 typedef unsigned char uchar;
 
-uint lex(FILE *file, Token_vec *token_vec, Vector *lines);
+uint lex(FILE *file, Token_vec *folded_tokens, Vector *lines);
 
 void print_tokens(Token_vec* token_vec, bool include_ws, bool include_comments);
 void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels);

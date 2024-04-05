@@ -35,6 +35,8 @@ typedef enum TokenType {
 
     OP_BIN,
     OP_UN,
+    OP_UN_PRE,
+    OP_UN_POST,
     OP_TRINARY,
     OP_BIN_OR_UN,
 
@@ -78,15 +80,26 @@ typedef enum ATOM_CT__LEX_KEYWORD_ENUM {
 } ATOM_CT__LEX_KEYWORD_ENUM;
 
 typedef enum ATOM_CT__LEX_TYPES_ENUM {
-    INTEGER,
-    NATURAL,
-    REAL,
-    RATIONAL,
+    I1, I2, I4, I8,
+    N1, N2, N4, N8,
+    R4, R8, R10,
+    Q4, Q8, Q16,
     STR,
     CHR,
     BOOL,
     NAV
 } ATOM_CT__LEX_TYPES_ENUM;
+
+typedef enum ATOM_CT__LEX_TYPES_GENERAL_ENUM {
+    INTEGER,
+    NATURAL,
+    REAL,
+    RATIONAL,
+    STRING,
+    CHAR,
+    BOOLEAN,
+    NOT_A_VALUE
+} ATOM_CT__LEX_TYPES_GENERAL_ENUM;
 
 typedef enum ATOM_CT__LEX_OP_IDENTIFIERS_ENUM {
     AND, OR, XOR,
@@ -131,11 +144,11 @@ typedef enum ATOM_CT__LEX_OPERATORS_ENUM {
     ARROW,
 } ATOM_CT__LEX_OPERATORS_ENUM;
 
-/* Should the tokens store their location?
+/* Should the base_tokens store their location?
  *   It would make printing their information easier
  *
  *   But it is not needed elsewhere in the compiler? Only really for printing the ast    ----AND ERRORS!
- *   Calculating the position of a single token would require looking at all previous tokens
+ *   Calculating the position of a single token would require looking at all previous base_tokens
  *   But calculating the position of each token one by one sequentially would be fairly cheap
  *   I would have to store the whitespace characters as well in order to calc the position instead of dropping '\t' and '\s'
  *
@@ -149,7 +162,14 @@ typedef struct Position {
     uint32_t end_col;
 } Position;
 
-//a tokens value is the |func mainfunction () : i4|
+typedef struct encodedType {
+    unsigned short general_type : 16;
+    unsigned short size : 16;
+    unsigned short ptr_offset : 16;
+    unsigned short enum_position : 16;
+} encodedType;
+
+//a base_tokens value is the |func mainfunction () : i4|
 //                            ^----------^
 //                            |           `line + elem_count
 //                            `line
@@ -160,7 +180,7 @@ typedef struct Token {
         int64_t integer;
         uint64_t natural;
         long double real;
-        uint64_t type;
+        encodedType type;
         int enum_pos;
     } data;
 
@@ -173,6 +193,8 @@ extern Arr ATOM_CT__LEX_KEYWORDS;
 extern char* ATOM_CT__LEX_KEYWORDS_RAW[];
 extern Arr ATOM_CT__LEX_TYPES;
 extern char* ATOM_CT__LEX_TYPES_RAW[];
+extern Arr ATOM_CT__LEX_TYPES_GENERAL;
+extern char* ATOM_CT__LEX_TYPES_GENERAL_RAW[];
 extern Arr ATOM_CT__LEX_CONS_IDENTIFIERS;
 extern char* ATOM_CT__LEX_CONS_IDENTIFIERS_RAW[];
 extern Arr ATOM_CT__LEX_OPERATORS;

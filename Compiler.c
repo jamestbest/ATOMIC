@@ -8,7 +8,7 @@ VEC_ADD(Token, Token)
 VEC_ADD(Node, Node)
 
 //[[todo]] better to use something like a block allocator(? is that the name)
-// where a large part of memory is allocated and then the data for the tokens
+// where a large part of memory is allocated and then the data for the base_tokens
 // and nodes are stored there instead of having then spread out with
 // rounding of allocation. They would also all have the same life time.
 
@@ -61,7 +61,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 
     if (parseRet != SUCCESS) {
         free_nodes(&nodes);
-        free_tokens(&tokens); //[[todo]] do the nodes take over control & responsibility of the tokens
+        free_tokens(&tokens); //[[todo]] do the nodes take over control & responsibility of the base_tokens
 
         return (CompileRet){PARSERR, NULL};
     }
