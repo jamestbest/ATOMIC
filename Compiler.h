@@ -18,6 +18,8 @@
 
 #define BUFF_SIZE 100
 
+VEC_PROTO(char*, charp)
+
 typedef struct CompileRet {
     int code;
     const char* info;

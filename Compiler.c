@@ -6,8 +6,9 @@
 
 VEC_ADD(Token, Token)
 VEC_ADD(Node, Node)
+VEC_ADD(char*, charp)
 
-//[[todo]] better to use something like a block allocator(? is that the name)
+//[[todo]] better to use something like a block allocator(? is that the name) (ARENA ALLOC?)
 // where a large part of memory is allocated and then the data for the base_tokens
 // and nodes are stored there instead of having then spread out with
 // rounding of allocation. They would also all have the same life time.
@@ -37,10 +38,10 @@ CompileRet compile(const char* entry_point, const char* out_format, const char* 
 
 CompileRet compile_file(const char* entry_point, const char* out_format, FILE* fp) {
     Token_vec tokens = Token_vec_create(BUFF_SIZE);
-    //this is an array of structs, could become a struct of arrays:
-    //Is it more likely that the data of consecutive structs is accessed
-    //Or that the (data/type) of a structure is access more? - Printing will do this
-    //For now it will stay as AOS
+    // [[maybe]] this is an array of structs, could become a struct of arrays:
+    //  Is it more likely that the data of consecutive structs is accessed
+    //  Or that the (data/type) of a structure is access more? - Printing will do this
+    //  For now it will stay as AOS
 
     Vector lines = vector_create(BUFF_MIN);
 
