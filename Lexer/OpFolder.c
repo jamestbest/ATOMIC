@@ -22,7 +22,6 @@ static Token* peek(void);
 static Token* consume(void);
 static Token* current(void);
 
-static bool is_operator(TokenType type);
 static bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator);
 
 static void fold_operator(Token* operator);
@@ -40,7 +39,7 @@ uint fold(Token_vec* base_tokens, Token_vec* folded_tokens) {
     while (t_pos < base_tokens->pos) {
         Token* c = current();
 
-        if (is_operator(c->type) && is_foldable(c->data.enum_pos)) {
+        if (is_operator(c) && is_foldable(c->data.enum_pos)) {
             // [[maybe]] just pass the current token and then edit it within the function
             //  and have it added here. Would add obsfuc.
             fold_operator(c);
@@ -64,18 +63,6 @@ bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator) {
         case MINUS:
         case SHR:
         case MORE:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool is_operator(TokenType type) {
-    switch (type) {
-        case OP_UN:
-        case OP_TRINARY:
-        case OP_BIN_OR_UN:
-        case OP_BIN:
             return true;
         default:
             return false;
@@ -126,10 +113,6 @@ bool is_lit(TokenType type) {
     }
 }
 
-bool is_whitespace_tkn(TokenType type) {
-    return type == WS_S || type == WS_T;
-}
-
 TokenWrapper fold_mult(Token* operator) {
     /*
      *      Could be a dereference e.g.   *p
@@ -149,7 +132,7 @@ TokenWrapper fold_mult(Token* operator) {
         operator->data.enum_pos = MULT;
     }
     else {
-        operator->type = OP_UN;
+        operator->type = OP_UN_PRE;
         operator->data.enum_pos = DEREFERENCE;
     }
 
@@ -184,11 +167,34 @@ TokenWrapper fold_plusminus(Token* operator) {
      *      binary operator e.g. myVar /+/ -myOtherVar
      */
 
+    Token* next = peek();
+
+    if (operator->data.enum_pos == MINUS && next) {
+        TokenType ntype = peek()->type;
+
+        bool needs_consolidation = true;
+
+        if (ntype == LIT_INT) {
+            next->data.integer = -next->data.integer;
+        } else if (ntype == LIT_FLOAT) {
+            next->data.real = -next->data.integer;
+        } else {
+            needs_consolidation = false;
+        }
+
+        if (needs_consolidation) {
+            consume();
+            consolidate(next, operator);
+
+            return (TokenWrapper){SUCCESS, *next};
+        }
+    }
+
     Token* prev = justify();
 
-    bool is_un = !prev || is_operator(prev->type) || prev->type == EQU;
+    bool is_un = !prev || is_operator(prev) || prev->type == EQU;
 
-    operator->type = is_un ? OP_UN : OP_BIN;
+    operator->type = is_un ? OP_UN_PRE : OP_BIN;
 
     return (TokenWrapper){SUCCESS, *operator};
 }
