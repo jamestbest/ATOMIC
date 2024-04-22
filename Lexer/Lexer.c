@@ -36,7 +36,7 @@ static void update_line_count(void);
 
 static char* consume(void);
 static char* gourge_unsafe(uint32_t bytes, uint32_t new_col);
-static char* gourge(uint amount);
+static char* gourge(int amount);
 static uint32_t get_utf_char_bytes(const char* character);
 static uint32_t consume_utf_char(char *start, bool consume, char** next_char);
 
@@ -574,18 +574,21 @@ void lex_word(void) {
 
         switch (info.arr_pos) {
             case AND:
-                token.data.integer = LAND;
+                token.data.enum_pos = LAND;
                 break;
             case OR:
-                token.data.integer = LOR;
+                token.data.enum_pos = LOR;
                 break;
             case XOR:
-                token.data.integer = LXOR;
+                token.data.enum_pos = LXOR;
                 break;
             case NOT:
-                token.data.integer = LNOT;
-                token.type = OP_UN;
+                token.data.enum_pos = LNOT;
+                token.type = OP_UN_PRE;
                 break;
+            case AS:
+//                token.data
+
             default:
                 assert(false);
         }
@@ -727,7 +730,7 @@ static Token construct_token(TokenType type, void* made_data, uint32_t start_col
 /* Token type is self-explanatory, the list is in the Tokens.h file
  * Data is a pointer to anything that may need to be stored e.g. for identifiers or keywords its a char* to
  * the word, for a number its a pointer to a 64 bit number, for a float a pointer to a double, ect
- * The data elem_count is just for the malloc
+ * The data capacity is just for the malloc
  * start and end col e.g. 123, <1:3>
  */
 Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col) {
@@ -826,8 +829,8 @@ char* gourge_unsafe(const uint32_t bytes, const uint32_t new_col) {
     return c_char;
 }
 
-char* gourge(uint amount) {
-    for (uint i = 0; i < amount; i++) consume();
+char* gourge(int amount) {
+    for (int i = 0; i < amount; i++) consume();
 
     return c_char;
 }
