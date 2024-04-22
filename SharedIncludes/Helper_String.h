@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef unsigned int uint;
 
@@ -51,5 +52,7 @@ bool is_alph(uint32_t a);
 bool is_alph_numeric(uint32_t a);
 bool is_whitespace(uint32_t a);
 bool is_newline(uint32_t a);
+
+void putz(char* string);
 
 #endif //ATOMIC_HELPER_STRING_H

@@ -208,3 +208,7 @@ bool is_whitespace(const uint32_t a) {
 bool is_newline(const uint32_t a) {
     return a == '\n';
 }
+
+void putz(char* string) {
+    fputs(string, stdout);
+}
