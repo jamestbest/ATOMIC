@@ -23,7 +23,8 @@ Arr ATOM_CT__LEX_KEYWORDS = {
 
 char* ATOM_CT__LEX_OP_IDENTIFIERS_RAW[] = {
         "and", "or", "xor",
-        "not"
+        "not",
+        "as"
 };
 
 Arr ATOM_CT__LEX_OP_IDENTIFIERS = {
@@ -355,7 +356,7 @@ void print_token_value(Token* token) {
         case OP_TRINARY:
         case OP_BIN_OR_UN:
         case ARITH_ASSIGN:
-            printf("%s", ATOM_CT__LEX_OPERATORS_RAW[token->data.integer]);
+            printf("%s", ATOM_CT__LEX_OPERATORS_RAW[token->data.enum_pos]);
             break;
 
         case ASSIGN:
@@ -481,5 +482,61 @@ bool type_needs_free(TokenType type) {
             return true;
         default:
             return false;
+    }
+}
+
+bool is_whitespace_tkn(TokenType type) {
+    return type == WS_S || type == WS_T;
+}
+
+bool is_l_paren(Token* tok) {
+    return tok->type == PAREN_OPEN;
+}
+
+bool is_r_paren(Token* tok) {
+    return tok->type == PAREN_CLOSE;
+}
+
+bool is_terminal(Token* tok) {
+    switch (tok->type) {
+        case IDENTIFIER:
+        case LIT_BOOL:
+        case LIT_CHR:
+        case LIT_STR:
+        case LIT_INT:
+        case LIT_FLOAT:
+        case LIT_NAV:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+bool is_operator(Token* tok) {
+    switch (tok->type) {
+        case OP_BIN:
+        case OP_BIN_OR_UN:
+        case OP_TRINARY:
+        case OP_UN:
+        case OP_UN_POST:
+        case OP_UN_PRE:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+void consolidate(Token* base_token, Token* token_to_eat) {
+    bool base_before = base_token->pos.start_line < token_to_eat->pos.start_line ||
+            base_token->pos.start_col < token_to_eat->pos.start_col;
+
+    if (base_before) {
+        base_token->pos.end_line = token_to_eat->pos.end_line;
+        base_token->pos.end_col = token_to_eat->pos.end_col;
+    } else {
+        base_token->pos.start_line = token_to_eat->pos.start_line;
+        base_token->pos.start_col = token_to_eat->pos.start_col;
     }
 }

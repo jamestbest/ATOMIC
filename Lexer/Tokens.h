@@ -103,7 +103,8 @@ typedef enum ATOM_CT__LEX_TYPES_GENERAL_ENUM {
 
 typedef enum ATOM_CT__LEX_OP_IDENTIFIERS_ENUM {
     AND, OR, XOR,
-    NOT
+    NOT,
+    AS
 } ATOM_CT__LEX_OP_IDENTIFIERS_ENUM;
 
 typedef enum ATOM_CT__LEX_OPERATORS_ENUM {
@@ -171,7 +172,7 @@ typedef struct encodedType {
 
 //a base_tokens value is the |func mainfunction () : i4|
 //                            ^----------^
-//                            |           `line + elem_count
+//                            |           `line + capacity
 //                            `line
 typedef struct Token {
     TokenType type;
@@ -206,10 +207,18 @@ const char* get_token_color(TokenType type);
 const char* cons_token_type_colored(TokenType type);
 
 bool type_needs_free(TokenType type);
+bool is_whitespace_tkn(TokenType type);
 
 int print_position(Position pos);
 void print_token_value(Token* token);
 void print_token(Token* token);
+
+void consolidate(Token* base_token, Token* token_to_eat);
+
+bool is_l_paren(Token* tok);
+bool is_r_paren(Token* tok);
+bool is_terminal(Token* tok);
+bool is_operator(Token* tok);
 
 VEC_PROTO(Token, Token)
 
