@@ -4,7 +4,7 @@
 
 #include "Vector.h"
 
-VEC_ADD(char*, charp)
+VEC_ADD(int, int)
 
 bool vector_grow(Vector* vector, size_t new_size) {
     if (new_size < vector->size) return false;
@@ -42,7 +42,7 @@ VecRet vector_get(Vector* vector, size_t index) {
 Vector vector_create(size_t size) {
     void* arr = malloc(size * sizeof(void*));
 
-    if (arr == NULL) return (Vector) {NULL, -1, -1};
+    if (!arr) return (Vector) {NULL, -1, -1};
 
     return (Vector){arr, size, 0};
 }

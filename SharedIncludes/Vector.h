@@ -172,6 +172,6 @@ bool typename##_vec_add(typename##_vec* vector, type toAdd);
         return vector->arr[vector->pos];                            \
     }
 
-VEC_PROTO(char*, charp)
+VEC_PROTO(int, int)
 
 #endif //ATOMIC_VECTOR_H
