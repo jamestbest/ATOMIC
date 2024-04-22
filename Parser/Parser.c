@@ -6,7 +6,7 @@
 
 const Token_vec* ptokens;
 const Vector* plines;
-uint t_pos;
+int t_pos;
 
 Node file_global_node;
 
@@ -21,14 +21,17 @@ static NodeRet parse_while_statement(Token* t);
 static NodeRet parse_foreach_statement(Token* t);
 static NodeRet parse_if_statement(Token* t);
 
+static bool is_valid_index(int index);
+
+static Token* confungry(int offset, bool consume, bool ignore_whitespace);
 static Token* consume(void);
-static Token* gourge(uint amount);
+static Token* gourge(int amount);
 
 static Token* current(void);
 static Token* peek(void);
-static Token* peer(uint amount);
+static Token* peer(int amount);
 
-static uint parserr(const ParsErrors errorCode, Token* parent_token, Token* issue_token, ...);
+static uint parserr(ParsErrors errorCode, Token* parent_token, Token* issue_token, ...);
 
 void add_statement(Node* statement) {
     if (statement == NULL) return;
@@ -65,6 +68,17 @@ NodeRet parse_statement(Token* t) {
     // this will help with having if (expr) statement
     // without braces
     switch (t->type) {
+        case LIT_INT:
+        case IDENTIFIER:
+        case OP_UN_PRE:
+        case PAREN_OPEN: {
+            //[[todo]] this is temp!!
+            ShuntRet shuntData = shunt(ptokens, t_pos, false);
+            t_pos = shuntData.tok_end_pos;
+            return (NodeRet){shuntData.expressionNode, shuntData.err_code};
+        }
+
+
         case KEYWORD:
             return parse_keyword(t);
 
@@ -225,33 +239,79 @@ uint parserr(const ParsErrors errorCode, Token* parent_token, Token* issue_token
     }
 }
 
-Token* current(void) {
-    return &ptokens->arr[t_pos];
+bool is_valid_index(int index) {
+    return index >= 0 && index < ptokens->pos;
 }
 
-Token* peer(const uint amount) {
-    if (t_pos + amount >= ptokens->pos) {
-        return NULL;
+Token* confungry(int offset, bool consume, bool ignore_whitespace) {
+    if (offset == 0) {
+        return &ptokens->arr[t_pos];
     }
 
-    return &ptokens->arr[t_pos + amount];
+    if (!ignore_whitespace) {
+        if (!is_valid_index(t_pos + offset)) {
+            if (consume) {
+                t_pos += offset;
+            }
+            return NULL;
+        }
+
+        if (consume) {
+            t_pos += offset;
+            return &ptokens->arr[t_pos];
+        }
+
+        return &ptokens->arr[t_pos + offset];
+    }
+
+    int valid_skipped = 0;
+    int diff = offset < 0 ? -1 : 1;
+    int current_offset = 0;
+
+    while (valid_skipped < abs(offset)) {
+        current_offset += diff;
+        if (!is_valid_index(t_pos + current_offset)) {
+            if (consume) {
+                t_pos += current_offset;
+            }
+            return NULL;
+        }
+
+        if (is_whitespace_tkn(ptokens->arr[t_pos + current_offset].type)) {
+            continue;
+        }
+
+        valid_skipped += 1;
+    }
+
+    if (consume) {
+        t_pos += current_offset;
+        return &ptokens->arr[t_pos];
+    }
+
+    return &ptokens->arr[t_pos + current_offset];
+}
+
+Token* peer(int amount) {
+    return confungry(amount, false, true);
 }
 
 Token* peek(void) {
     return peer(1);
 }
 
-Token* gourge(const uint amount) {
-    if (t_pos + amount >= ptokens->pos) {
-        return NULL;
-    }
-    t_pos += amount;
-    return &ptokens->arr[t_pos];
+Token* justify(void) {
+    return peer(-1);
 }
 
 Token* consume(void) {
-    if (t_pos >= ptokens->pos) {
-        return NULL;
-    }
-    return &ptokens->arr[t_pos++];
+    return confungry(1, true, true);
+}
+
+Token* gourge(const int amount) {
+    return confungry(amount, true, true);
+}
+
+Token* current(void) {
+    return confungry(0, false, false);
 }

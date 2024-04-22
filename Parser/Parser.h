@@ -7,6 +7,7 @@
 
 #include "../Lexer/Tokens.h"
 #include "Node.h"
+#include "ShuntingYard.h"
 
 #include "ParsErrors.h"
 
