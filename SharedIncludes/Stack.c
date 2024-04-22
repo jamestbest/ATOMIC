@@ -21,9 +21,7 @@ Stack stack_create(size_t elem_count) {
 
     if (!arr) return (Stack){NULL, -1, -1};
 
-    Stack stack = (Stack){arr, 0, elem_count};
-
-    return stack;
+    return (Stack){arr, 0, elem_count};
 }
 
 bool stack_resize(Stack* stack, size_t new_elem_count) {
@@ -57,9 +55,17 @@ bool stack_push(Stack* stack, void* element) {
 void* stack_pop(Stack* stack) {
     if (!verify_stack(stack)) return false;
 
-    if (stack->ptr == 0) return NULL;
+    if (stack_empty(stack)) return NULL;
 
     return stack->arr[--(stack->ptr)];
+}
+
+void* stack_peek(Stack* stack) {
+    if (!verify_stack(stack)) return false;
+
+    if (stack_empty(stack)) return NULL;
+
+    return stack->arr[stack->ptr - 1];
 }
 
 void stack_destroy(Stack* stack) {
@@ -68,4 +74,8 @@ void stack_destroy(Stack* stack) {
     free(stack->arr);
 
     *stack = (Stack){NULL, -1, -1};
+}
+
+bool stack_empty(Stack* stack) {
+    return stack->ptr == 0;
 }
