@@ -10,6 +10,16 @@
 
 #include "../SharedIncludes/Queue.h"
 #include "../SharedIncludes/Stack.h"
+#include "../SharedIncludes/Vector.h"
+
+typedef enum STATE {
+    EXPECTING_START,        // The start of an expression can
+
+    EXPECTING_LEFT,         // a left value is var, function call, UN_OP_PRE, or an open paren
+    EXPECTING_CENTRE,       // a centre value is one after a left value e.g. operator, or close paren
+
+    EXPECTING_END           // should end the expression shunting
+} STATE;
 
 typedef enum ASS {
     LEFT,           // +-*/ etc
@@ -20,13 +30,15 @@ typedef enum ASS {
 
 typedef struct ShuntRet {
     Node* expressionNode;
-    uint tok_end_pos;
+    int tok_end_pos;
     uint err_code;
 } ShuntRet;
 
 typedef struct ShuntData {
-    Token_vec* tokens;
+    const Token_vec* tokens;
     uint* t_pos;
 } ShuntData;
+
+ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens);
 
 #endif //ATOMIC_SHUNTINGYARD_H
