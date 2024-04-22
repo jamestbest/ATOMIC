@@ -47,10 +47,19 @@ typedef struct NodeRet {
     uint retCode;
 } NodeRet;
 
+typedef enum NodeLevelPrintType {
+    BLANK,          //
+    DRAW_DOWN,      // |
+    LINK,           // |-
+    LINK_END        // `-
+} NodeLevelPrintType;
+
 Node* create_node_basic(NodeType type, Token* token, bool has_children);
 Node* create_leaf_node(NodeType type, Token* token);
 Node* create_parent_node(NodeType type, Token* token);
 NodeRet construct_error_node(Token *token);
+
+void print_top_level_node(Node* node);
 
 VEC_PROTO(Node, Node)
 
