@@ -393,6 +393,8 @@ void print_token_value(Token* token) {
 }
 
 void print_token(Token* token) {
+    if (!token) return;
+
     //{<POSITION> TYPE: VALUE}
     printf("{");
     Position pos = token->pos;
@@ -404,7 +406,12 @@ void print_token(Token* token) {
     free((void*)title);
 
     print_token_value(token);
-    printf("'}\n");
+    printf("'}");
+}
+
+void print_token_ln(Token* token) {
+    print_token(token);
+    putchar('\n');
 }
 
 TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {

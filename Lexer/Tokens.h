@@ -212,6 +212,7 @@ bool is_whitespace_tkn(TokenType type);
 int print_position(Position pos);
 void print_token_value(Token* token);
 void print_token(Token* token);
+void print_token_ln(Token* token);
 
 void consolidate(Token* base_token, Token* token_to_eat);
 
