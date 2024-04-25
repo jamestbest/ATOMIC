@@ -47,7 +47,7 @@ uint parse(const Token_vec *token_vec, const Node_vec *nodes, const Vector *line
 
     Token* c;
 
-    file_global_node = (Node){NODE_FILE, NULL, vector_create(MIN_CHILDREN)};
+    file_global_node = (Node){NODE_ROOT, NULL, vector_create(MIN_CHILDREN)};
 
     while (c = current(), c != NULL && c->type != EOTS) {
         const NodeRet ret = parse_statement(c);
