@@ -198,24 +198,52 @@ func getFive() : i4 {
 
 #### Recursion
 Recursive functions in atom can, and should, be given the `rec` keyword  
-These functions then gain the ability to use a recursive `header` section this is a section of code
-that will be executed when and only when a function that is not itself calls it
+These functions then gain the ability to use the recursive `header`, and `footer` sections.
+This is a section of code that will be executed when and only when a function that is not itself calls it
 
 example
 ```atom
     entry rec func fib(i : i4) : i4 {
         header {
-            print("calculating fib of " + i)
+            count: n4 = 0
+            print("calculating fib of " + i + "...")
         }
+        
+        count++
+        
         if i <= 1 {
             ret i
         }
         ret fib(i - 1) + fib(i - 2)
+        
+        footer {
+            print($"it took {count} recursive calls to calculate the fib of {i}")
+        }
     }
 ```
 Is this a good/useful idea?... I've got no fucking clue
 
+<pre>Example function chain
+fib(4)
+|--header
+|--fib(3)
+|  |--fib(2)
+|  |  |--fib(1)
+|  |  `--fib(0)
+|  `--fib(1)
+|--fib(2)
+|  |--fib(1)
+|  `--fib(0)
+`--footer
+</pre>
+output:
+```console
+calculating fib of 4...
+it took 9 recursive calls to calculate fib of 4
+```
 
+In this case count is unique to this call chain, if there was another call to fib it would start with count = 0,
+not just because its in the header but also because count only exists in each of the call chains
 
 ### Loops
 There are four types of loops, [for](#for), [foreach](#foreach), [while](#while), and [times](#times)
