@@ -5,6 +5,46 @@
 #include "Node.h"
 
 static void print_node_basic(Node* node, int_vec* levels);
+static void printpostfix(Node* node);
+
+static char* nodeTypeToString(NodeType type) {
+    switch (type) {
+        case NODE_INVALID:
+            return "INVALID";
+        case NODE_ROOT:
+            return "ROOT";
+        case ST_BLOCK:
+            return "STATEMENT BLOCK";
+        case ST_FOREACH:
+            return "FOREACH";
+        case ST_WHILE:
+            return "WHILE";
+        case ST_TIMES:
+            return "TIMES";
+        case ST_FOR:
+            return "FOR";
+        case ST_IF:
+            return "IF";
+        case ST_ELIF:
+            return "ELIF";
+        case ST_ELSE:
+            return "ELSE";
+        case ST_VAR_DECL:
+            return "VAR DECL";
+        case ST_VAR_ASS:
+            return "VAR ASS";
+        case EXPR:
+            return "EXPR";
+        case EX_LIT:
+            return "LITERAL";
+        case TOKEN_WRAPPER:
+            return "";
+        case FUNC_CALL:
+            return "FUNC CALL";
+        case PROC_CALL:
+            return "PROC CALL";
+    }
+}
 
 static char* nodeLevelToString(NodeLevelPrintType level) {
     switch (level) {
@@ -91,11 +131,77 @@ void print_node_multi_child(Node* parent, int_vec* levels) {
 }
 
 void print_node_basic(Node *node, int_vec *levels) {
-//    print_node_levels(levels);
-    printf("E Val: %d; Tok: ", node->type);
+    putz(nodeTypeToString(node->type));
+
+    if (node->token && node->type != TOKEN_WRAPPER) {
+        putz("; TOK: ");
+    }
+
     print_token(node->token);
+
+    if (node->type == EXPR) {
+        putz(C_MGN"  POSTFIX:"C_RST" { ");
+        printpostfix(node);
+        putchar('}');
+    }
+
+    putchar('\n');
 
     if (!node->children.arr || node->children.pos == 0) return;
 
     print_node_multi_child(node, levels);
+}
+
+static void printpostfix_value(Node* node) {
+    switch (node->type) {
+        case EXPR:
+        case EX_LIT: {
+            Token* tok = node->token;
+            print_token_value(tok);
+        }
+    }
+}
+
+void printpostfix(Node* node) {
+    // First is to deal with un expressions to make sure they print in a nicer way
+    if (node->type == EXPR && (node->token->type == OP_UN_PRE || node->token->type == OP_UN_POST) && node->children.arr) {
+        Node* fchild = node->children.arr[0];
+
+        bool is_postfix = node->token->type == OP_UN_POST;
+
+        if (!is_postfix) printpostfix_value(node);
+        printpostfix_value(fchild);
+        if (is_postfix) printpostfix_value(node);
+        putchar(' ');
+        return;
+    }
+
+    if ((node->type == FUNC_CALL || node->type == PROC_CALL) && node->children.arr) {
+        Node* func_name = node->children.arr[0];
+
+        print_token_value(func_name->token);
+        putz("( ");
+        //[[todo]] change to have the arguments be within another wrapper node
+        //  may need to have wrapper node types
+        for (uint i = 1; i < node->children.pos; ++i) {
+            Node* arg = node->children.arr[i];
+
+            printpostfix(arg);
+
+            //[[todo]] comma seperated
+        }
+        putz(") ");
+        return;
+    }
+
+    if (node->children.arr) {
+        for (uint i = 0; i < node->children.pos; ++i) {
+            Node *child = node->children.arr[i];
+
+            printpostfix(child);
+        }
+    }
+
+    printpostfix_value(node);
+    putchar(' ');
 }

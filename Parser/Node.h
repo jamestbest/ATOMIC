@@ -14,8 +14,9 @@
 
 typedef enum NodeType {
     NODE_INVALID,
+    TOKEN_WRAPPER,
 
-    NODE_FILE,
+    NODE_ROOT,
 
     ST_BLOCK,
 
@@ -30,6 +31,9 @@ typedef enum NodeType {
 
     ST_VAR_DECL,
     ST_VAR_ASS,
+
+    FUNC_CALL,
+    PROC_CALL,
 
     EXPR,
 
