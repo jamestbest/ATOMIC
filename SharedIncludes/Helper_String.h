@@ -30,6 +30,7 @@ int find_last(char* string, char pattern);
 int starts_with_ips(const char* string, const char* pattern);
 int starts_with(const char* string, const char* pattern);
 int starts_with_ic(const char* string, const char* pattern);
+int word_match_alphnumeric(const char* word, const char* match);
 bool str_eq(const char* stra, const char* strb);
 
 uint len(const char* string);

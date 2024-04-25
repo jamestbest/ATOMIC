@@ -71,6 +71,19 @@ int starts_with(const char* string, const char* pattern) {
     return -1;
 }
 
+int word_match_alphnumeric(const char* word, const char* match) {
+    int i = 0;
+    while (word[i] != '\0' && match[i] != '\0') {
+        if (word[i] != match[i]) return -1;
+
+        i++;
+    }
+
+    if (match[i] == '\0' && word[i] != '\0' && is_alph_numeric(word[i])) return -1;
+
+    return i;
+}
+
 //ignore case
 int starts_with_ic(const char* string, const char* pattern) {
     int i = 0;
