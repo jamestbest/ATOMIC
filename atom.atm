@@ -6,7 +6,8 @@
 *¬
 
 a : bool = not b;
-c: i4 = (2 + -12) * 16 / 3 * *a - -b;
+b: n8 = 2 + funca(1 + 3)
+c: i4 = (2 + -12) * 16 / 3 * *a - -b + funca(12 + 2);
 d: bool = a++
 
 func main(argc: i4, argv: > >chr): i4 {
