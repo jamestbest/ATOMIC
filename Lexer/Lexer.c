@@ -200,7 +200,7 @@ void print_tokens(Token_vec* token_vec, bool include_ws, bool include_comments) 
         if ((type == WS_S || type == WS_T) && !include_ws) continue;
         if ((type == COMMENT) && !include_comments) continue;
 
-        print_token(&token_vec->arr[i]);
+        print_token_ln(&token_vec->arr[i]);
     }
 }
 
@@ -291,7 +291,7 @@ PosCharp word_in_arr(const char *word, Arr arr) {
     for (uint i = 0; i < arr.elem_count; i++) {
         const char* w_arr = arr.arr[i];
 
-        const int final_pos = starts_with_ic(word, w_arr);
+        const int final_pos = word_match_alphnumeric(word, w_arr);
         if (final_pos != -1) {
             return (PosCharp) {(int)i, (char*)(word + final_pos)};
         }
