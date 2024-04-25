@@ -14,6 +14,8 @@ static bool c_is_valid_expr_cont(Token *current_t, STATE current_state);
 
 static Node* form_operator_node(Token* op_token, Stack *output_s);
 
+static void update_data(ShuntData data, ShuntRet ret);
+
 //[[DEBUG]]
 static void print_token_stack(Stack* operator_stack);
 static void print_node_stack(Stack *output_s);
@@ -212,6 +214,23 @@ ASS get_token_ass(Token* token) {
     return get_ass(token->data.enum_pos, token->type);
 }
 
+Node* parse_function_call(ShuntData data) {
+    Node* funcNode = create_parent_node(FUNC_CALL, NULL);
+
+    Token* func_name = consume(data);
+
+    //[[todo]] add multi param
+    ShuntRet ret = shunt(data.tokens, *data.t_pos, true);
+    update_data(data, ret);
+
+    if (ret.err_code != SUCCESS) assert(false);
+
+    vector_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
+    vector_add(&funcNode->children, ret.expressionNode);
+
+    return funcNode;
+}
+
 void parse_identifier(ShuntData data, Token* current, Token* next, Stack* output_s) {
     /*  Could be an identifier or a function call
      *      - Identifier: push to the output q
@@ -219,7 +238,7 @@ void parse_identifier(ShuntData data, Token* current, Token* next, Stack* output
      */
 
     if (next->type == PAREN_OPEN) {
-        //[[todo]] do
+        stack_push(output_s, parse_function_call(data));
     } else {
         stack_push(output_s, create_leaf_node(EX_LIT, current));
     }
@@ -377,6 +396,10 @@ Token* consume(ShuntData data) {
     return &data.tokens->arr[(*data.t_pos)++];
 }
 
+void update_data(ShuntData data, ShuntRet ret) {
+    *data.t_pos = ret.tok_end_pos;
+}
+
 //[[DEBUG]]
 void print_token_stack(Stack* operator_stack) {
     printf("---------------STACK OP TOKENS--------------- \n");
@@ -389,7 +412,7 @@ void print_token_stack(Stack* operator_stack) {
     for (int i = 0; i < operator_stack->ptr; ++i) {
         Token* tok = operator_stack->arr[i];
         printf("[%d]: ", i);
-        print_token(tok);
+        print_token_ln(tok);
         printf("\n");
     }
 }
