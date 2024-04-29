@@ -9,6 +9,10 @@ bool ATOM_VR__FLAGS[ATOM_CT__FLAG_COUNT];
 int flag_int_to_index(long long int fi) {
     switch (fi) {
         //%%FLAG INDEX SWITCH%% FLAG PREPROCESSOR GENERATED SWITCH CASE SHOULD APPEAR HERE
+		case ATOM_CT__FLAG_EXPR_DBG_HASH:
+			return ATOM_CT__FLAG_EXPR_DBG;
+		case ATOM_CT__FLAG_VEXPR_DBG_HASH:
+			return ATOM_CT__FLAG_VEXPR_DBG;
 		case ATOM_CT__FLAG_TOK_OUT_HASH:
 			return ATOM_CT__FLAG_TOK_OUT;
 		case ATOM_CT__FLAG_VTOK_OUT_HASH:
@@ -36,6 +40,10 @@ int flag_int_to_index(long long int fi) {
 char* flag_index_to_string(int index) {
     switch(index) {
         //%%FLAG STR SWITCH%%
+		case ATOM_CT__FLAG_EXPR_DBG:
+			return ATOM_CT__FLAG_EXPR_DBG_STR;
+		case ATOM_CT__FLAG_VEXPR_DBG:
+			return ATOM_CT__FLAG_VEXPR_DBG_STR;
 		case ATOM_CT__FLAG_TOK_OUT:
 			return ATOM_CT__FLAG_TOK_OUT_STR;
 		case ATOM_CT__FLAG_VTOK_OUT:
