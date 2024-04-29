@@ -32,8 +32,8 @@ typedef enum NodeType {
     ST_VAR_DECL,
     ST_VAR_ASS,
 
-    FUNC_CALL,
-    PROC_CALL,
+    SUB_CALL,
+    SUB_CALL_ARGS,
 
     EXPR,
 

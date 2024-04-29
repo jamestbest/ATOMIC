@@ -39,10 +39,10 @@ static char* nodeTypeToString(NodeType type) {
             return "LITERAL";
         case TOKEN_WRAPPER:
             return "";
-        case FUNC_CALL:
-            return "FUNC CALL";
-        case PROC_CALL:
-            return "PROC CALL";
+        case SUB_CALL:
+            return "SUB CALL";
+        case SUB_CALL_ARGS:
+            return "SUB CALL ARGS";
     }
 }
 
@@ -51,11 +51,11 @@ static char* nodeLevelToString(NodeLevelPrintType level) {
         case BLANK:
             return "   ";
         case DRAW_DOWN:
-            return "│  ";
+            return "|  ";
         case LINK:
-            return "├──";
+            return "|--";
         case LINK_END:
-            return "└──";
+            return "`--";
         default:
             assert(false);
     }
@@ -176,19 +176,17 @@ void printpostfix(Node* node) {
         return;
     }
 
-    if ((node->type == FUNC_CALL || node->type == PROC_CALL) && node->children.arr) {
+    if (node->type == SUB_CALL && node->children.arr) {
         Node* func_name = node->children.arr[0];
+        Node* args = node->children.arr[1];
 
         print_token_value(func_name->token);
         putz("( ");
-        //[[todo]] change to have the arguments be within another wrapper node
-        //  may need to have wrapper node types
-        for (uint i = 1; i < node->children.pos; ++i) {
-            Node* arg = node->children.arr[i];
-
+        for (uint i = 0; i < args->children.pos; ++i) {
+            Node* arg = args->children.arr[i];
             printpostfix(arg);
 
-            //[[todo]] comma seperated
+            if (i != args->children.pos - 1) putz(", ");
         }
         putz(") ");
         return;
