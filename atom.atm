@@ -4,11 +4,15 @@
     behold the elusive multiline comment
     gaze upon its ability to traverse multiple lines
 *¬
+i: i4 = a++ + b * -c;
+
+main(12 + 2, 18 * 9, 8, a++ + b * -c)
 
 a : bool = not b;
 b: n8 = 2 + funca(1 + 3)
-c: i4 = (2 + -12) * 16 / 3 * *a - -b + funca(12 + 2);
+c: i4 = (2 + -12.3524336645244) * 16 / 3 * *a - -b + funca(12 + 2);
 d: bool = a++
+
 
 func main(argc: i4, argv: > >chr): i4 {
     a: i4 = 0
