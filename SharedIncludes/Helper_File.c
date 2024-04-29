@@ -10,6 +10,10 @@ FILE* validate_file(const char* filename, const char* mode) {
     //need some way to allow checks for a file's existence
     uint mode_length = len(mode);
 
+    if (access(filename, F_OK) != 0) {
+        return fopen(filename, mode);
+    }
+
     for (uint i = 0; i < mode_length; i++) {
         int dec;
         switch (mode[i]) {
@@ -23,7 +27,7 @@ FILE* validate_file(const char* filename, const char* mode) {
                 assert(false);
         }
 
-        uint res = access(filename, dec);
+        int res = access(filename, dec);
 
         if (res != 0) return NULL;
     }
