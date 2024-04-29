@@ -4,6 +4,8 @@
 
 #include "Flag_Preprocessor.h"
 
+VEC_ADD(char*, charp)
+
 int main(int argc, char** argv) {
     puts("Welcome to the Flag preprocessor for ATOMIC\n");
 

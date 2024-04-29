@@ -18,6 +18,8 @@
 
 #define Error(type, msg) C_RED type C_RST msg
 
+VEC_PROTO(char*, charp)
+
 typedef enum State {
     SEARCHING,
 
