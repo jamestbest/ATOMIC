@@ -311,7 +311,7 @@ void print_token_value(Token* token) {
             break;
 
         case LIT_INT:
-            printf("%ld", token->data.integer);
+            printf("%lld", token->data.integer);
             break;
         case LIT_FLOAT:
             printf("%Lf", token->data.real);
