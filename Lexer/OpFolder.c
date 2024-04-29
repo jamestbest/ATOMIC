@@ -177,7 +177,7 @@ TokenWrapper fold_plusminus(Token* operator) {
         if (ntype == LIT_INT) {
             next->data.integer = -next->data.integer;
         } else if (ntype == LIT_FLOAT) {
-            next->data.real = -next->data.integer;
+            next->data.real = -next->data.real;
         } else {
             needs_consolidation = false;
         }
@@ -192,7 +192,7 @@ TokenWrapper fold_plusminus(Token* operator) {
 
     Token* prev = justify();
 
-    bool is_un = !prev || is_operator(prev) || prev->type == EQU;
+    bool is_un = !prev || (is_operator(prev) && prev->type != OP_UN_POST) || prev->type == EQU;
 
     operator->type = is_un ? OP_UN_PRE : OP_BIN;
 
