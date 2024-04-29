@@ -11,14 +11,13 @@
 #include "../SharedIncludes/Queue.h"
 #include "../SharedIncludes/Stack.h"
 #include "../SharedIncludes/Vector.h"
+#include "../Flags.h"
 
 typedef enum STATE {
     EXPECTING_START,        // The start of an expression can
 
     EXPECTING_LEFT,         // a left value is var, function call, UN_OP_PRE, or an open paren
     EXPECTING_CENTRE,       // a centre value is one after a left value e.g. operator, or close paren
-
-    EXPECTING_END           // should end the expression shunting
 } STATE;
 
 typedef enum ASS {

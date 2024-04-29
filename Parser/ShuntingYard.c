@@ -42,9 +42,10 @@ STATE get_next_state(STATE current_state, Token *current_t) {
             if (current_t->type == OP_UN_PRE || current_t->type == PAREN_OPEN) return EXPECTING_LEFT;
             return EXPECTING_CENTRE;
         case EXPECTING_CENTRE:
-            if (current_t->type == PAREN_CLOSE) return EXPECTING_CENTRE;
+            if (current_t->type == OP_UN_POST || current_t->type == PAREN_CLOSE) return EXPECTING_CENTRE;
             return EXPECTING_LEFT;
     }
+    assert(false);
 }
 
 ASS get_ass(ATOM_CT__LEX_OPERATORS_ENUM operator, TokenType token_type) {
@@ -214,19 +215,47 @@ ASS get_token_ass(Token* token) {
     return get_ass(token->data.enum_pos, token->type);
 }
 
-Node* parse_function_call(ShuntData data) {
-    Node* funcNode = create_parent_node(FUNC_CALL, NULL);
-
-    Token* func_name = consume(data);
-
-    //[[todo]] add multi param
+ShuntRet parse_subroutine_call_arg(ShuntData data) {
     ShuntRet ret = shunt(data.tokens, *data.t_pos, true);
     update_data(data, ret);
 
-    if (ret.err_code != SUCCESS) assert(false);
+    return ret;
+}
+
+Node* parse_subroutine_call_arguments(ShuntData data) {
+    Node* argsNode = create_parent_node(SUB_CALL_ARGS, NULL);
+
+    Token* next;
+    if (next = peek(data), !next || next->type == PAREN_CLOSE) {
+        return argsNode;
+    }
+
+    Token* c;
+    bool first_arg = true;
+    do {
+        if (first_arg) first_arg = false;
+        else consume(data); // eat the comma
+
+        ShuntRet arg = parse_subroutine_call_arg(data);
+
+        if (arg.err_code != SUCCESS) assert(false);
+
+        vector_add(&argsNode->children, arg.expressionNode);
+    } while(c = current(data), c && c->type == COMMA);
+
+    return argsNode;
+}
+
+Node* parse_subroutine_call(ShuntData data) {
+    Node* funcNode = create_parent_node(SUB_CALL, NULL);
+
+    Token* func_name = consume(data);
+    consume(data); //eat the (
+
+    Node* args = parse_subroutine_call_arguments(data);
 
     vector_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
-    vector_add(&funcNode->children, ret.expressionNode);
+    vector_add(&funcNode->children, args);
 
     return funcNode;
 }
@@ -238,7 +267,7 @@ void parse_identifier(ShuntData data, Token* current, Token* next, Stack* output
      */
 
     if (next->type == PAREN_OPEN) {
-        stack_push(output_s, parse_function_call(data));
+        stack_push(output_s, parse_subroutine_call(data));
     } else {
         stack_push(output_s, create_leaf_node(EX_LIT, current));
     }
@@ -252,13 +281,23 @@ ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
 
     STATE c_state = EXPECTING_START;
 
+    bool expr_dbg = flag_get(ATOM_CT__FLAG_EXPR_DBG);
+    bool verbose_expr_dbg = flag_get(ATOM_CT__FLAG_VEXPR_DBG);
+
     Token* c;
     while (c = current(data), c_is_valid_expr_cont(c, c_state)) {
-        print_token_stack(&operator_s);
-        print_node_stack(&output_s);
+        if (verbose_expr_dbg) {
+            print_token_stack(&operator_s);
+            print_node_stack(&output_s);
+        }
 
         switch (c->type) {
             case LIT_INT:
+            case LIT_FLOAT:
+            case LIT_STR:
+            case LIT_BOOL:
+            case LIT_CHR:
+            case LIT_NAV:
                 stack_push(&output_s, create_leaf_node(EX_LIT, c));
                 break;
             case IDENTIFIER:
@@ -304,8 +343,10 @@ ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
         consume(data);
     }
 
-    print_token_stack(&operator_s);
-    print_node_stack(&output_s);
+    if (verbose_expr_dbg) {
+        print_token_stack(&operator_s);
+        print_node_stack(&output_s);
+    }
 
     while (!stack_empty(&operator_s)) {
         Token* o1 = stack_peek(&operator_s);
@@ -319,8 +360,11 @@ ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
 
     Node* ret = (Node*)stack_pop(&output_s);
 
-    puts("END EXPR: ");
-    print_top_level_node(ret);
+    if (expr_dbg) {
+        puts("END EXPR: ");
+        print_top_level_node(ret);
+        putchar('\n');
+    }
 
     stack_destroy(&output_s);
     stack_destroy(&operator_s);
