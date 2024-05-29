@@ -5,8 +5,8 @@
 #ifndef ATOMIC_OPFOLDER_H
 #define ATOMIC_OPFOLDER_H
 
+#include "Lexerr.h"
 #include "Tokens.h"
-#include "LexErrors.h"
 
 uint fold(Token_vec* base_tokens, Token_vec* folded_tokens);
 

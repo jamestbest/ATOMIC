@@ -12,8 +12,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include "Lexerr.h"
 #include "Tokens.h"
-#include "LexErrors.h"
 
 #include "OpFolder.h"
 

@@ -4,7 +4,7 @@ project(ATOMIC C)
 set(CMAKE_C_STANDARD 17)
 
 add_compile_options(-pedantic-errors -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self
-        -Wno-unused-parameter -ggdb3 -pedantic-errors -Wswitch-enum)
+        -Wno-unused-parameter -ggdb3 -pedantic-errors -Wswitch-enum -fsanitize=undefined -Wno-unused-function -lubsan)
 
 add_executable(ATOMICLI
         Compiler.c
@@ -25,7 +25,7 @@ add_executable(ATOMICLI
         Parser/Parser.h
         Parser/Node.c
         Parser/Node.h
-        Parser/ParsErrors.h
+        Parser/Parserr.h
         Errors.c
         Parser/ShuntingYard.c
         Parser/ShuntingYard.h

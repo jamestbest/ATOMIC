@@ -23,6 +23,8 @@ static char* nodeTypeToString(NodeType type) {
             return "TIMES";
         case ST_FOR:
             return "FOR";
+        case ST_IF_TOP_LEVEL:
+            return "IF TOP LEVEL";
         case ST_IF:
             return "IF";
         case ST_ELIF:
@@ -35,6 +37,10 @@ static char* nodeTypeToString(NodeType type) {
             return "VAR ASS";
         case EXPR:
             return "EXPR";
+        case EXPR_BIN:
+            return "BINARY EXPR";
+        case EXPR_UN:
+            return "UNARY EXPR";
         case EX_LIT:
             return "LITERAL";
         case TOKEN_WRAPPER:
@@ -43,7 +49,30 @@ static char* nodeTypeToString(NodeType type) {
             return "SUB CALL";
         case SUB_CALL_ARGS:
             return "SUB CALL ARGS";
+        case ST_RET:
+            return "ST RET";
+        case NODE_MULTIPLE_STATEMENTS:
+            return "[[DEV]] MULTIPLE STATEMENTS";
+        case ST_FOR_SETUP:
+            return "ST FOR SETUP";
+        case ST_FOR_LOOP:
+            return "ST FOR INC";
+        case ST_FOR_COND:
+            return "ST FOR COND";
+        case ST_CONT:
+            return "ST CONTINUE";
+        case ST_BRK:
+            return "ST BREAK";
+        case ST_FUNC:
+            return "ST FUNCTION";
+        case ST_PROC:
+            return "ST PROCEDURE";
+        case SUB_PARAMS:
+            return "PARAMETERS";
+        case SUB_PARAM:
+            return "PARAMETER";
     }
+    assert(false);
 }
 
 static char* nodeLevelToString(NodeLevelPrintType level) {
@@ -92,6 +121,10 @@ NodeRet construct_error_node(Token *token) {
     return (NodeRet){node, FAIL};
 }
 
+void free_node(Node* node) {
+    free(node);
+}
+
 void print_top_level_node(Node* tl_node) {
     int_vec levels = int_vec_create(10);
 
@@ -130,6 +163,10 @@ void print_node_multi_child(Node* parent, int_vec* levels) {
     print_node_end_child(parent->children.arr[parent->children.pos - 1], levels);
 }
 
+static bool is_expr_node(Node* node) {
+    return node->type == EXPR || node->type == EXPR_UN || node->type == EXPR_BIN;
+}
+
 void print_node_basic(Node *node, int_vec *levels) {
     putz(nodeTypeToString(node->type));
 
@@ -139,7 +176,7 @@ void print_node_basic(Node *node, int_vec *levels) {
 
     print_token(node->token);
 
-    if (node->type == EXPR) {
+    if (is_expr_node(node)) {
         putz(C_MGN"  POSTFIX:"C_RST" { ");
         printpostfix(node);
         putchar('}');
@@ -155,6 +192,8 @@ void print_node_basic(Node *node, int_vec *levels) {
 static void printpostfix_value(Node* node) {
     switch (node->type) {
         case EXPR:
+        case EXPR_BIN:
+        case EXPR_UN:
         case EX_LIT: {
             Token* tok = node->token;
             print_token_value(tok);
@@ -164,7 +203,7 @@ static void printpostfix_value(Node* node) {
 
 void printpostfix(Node* node) {
     // First is to deal with un expressions to make sure they print in a nicer way
-    if (node->type == EXPR && (node->token->type == OP_UN_PRE || node->token->type == OP_UN_POST) && node->children.arr) {
+    if (is_expr_node(node) && (node->token->type == OP_UN_PRE || node->token->type == OP_UN_POST) && node->children.arr) {
         Node* fchild = node->children.arr[0];
 
         bool is_postfix = node->token->type == OP_UN_POST;
@@ -176,6 +215,7 @@ void printpostfix(Node* node) {
         return;
     }
 
+    // Next is func/proc calls
     if (node->type == SUB_CALL && node->children.arr) {
         Node* func_name = node->children.arr[0];
         Node* args = node->children.arr[1];

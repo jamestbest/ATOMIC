@@ -134,6 +134,8 @@ typedef enum ATOM_CT__LEX_OPERATORS_ENUM {
 
     AMPERSAND, // address of
 
+    TYPE_CONVERSION,
+
     ASSIGNMENT,
 
     EQU, NEQ, LESS, MORE, LESSEQ, MOREEQ,
@@ -188,6 +190,8 @@ typedef struct Token {
     Position pos;
 } Token;
 
+extern const char* ATOM_CT__LEX_NAV;
+
 extern Arr ATOM_CT__LEX_OP_IDENTIFIERS;
 extern char* ATOM_CT__LEX_OP_IDENTIFIERS_RAW[];
 extern Arr ATOM_CT__LEX_KEYWORDS;
@@ -196,8 +200,8 @@ extern Arr ATOM_CT__LEX_TYPES;
 extern char* ATOM_CT__LEX_TYPES_RAW[];
 extern Arr ATOM_CT__LEX_TYPES_GENERAL;
 extern char* ATOM_CT__LEX_TYPES_GENERAL_RAW[];
-extern Arr ATOM_CT__LEX_CONS_IDENTIFIERS;
-extern char* ATOM_CT__LEX_CONS_IDENTIFIERS_RAW[];
+extern Arr ATOM_CT__LEX_LIT_BOOLS;
+extern char* ATOM_CT__LEX_LIT_BOOLS_RAW[];
 extern Arr ATOM_CT__LEX_OPERATORS;
 extern char* ATOM_CT__LEX_OPERATORS_RAW[];
 

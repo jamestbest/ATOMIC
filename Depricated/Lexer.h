@@ -15,10 +15,10 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#include "../SharedIncludes/Vector.h"
+#include "../Lexer/Lexerr.h"
 #include "../SharedIncludes/Buffer.h"
 #include "../SharedIncludes/Helper_File.h"
-#include "../Lexer/LexErrors.h"
+#include "../SharedIncludes/Vector.h"
 
 #include "../Lexer/Tokens.h"
 

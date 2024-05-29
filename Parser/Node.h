@@ -14,6 +14,7 @@
 
 typedef enum NodeType {
     NODE_INVALID,
+    NODE_MULTIPLE_STATEMENTS,
     TOKEN_WRAPPER,
 
     NODE_ROOT,
@@ -24,10 +25,19 @@ typedef enum NodeType {
     ST_WHILE,
     ST_TIMES,
     ST_FOR,
+    ST_FOR_SETUP,
+    ST_FOR_LOOP,
+    ST_FOR_COND,
 
+    ST_CONT,
+    ST_BRK,
+
+    ST_IF_TOP_LEVEL,
     ST_IF,
     ST_ELIF,
     ST_ELSE,
+
+    ST_RET,
 
     ST_VAR_DECL,
     ST_VAR_ASS,
@@ -35,7 +45,14 @@ typedef enum NodeType {
     SUB_CALL,
     SUB_CALL_ARGS,
 
+    ST_FUNC,
+    ST_PROC,
+    SUB_PARAMS,
+    SUB_PARAM,
+
     EXPR,
+    EXPR_BIN,
+    EXPR_UN,
 
     EX_LIT,
 } NodeType;
@@ -62,6 +79,8 @@ Node* create_node_basic(NodeType type, Token* token, bool has_children);
 Node* create_leaf_node(NodeType type, Token* token);
 Node* create_parent_node(NodeType type, Token* token);
 NodeRet construct_error_node(Token *token);
+
+void free_node(Node* node);
 
 void print_top_level_node(Node* node);
 

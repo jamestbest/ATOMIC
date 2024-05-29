@@ -54,6 +54,6 @@ bool is_alph_numeric(uint32_t a);
 bool is_whitespace(uint32_t a);
 bool is_newline(uint32_t a);
 
-void putz(char* string);
+void putz(const char* string);
 
 #endif //ATOMIC_HELPER_STRING_H

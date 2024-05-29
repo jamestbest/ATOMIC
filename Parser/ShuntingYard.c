@@ -4,9 +4,13 @@
 
 #include "ShuntingYard.h"
 
+static bool is_valid_index(ShuntData data, uint index);
+
 static Token* current(ShuntData data);
 static Token* peek(ShuntData data);
 static Token* consume(ShuntData data);
+
+static bool expect(ShuntData data, TokenType type);
 
 static STATE get_next_state(STATE current_state, Token *current_t);
 
@@ -15,6 +19,8 @@ static bool c_is_valid_expr_cont(Token *current_t, STATE current_state);
 static Node* form_operator_node(Token* op_token, Stack *output_s);
 
 static void update_data(ShuntData data, ShuntRet ret);
+
+static Node* parse_subroutine_call(ShuntData data);
 
 //[[DEBUG]]
 static void print_token_stack(Stack* operator_stack);
@@ -83,6 +89,8 @@ ASS get_ass(ATOM_CT__LEX_OPERATORS_ENUM operator, TokenType token_type) {
         case LXOR:
             return LEFT;
 
+        case TYPE_CONVERSION:
+            return RIGHT;
 
         case LNOT:
             return RIGHT;
@@ -124,6 +132,7 @@ ASS get_ass(ATOM_CT__LEX_OPERATORS_ENUM operator, TokenType token_type) {
         case DEREFERENCE:
             return RIGHT;
     }
+    assert(false);
 }
 
 int get_pres(ATOM_CT__LEX_OPERATORS_ENUM operator, TokenType token_type) {
@@ -147,6 +156,7 @@ int get_pres(ATOM_CT__LEX_OPERATORS_ENUM operator, TokenType token_type) {
         case AMPERSAND:
         case DEREFERENCE:
         case SWAP: // [[maybe]] !sure where to place swap
+        case TYPE_CONVERSION:
             return 1;
 
         case MULT:
@@ -205,6 +215,7 @@ int get_pres(ATOM_CT__LEX_OPERATORS_ENUM operator, TokenType token_type) {
         case ASSIGNMENT:
             return 15;
     }
+    assert(false);
 }
 
 int get_token_pres(Token* token) {
@@ -225,12 +236,11 @@ ShuntRet parse_subroutine_call_arg(ShuntData data) {
 Node* parse_subroutine_call_arguments(ShuntData data) {
     Node* argsNode = create_parent_node(SUB_CALL_ARGS, NULL);
 
-    Token* next;
-    if (next = peek(data), !next || next->type == PAREN_CLOSE) {
+    Token* c;
+    if (c = current(data), !c || c->type == PAREN_CLOSE) {
         return argsNode;
     }
 
-    Token* c;
     bool first_arg = true;
     do {
         if (first_arg) first_arg = false;
@@ -253,6 +263,12 @@ Node* parse_subroutine_call(ShuntData data) {
     consume(data); //eat the (
 
     Node* args = parse_subroutine_call_arguments(data);
+
+    if (!expect(data, PAREN_CLOSE)) {
+        assert(false);
+    }
+
+    consume(data); // eat the )
 
     vector_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
     vector_add(&funcNode->children, args);
@@ -298,6 +314,7 @@ ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
             case LIT_BOOL:
             case LIT_CHR:
             case LIT_NAV:
+            case TYPE:
                 stack_push(&output_s, create_leaf_node(EX_LIT, c));
                 break;
             case IDENTIFIER:
@@ -331,8 +348,10 @@ ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
                     stack_push(&output_s, op_node);
                 }
 
-                if (o1 = stack_peek(&operator_s), o1 && o1->type != PAREN_OPEN) { //[[maybe]] is the && correct here?
-                    assert(false); //[[todo]] mismatch
+                if (o1 = stack_peek(&operator_s), !o1 || o1->type != PAREN_OPEN) { //[[maybe]] is the && correct here?
+                    if (!ignoreTrailingParens)
+                        assert(false); //[[todo]] mismatch
+                    goto shunt_end_of_while; // we don't want to continue shunting, there is no more parsing to do
                 }
 
                 stack_pop(&operator_s);
@@ -343,6 +362,7 @@ ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
         consume(data);
     }
 
+shunt_end_of_while:
     if (verbose_expr_dbg) {
         print_token_stack(&operator_s);
         print_node_stack(&output_s);
@@ -379,7 +399,7 @@ Node* form_un_op_node(Token* op_token, Stack* output_s) {
         assert(false); //[[todo]] errors
     }
 
-    Node* op_node = create_parent_node(EXPR, op_token);
+    Node* op_node = create_parent_node(EXPR_UN, op_token);
 
     vector_add(&op_node->children, child);
 
@@ -394,7 +414,7 @@ Node* form_bin_op_node(Token* op_token, Stack* output_s) {
         assert(false); //[[todo]] add errors to shunting yard
     }
 
-    Node* op_node = create_parent_node(EXPR, op_token);
+    Node* op_node = create_parent_node(EXPR_BIN, op_token);
 
     vector_add(&op_node->children, l_expr);
     vector_add(&op_node->children, r_expr);
@@ -417,16 +437,25 @@ Node* form_operator_node(Token* op_token, Stack *output_s) {
         case OP_TRINARY:
             return form_tri_op_node(op_token, output_s);
         case OP_BIN_OR_UN:
-            assert(false); // should no exist anymore from OpFolder
+            assert(false); // should not exist anymore from OpFolder
     }
+    assert(false);
+}
+
+bool is_valid_index(ShuntData data, uint index) {
+    return index < data.tokens->pos;
 }
 
 Token* current(ShuntData data) {
+    if (!is_valid_index(data, *data.t_pos)) {
+        return NULL;
+    }
+
     return &data.tokens->arr[*data.t_pos];
 }
 
 Token* peek(ShuntData data) {
-    if ((*data.t_pos) + 1 >= data.tokens->pos) {
+    if (!is_valid_index(data, (*data.t_pos) + 1)) {
         return NULL;
     }
 
@@ -434,10 +463,18 @@ Token* peek(ShuntData data) {
 }
 
 Token* consume(ShuntData data) {
-    if ((*data.t_pos) >= data.tokens->pos) {
+    if (!is_valid_index(data, *data.t_pos)) {
         return NULL;
     }
     return &data.tokens->arr[(*data.t_pos)++];
+}
+
+bool expect(ShuntData data, TokenType type) {
+    Token* c = current(data);
+
+    if (!c) return false;
+
+    return c->type == type;
 }
 
 void update_data(ShuntData data, ShuntRet ret) {

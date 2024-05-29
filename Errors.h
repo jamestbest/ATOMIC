@@ -8,7 +8,11 @@
 #include "SharedIncludes/Colours.h"
 #include "Lexer/Tokens.h"
 
+#include <stdarg.h>
+
 void highlight_line_err(Position pos, const char* line);
+void highlight_line_start_and_error(Token* parent, Token* issue,
+                                    const Vector* lines);
 
 #define SUCCESS 0
 #define FAIL    1

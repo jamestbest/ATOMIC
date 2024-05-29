@@ -51,11 +51,16 @@ char* c_char;
 Token_vec base_tokens;
 FILE* c_file;
 Buffer line_buffer;
+Vector *llines;
 
 bool load_line(void) {
     update_line_count();
     c_char = line_buffer.data;
-    return get_line(c_file, &line_buffer);
+    bool success = get_line(c_file, &line_buffer);
+
+    if (success) vector_add(llines, buffer_steal(&line_buffer, BUFF_MIN));
+
+    return success;
 }
 
 //new plan for the lexer
@@ -65,6 +70,7 @@ uint lex(FILE* file, Token_vec* folded_tokens, Vector *lines) {
     line_num = 0;
     col_num = 1;
     c_char = NULL;
+    llines = lines;
 
     line_buffer = buffer_create(BUFF_MIN);
 
@@ -80,8 +86,6 @@ uint lex(FILE* file, Token_vec* folded_tokens, Vector *lines) {
         if (errcode != SUCCESS) {
             retCode = errcode;
         }
-
-        vector_add(lines, buffer_steal(&line_buffer, BUFF_MIN));
     }
 
     Token_vec_add(&base_tokens, create_simple_token(EOTS, col_num, col_num));
@@ -228,7 +232,9 @@ void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels
     Token* current_tok = &token_vec->arr[current_tok_pos];
 
     for (uint i = 0; i < lines->pos; i++) {
+        bool printable_token_on_line = false;
         while (current_tok->pos.start_line == i + 1) { //[[todo]] won't work with multiline base_tokens
+            printable_token_on_line = true;
             printf("%s", get_token_color(current_tok->type));
             print_token_value(current_tok);
             printf(C_RST);
@@ -236,7 +242,7 @@ void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels
             if (++current_tok_pos >= token_vec->pos) break;
             current_tok = &token_vec->arr[current_tok_pos];
         }
-        putchar('\n');
+        if (printable_token_on_line) putchar('\n');
     }
 }
 
@@ -316,6 +322,8 @@ int create_multiline_value(const char* starter, const char* delimiter, const Tok
             buffer_concat(&ml_comment_buff, c_char);
 
             //A new line needs to be loaded into the line_buffer
+            // this means we need to add the line to the line array first.
+            // HOWEVER the last line needs to be left as the folks (functions) above expect to add it themselves
             const bool ret = load_line();
 
             if (!ret) goto create_multiline_value_fail;
@@ -532,7 +540,8 @@ void lex_word(void) {
      *  - TYPE
      *  - OPERATOR e.g. and, or, xor, not
      *  - IDENTIFIER (VAR NAME, FUNCTION NAME)
-     *  - CONSTANT IDENTIFIERS (true, false)
+     *  - BOOL LIT (true, false)
+     *  - NAV LIT
      */
 
     PosCharp info;
@@ -557,9 +566,10 @@ void lex_word(void) {
         return;
     }
 
-    if (info = word_in_arr(c_char, ATOM_CT__LEX_CONS_IDENTIFIERS), info.arr_pos != -1) {
-        const uint64_t char_count =  strlen(ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos]);
-        add_token(create_token(LIT_BOOL, ATOM_CT__LEX_CONS_IDENTIFIERS.arr[info.arr_pos],
+    if (info = word_in_arr(c_char, ATOM_CT__LEX_LIT_BOOLS), info.arr_pos != -1) {
+        const uint64_t char_count =  strlen(ATOM_CT__LEX_LIT_BOOLS.arr[info.arr_pos]);
+        add_token(create_token(LIT_BOOL,
+                               ATOM_CT__LEX_LIT_BOOLS.arr[info.arr_pos],
                                (char_count + 1) * sizeof(char), col_num, col_num + char_count - 1));
         gourge(info.next_char - c_char);
         return;
@@ -587,8 +597,9 @@ void lex_word(void) {
                 token.type = OP_UN_PRE;
                 break;
             case AS:
-//                token.data
-
+                token.data.enum_pos = TYPE_CONVERSION;
+                token.type = OP_BIN;
+                break;
             default:
                 assert(false);
         }
@@ -598,6 +609,14 @@ void lex_word(void) {
 
         add_token(token);
         gourge(info.next_char - c_char);
+        return;
+    }
+
+    int offset;
+    if (offset = word_match_alphnumeric(c_char, ATOM_CT__LEX_NAV), offset != -1) {
+        int cols = strlen(ATOM_CT__LEX_NAV);
+        add_token(create_simple_token(LIT_NAV, col_num, col_num + cols));
+        gourge(cols);
         return;
     }
 
@@ -762,6 +781,8 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
             break;
         case OP_BIN:
         case OP_UN:
+        case OP_UN_PRE:
+        case OP_UN_POST:
         case OP_TRINARY:
         case OP_BIN_OR_UN:
         case ARITH_ASSIGN:

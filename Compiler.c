@@ -56,13 +56,10 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     }
 
     //parse
-    Node_vec nodes = Node_vec_create(BUFF_MIN);
+    NodeRet parseRet = parse(&tokens, &lines);
 
-    uint parseRet = parse(&tokens, &nodes, &lines);
-
-    if (parseRet != SUCCESS) {
-        free_nodes(&nodes);
-        free_tokens(&tokens); //[[todo]] do the nodes take over control & responsibility of the base_tokens
+    if (parseRet.retCode != SUCCESS) {
+        free_tokens(&tokens); //[[todo]] do the nodes take over control & responsibility of the base_tokens -- I think not
 
         return (CompileRet){PARSERR, NULL};
     }

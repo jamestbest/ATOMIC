@@ -9,13 +9,13 @@
 #include "Node.h"
 #include "ShuntingYard.h"
 
-#include "ParsErrors.h"
+#include "Parserr.h"
 
 typedef struct TypeInformation {
     ATOM_CT__LEX_TYPES_GENERAL_ENUM type;
     uint16_t pointer_level;
 } TypeInformation;
 
-uint parse(const Token_vec *token_vec, const Node_vec *nodes, const Vector *lines);
+NodeRet parse(const Token_vec* token_vec, const Vector* lines);
 
 #endif //PARSER_H

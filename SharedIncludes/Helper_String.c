@@ -222,6 +222,6 @@ bool is_newline(const uint32_t a) {
     return a == '\n';
 }
 
-void putz(char* string) {
+void putz(const char* string) {
     fputs(string, stdout);
 }

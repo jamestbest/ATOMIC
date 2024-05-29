@@ -2,8 +2,8 @@
 // Created by james on 19/12/23.
 //
 
-#ifndef ATOMIC_LEXERRORS_H
-#define ATOMIC_LEXERRORS_H
+#ifndef ATOMIC_LEXERR_H
+#define ATOMIC_LEXERR_H
 
 #include "../Errors.h"
 
@@ -51,4 +51,4 @@ typedef enum Lexwarns {
 #define ATOM_CT__LEXERR_COMMENT_MULTILINE_NO_END \
             "Multiline comment started but does not end, reaches EOF. Place *¬ to end the comment\n"
 
-#endif //ATOMIC_LEXERRORS_H
+#endif // ATOMIC_LEXERR_H

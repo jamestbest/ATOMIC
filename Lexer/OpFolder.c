@@ -17,12 +17,15 @@ static Token_vec* btokens;
 static Token_vec* ftokens;
 static int t_pos;
 
+static bool is_valid_index(int index);
+
 static Token* justify(void);
 static Token* peek(void);
 static Token* consume(void);
 static Token* current(void);
 
 static bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator);
+static bool is_skippable(TokenType type);
 
 static void fold_operator(Token* operator);
 
@@ -30,6 +33,7 @@ static TokenWrapper fold_mult(Token *operator);
 static TokenWrapper fold_incdec(Token* operator);
 static TokenWrapper fold_plusminus(Token* operator);
 static TokenWrapper fold_pointer(Token* operator);
+static TokenWrapper fold_ampersand(Token* token);
 
 uint fold(Token_vec* base_tokens, Token_vec* folded_tokens) {
     t_pos = 0;
@@ -43,7 +47,7 @@ uint fold(Token_vec* base_tokens, Token_vec* folded_tokens) {
             // [[maybe]] just pass the current token and then edit it within the function
             //  and have it added here. Would add obsfuc.
             fold_operator(c);
-        } else {
+        } else if (!is_skippable(c->type)) {
             Token_vec_add(ftokens, *c);
         }
 
@@ -53,10 +57,20 @@ uint fold(Token_vec* base_tokens, Token_vec* folded_tokens) {
     return SUCCESS;
 }
 
+bool is_whitespace_type(TokenType type) {
+    return type == WS_S || type == WS_T;
+}
+
+bool is_skippable(TokenType type) {
+    return is_whitespace_type(type) || type == COMMENT;
+}
+
 bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator) {
     switch (operator) {
         case MULT:
         case DEREFERENCE:
+        case BAND:
+        case AMPERSAND:
         case INC:
         case DEC:
         case PLUS:
@@ -88,6 +102,10 @@ void fold_operator(Token* operator) {
         case SHR:
         case MORE:
             toAdd = fold_pointer(operator);
+            break;
+        case BAND:
+        case AMPERSAND:
+            toAdd = fold_ampersand(operator);
             break;
         default:
             assert(false);
@@ -192,6 +210,8 @@ TokenWrapper fold_plusminus(Token* operator) {
 
     Token* prev = justify();
 
+    bool is_bin = prev && (is_terminal(prev) || prev->type == CURLY_CLOSE) && next && (is_terminal(next) || next->type == CURLY_OPEN);
+    // [[todo]] is is_bin better?
     bool is_un = !prev || (is_operator(prev) && prev->type != OP_UN_POST) || prev->type == EQU;
 
     operator->type = is_un ? OP_UN_PRE : OP_BIN;
@@ -234,11 +254,35 @@ TokenWrapper fold_pointer(Token* operator) {
     return (TokenWrapper){SUCCESS, *current()};
 }
 
+TokenWrapper fold_ampersand(Token* operator) {
+    /* This could be the bitwise and binary operator e.g. a & b
+     *  or this could be the address unary operator e.g. &a
+     */
+
+    Token* prev = justify();
+    Token* next = peek();
+
+    bool is_bin = prev && (is_terminal(prev) || prev->type == CURLY_CLOSE) && next && (is_terminal(next) || next->type == CURLY_OPEN);
+
+//    bool is_un = !prev || (is_operator(prev) && prev->type != OP_UN_POST) || prev->type == EQU;
+
+    if (!is_bin) {
+        operator->type == OP_UN_PRE;
+        operator->data.enum_pos = AMPERSAND;
+    } else {
+        operator->type == OP_BIN;
+        operator->data.enum_pos = BAND;
+    }
+
+    return (TokenWrapper){SUCCESS, *operator};
+}
+
 bool is_valid_index(int index) {
     return index >= 0 && index < btokens->pos;
 }
 
-Token* confungry(int offset, bool consume, bool ignore_whitespace) {
+Token* confungry(int offset, bool consume, bool ignore_whitespace,
+                 bool ignore_newline) {
     if (offset == 0) {
         return &btokens->arr[t_pos];
     }
@@ -288,7 +332,7 @@ Token* confungry(int offset, bool consume, bool ignore_whitespace) {
 }
 
 Token* peer(int amount) {
-    return confungry(amount, false, true);
+    return confungry(amount, false, true, false);
 }
 
 Token* peek(void) {
@@ -300,7 +344,7 @@ Token* justify(void) {
 }
 
 Token* consume(void) {
-    return confungry(1, true, true);
+    return confungry(1, true, true, false);
 }
 
 Token* current(void) {

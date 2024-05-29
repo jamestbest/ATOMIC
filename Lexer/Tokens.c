@@ -4,6 +4,8 @@
 
 #include "Tokens.h"
 
+const char* ATOM_CT__LEX_NAV = "nav";
+
 char* ATOM_CT__LEX_KEYWORDS_RAW[] = {
         "for", "to", "do",
         "while",
@@ -39,7 +41,6 @@ char* ATOM_CT__LEX_TYPES_RAW[] = {
     "q4", "q8", "q16",
     "str", "chr",
     "bool",
-    "nav",
 };
 
 Arr ATOM_CT__LEX_TYPES = {
@@ -63,14 +64,19 @@ Arr ATOM_CT__LEX_TYPES_GENERAL = {
         sizeof(ATOM_CT__LEX_TYPES_GENERAL_RAW) / sizeof(char*)
 };
 
-char* ATOM_CT__LEX_CONS_IDENTIFIERS_RAW[] = {
+char* ATOM_CT__LEX_LIT_BOOLS_RAW[] = {
         "true",
         "false"
 };
 
-Arr ATOM_CT__LEX_CONS_IDENTIFIERS = {
-        ATOM_CT__LEX_CONS_IDENTIFIERS_RAW,
-        sizeof(ATOM_CT__LEX_CONS_IDENTIFIERS_RAW) / sizeof(char*)
+Arr ATOM_CT__LEX_LIT_BOOLS = {ATOM_CT__LEX_LIT_BOOLS_RAW,
+        sizeof(ATOM_CT__LEX_LIT_BOOLS_RAW) / sizeof(char*)
+};
+
+struct test {
+    ATOM_CT__LEX_OPERATORS_ENUM e_val;
+    const char* op_str;
+
 };
 
 char* ATOM_CT__LEX_OPERATORS_RAW[] = {
@@ -97,6 +103,8 @@ char* ATOM_CT__LEX_OPERATORS_RAW[] = {
     "?",
 
     "&",
+
+    "as",
 
     "=",
 
@@ -356,7 +364,7 @@ void print_token_value(Token* token) {
         case OP_TRINARY:
         case OP_BIN_OR_UN:
         case ARITH_ASSIGN:
-            printf("%s", ATOM_CT__LEX_OPERATORS_RAW[token->data.enum_pos]);
+            printf("%s", ATOM_CT__LEX_OPERATORS.arr[token->data.enum_pos]);
             break;
 
         case ASSIGN:
@@ -513,6 +521,7 @@ bool is_terminal(Token* tok) {
         case LIT_INT:
         case LIT_FLOAT:
         case LIT_NAV:
+        case TYPE:
             return true;
 
         default:
