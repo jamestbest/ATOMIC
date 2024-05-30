@@ -70,6 +70,14 @@ char* buffer_steal(Buffer* buffer, uint new_size) {
     return ret;
 }
 
+char* buffer_copy(Buffer* buffer) {
+    char* newLine = malloc(buffer->size * sizeof(char));
+
+    memcpy(newLine, buffer->data, buffer->pos);
+
+    return newLine;
+}
+
 void buffer_clear(Buffer* buffer) {
     buffer->pos = 0;
 }

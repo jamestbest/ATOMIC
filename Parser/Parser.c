@@ -79,7 +79,7 @@ NodeRet parse(const Token_vec* token_vec, const Vector* lines) {
 
     file_global_node = create_parent_node(NODE_ROOT, NULL);
 
-    while (c = current(), c != NULL && c->type != EOTS) {
+    while (c = current(), c != NULL) {
         const NodeRet ret = parse_statement();
 
         if (ret.retCode != SUCCESS) {
@@ -105,6 +105,25 @@ void skip_all_skippables(void) {
     }
 }
 
+bool has_valid_statement_starter(void) {
+    Token* c = current();
+
+    if (!c) return false;
+
+    switch (c->type) {
+        case IDENTIFIER:
+        case KEYWORD:
+        case CURLY_OPEN:
+        case LIT_INT: // todo temp
+        case OP_UN_PRE:
+        case PAREN_OPEN:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 NodeRet parse_statement(void) {
     //[[todo]] could be a single statement or a block ('{')
     // this will help with having if (expr) statement
@@ -113,6 +132,10 @@ NodeRet parse_statement(void) {
     Token* t;
 
     skip_all_skippables();
+
+    if (!has_valid_statement_starter()) {
+        return (NodeRet){NULL, END};
+    }
 
     t = current();
 
@@ -147,10 +170,6 @@ NodeRet parse_statement(void) {
     }
 
     skip_all_skippables();
-
-    if (ret.retCode != SUCCESS) {
-        assert(false);
-    }
 
     return ret;
 }
@@ -270,8 +289,13 @@ NodeRet parse_identifier_statement(void) {
         case OP_UN_POST:
             return parse_un_op_statement();
         default:
+            consume(); // eat the error identifier
             return parserr(PARSERR_UNEXPECTED_TOKEN_IDENTIFIER_STATEMENT, identifier, next);
     }
+}
+
+uint extract_error_code(uint errCode) {
+    return errCode == SUCCESS || errCode == END ? SUCCESS : errCode;
 }
 
 NodeRet parse_statement_block(void) {
@@ -296,20 +320,29 @@ NodeRet parse_statement_block(void) {
         return (NodeRet){parent_node, SUCCESS};
     }
 
-    while (child = parse_statement(), child.retCode == SUCCESS) {
+    child = parse_statement();
+    while (child.retCode == SUCCESS) {
         vector_add(&parent_node->children, child.node);
 
         if (current() && current()->type == CURLY_CLOSE)
             break;
+
+        child = parse_statement();
     }
 
-    if (current()->type != CURLY_CLOSE) {
+    if (!current() || current()->type != CURLY_CLOSE) {
         return parserr(PARSERR_BLOCK_MISSING_BRACE, parent_node->token, current());
     }
 
     consume(); // eat the CURLY_CLOSE
 
-    return (NodeRet){parent_node, child.retCode};
+    uint retErr = extract_error_code(child.retCode);
+
+    if (retErr != SUCCESS) {
+        printf("WTF");
+    }
+
+    return (NodeRet){parent_node, retErr};
 }
 
 NodeRet parse_keyword(void) {
@@ -967,6 +1000,8 @@ bool verify_token_for_print(Token* token) {
 }
 
 NodeRet parserr(const ParsErrors errorCode, Token* parent_token, Token* issue_token, ...) {
+    putz(C_RED"PARSERROR"C_RST": ");
+
     switch (errorCode) {
         case PARSERR_BLOCK_MISSING_BRACE:
             puts(ATOM_CT__PARSERR_BLOCK_MISSING_BRACE);

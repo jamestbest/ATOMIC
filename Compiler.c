@@ -55,6 +55,8 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
         return (CompileRet) {LEXERR, NULL};
     }
 
+    fflush(stdout);
+
     //parse
     NodeRet parseRet = parse(&tokens, &lines);
 

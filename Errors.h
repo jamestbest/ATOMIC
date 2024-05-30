@@ -14,8 +14,9 @@ void highlight_line_err(Position pos, const char* line);
 void highlight_line_start_and_error(Token* parent, Token* issue,
                                     const Vector* lines);
 
+#define FAIL    -1
 #define SUCCESS 0
-#define FAIL    1
+#define END     1   // found end, either end of parsing
 #define ARGERR  2
 #define ENOMEM  12
 
@@ -36,7 +37,7 @@ void highlight_line_start_and_error(Token* parent, Token* issue,
 //Errros
 #define PError(ErrorMsg, ...) printf(ERROR_BASE ErrorMsg , ##__VA_ARGS__)
 
-#define ATOM_CT__CLI_ERR_ARG_NONE       "The ATOMIC compiler requires at least one argument (file to compile)\n"
+#define ATOM_CT__CLI_ERR_ARG_NONE       "The ATOMIC compiler requires at least one argument (file to compile). Got: %d\n"
 #define ATOM_CT__CLI_ERR_ARG_NULL       "Error with argv, null pointer in argument %d\n"
 
 #define ATOM_CT__CLI_ERR_OPT_ARG        "Option \"%s\" require at least 1 argument\n"

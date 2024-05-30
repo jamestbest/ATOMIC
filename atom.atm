@@ -64,6 +64,8 @@ func main(argc: i4, argv: > >chr): i4 {
 
     my_char: chr = 'c'
 
+    a 12
+
     ret a - a;
 }
 

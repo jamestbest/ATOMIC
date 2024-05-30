@@ -70,7 +70,7 @@ void parse_compile_ret(CompileRet ret) {
 
 bool verify_args(int argc, char** argv) {
     if (argc <= 1) {
-        PError(ATOM_CT__CLI_ERR_ARG_NONE);
+        PError(ATOM_CT__CLI_ERR_ARG_NONE, argc);
         return false;
     }
 

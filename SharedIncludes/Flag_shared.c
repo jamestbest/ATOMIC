@@ -7,11 +7,10 @@
 llint flag_to_int(const char* flag) {
     uint flag_len = len(flag);
 
-    uint count = 0;
     llint out = 0;
 
     for (uint i = 0; i < flag_len; i++) {
-        if (count >= MAX_FLAG_SYMBOLS) {
+        if (i >= MAX_FLAG_SYMBOLS) {
             break;
         }
 
@@ -24,8 +23,6 @@ llint flag_to_int(const char* flag) {
          * essentially just packing upto 8 characters and then interpreting as an int
          */
         out |= ((llint)(flag[i] & ~(1 << 5))) << (i << 3);
-
-        count++;
     }
 
     return out;

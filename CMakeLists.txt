@@ -1,10 +1,12 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.16.3)
 project(ATOMIC C)
 
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 99)
 
-add_compile_options(-pedantic-errors -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self
-        -Wno-unused-parameter -ggdb3 -pedantic-errors -Wswitch-enum -fsanitize=undefined -Wno-unused-function -lubsan)
+#add_link_options(-fsanitize=undefined)
+
+add_compile_options(-Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self
+        -Wno-unused-parameter -ggdb3 -pedantic-errors -Wswitch-enum -Wno-unused-function -Wno-pedantic)
 
 add_executable(ATOMICLI
         Compiler.c

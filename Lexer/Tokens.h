@@ -62,7 +62,6 @@ typedef enum TokenType {
     WS_S,                   //White space single/tab
     WS_T,
     NEWLINE,
-    EOTS,                   //End of token stream
 } TokenType;
 
 typedef enum ATOM_CT__LEX_KEYWORD_ENUM {

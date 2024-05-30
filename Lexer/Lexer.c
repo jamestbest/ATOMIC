@@ -58,7 +58,7 @@ bool load_line(void) {
     c_char = line_buffer.data;
     bool success = get_line(c_file, &line_buffer);
 
-    if (success) vector_add(llines, buffer_steal(&line_buffer, BUFF_MIN));
+    if (success) vector_add(llines, buffer_copy(&line_buffer));
 
     return success;
 }
@@ -87,8 +87,6 @@ uint lex(FILE* file, Token_vec* folded_tokens, Vector *lines) {
             retCode = errcode;
         }
     }
-
-    Token_vec_add(&base_tokens, create_simple_token(EOTS, col_num, col_num));
 
     fold(&base_tokens, folded_tokens);
 
@@ -808,7 +806,6 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
         case WS_S:
         case WS_T:
         case NEWLINE:
-        case EOTS:
         case TOKEN_INVALID:
             break;
     }

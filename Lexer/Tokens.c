@@ -178,7 +178,6 @@ const char* get_token_color(TokenType type) {
         case COMMENT:
         case DELIMITER:
             return C_WHT;
-        case EOTS:
         case TOKEN_INVALID:
         default:
             return C_RED;
@@ -278,9 +277,6 @@ const char* cons_token_type_colored(TokenType type) {
             break;
         case DELIMITER:
             title = "DELIMITER";
-            break;
-        case EOTS:
-            title = "END OF TOKEN STREAM";
             break;
         case TOKEN_INVALID:
             title = "INVALID";
@@ -390,9 +386,6 @@ void print_token_value(Token* token) {
             break;
         case NEWLINE:
             printf("\\n");
-            break;
-        case EOTS:
-            printf("\\EOTS\\");
             break;
         case TOKEN_INVALID:
             printf("\\INVALID\\");
