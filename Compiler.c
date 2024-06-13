@@ -4,23 +4,38 @@
 
 #include "Compiler.h"
 
-VEC_ADD(Token, Token)
-VEC_ADD(Node, Node)
-VEC_ADD(char*, charp)
+#include "Lexer/OpFolder.h"
+#include "SharedIncludes/Helper_File.h"
+
+#include "../hadron/hadron.h"
+#include "SharedIncludes/Array.h"
+
+/*  TODO
+ *      UPDATE ALL VECTORs TO VECs
+ *      CHECK WHAT THE ISSUE WITH hadron is
+ *      HF
+ */
+
+ARRAY_ADD(Token, token)
+ARRAY_ADD(Node, node)
+
+static void free_tokens(Array* tokens);
 
 //[[todo]] better to use something like a block allocator(? is that the name) (ARENA ALLOC?)
 // where a large part of memory is allocated and then the data for the base_tokens
 // and nodes are stored there instead of having then spread out with
 // rounding of allocation. They would also all have the same life time.
 
-CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, charp_vec files) {
+//[[TODO]] IF ANYTHING FROM AN ARRAY IS REMOVED ALL EXTERNAL POINTERS WILL BE OFFSET INCORRECTLY
+
+CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, Vector files) {
 
     assert(ATOM_CT__LEX_KEYWORD_ENUM_COUNT == ATOM_CT__LEX_KEYWORDS.elem_count);
     assert(strcmp(ATOM_CT__LEX_KEYWORDS_RAW[IF], "if") == 0);
 
     //for each file
     for (uint i = 0; i < files.pos; i++) {
-        const char* filename = charp_vec_get(&files, i);
+        const char* filename = vec_get(&files, i);
 
         FILE* fp = open_file(cwd, filename, "r");
 
@@ -37,65 +52,99 @@ CompileRet compile(const char* entry_point, const char* out_format, const char* 
 }
 
 CompileRet compile_file(const char* entry_point, const char* out_format, FILE* fp) {
-    Token_vec tokens = Token_vec_create(BUFF_SIZE);
+    Array base_tokens = arr_create(sizeof (Token));
+    Array folded_tokens;
     // [[maybe]] this is an array of structs, could become a struct of arrays:
     //  Is it more likely that the data of consecutive structs is accessed
     //  Or that the (data/type) of a structure is access more? - Printing will do this
     //  For now it will stay as AOS
 
-    Vector lines = vector_create(BUFF_MIN);
+    Vector lines = vec_create(BUFF_MIN);
 
-    uint lexRet = lex(fp, &tokens, &lines);
-
-    print_tokens_with_flag_check(&tokens, &lines);
+    uint lexRet = lex(fp, &base_tokens, &lines);
+    print_tokens_with_flag_check(&base_tokens, &lines, "\n\nBASE TOKENS");
+    fflush(stdout);
 
     if (lexRet != SUCCESS) {
-        free_tokens(&tokens);
+        free_tokens(&base_tokens);
 
         return (CompileRet) {LEXERR, NULL};
     }
 
+    folded_tokens = arr_construct(sizeof (Token), base_tokens.pos);
+    uint foldRet = fold(&base_tokens, &folded_tokens);
+    // this is here for debug purposes, it should be after error checking in later versions
+    print_tokens_with_flag_check(&folded_tokens, &lines, "\n\nFOLDED TOKENS");
     fflush(stdout);
 
+    // we no longer need the base tokens BUT the token data inside is now under the control of the folded tokens
+    // we shouldn't call free_tokens unless something went wrong, otherwise we will double free the data
+    arr_destroy(&base_tokens);
+
+    if (foldRet != SUCCESS) {
+        free_tokens(&folded_tokens);
+
+        return (CompileRet) {LEXERR, NULL};
+    }
+
     //parse
-    NodeRet parseRet = parse(&tokens, &lines);
+    NodeRet parseRet = parse(&folded_tokens, &lines);
 
     if (parseRet.retCode != SUCCESS) {
-        free_tokens(&tokens); //[[todo]] do the nodes take over control & responsibility of the base_tokens -- I think not
+        free_tokens(&folded_tokens); //[[todo]] do the nodes take over control & responsibility of the base_tokens -- I think not
 
         return (CompileRet){PARSERR, NULL};
     }
 
+    print_ast_with_flag_check(parseRet.node);
+
     //...
-    vector_disseminate_destruction(&lines);
-    free_tokens(&tokens);
+    vec_disseminate_destruction(&lines);
+    free_tokens(&folded_tokens);
+
+    free_node_rec(parseRet.node);
+
+    HADRON_EXPAND = flag_get(ATOM_CT__FLAG_HADRON_EXPAND);
+
+    hadron_verify_two();
 
     return (CompileRet) {SUCCESS, NULL};
 }
 
-void free_tokens(Token_vec* tokens) {
+void free_tokens(Array* tokens) {
     for (uint i = 0; i < tokens->pos; i++) {
-        if (type_needs_free(tokens->arr[i].type)) {
-            free(tokens->arr[i].data.ptr);
+        const Token t = token_arr_get(tokens, i);
+        if (type_needs_free(t.type)) {
+            free(t.data.ptr);
         }
     }
-    Token_vec_destroy(tokens);
+    arr_destroy(tokens);
 }
 
-void free_nodes(Node_vec* nodes) {
-    Node_vec_destroy(nodes);
+void print_ast_with_flag_check(Node* tl_node) {
+    if (flag_get(ATOM_CT__FLAG_AST_OUT)) {
+        print_top_level_node(tl_node);
+    }
 }
 
-void print_tokens_with_flag_check(Token_vec* tokens, Vector* lines) {
-    if (flag_get(ATOM_CT__FLAG_VLTOK_OUT)) {
+void print_tokens_with_flag_check(Array* tokens, Vector* lines, const char* print_header) {
+    const bool vltok = flag_get(ATOM_CT__FLAG_VLTOK_OUT);
+    const bool vtok = flag_get(ATOM_CT__FLAG_VTOK_OUT);
+    const bool tok = flag_get(ATOM_CT__FLAG_TOK_OUT);
+
+    if (vltok || vtok || tok) {
+        puts(print_header);
+    }
+
+    if (vltok) {
         print_verbose_tokens(tokens, lines, true);
         return;
     }
-    if (flag_get(ATOM_CT__FLAG_VTOK_OUT)) {
+    if (vtok) {
         print_verbose_tokens(tokens, lines, false);
         return;
     }
-    if (flag_get(ATOM_CT__FLAG_TOK_OUT)) {
+    if (tok) {
         print_tokens(tokens, false, false); //[[todo]] have white space and comments included in flag set
         return;
     }

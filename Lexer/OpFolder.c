@@ -4,6 +4,8 @@
 
 #include "OpFolder.h"
 
+#include "Lexer.h"
+
 /* This is a lexing stage that will use the base_tokens around the operators to try and
  * find the correct version of an operator e.g. * could be multiply or dereference
  */
@@ -13,8 +15,8 @@ typedef struct TokenWrapper {
     Token token;
 } TokenWrapper;
 
-static Token_vec* btokens;
-static Token_vec* ftokens;
+static Array* btokens;
+static Array* ftokens;
 static int t_pos;
 
 static bool is_valid_index(int index);
@@ -35,7 +37,7 @@ static TokenWrapper fold_plusminus(Token* operator);
 static TokenWrapper fold_pointer(Token* operator);
 static TokenWrapper fold_ampersand(Token* token);
 
-uint fold(Token_vec* base_tokens, Token_vec* folded_tokens) {
+uint fold(Array* base_tokens, Array* folded_tokens) {
     t_pos = 0;
     btokens = base_tokens;
     ftokens = folded_tokens;
@@ -43,12 +45,12 @@ uint fold(Token_vec* base_tokens, Token_vec* folded_tokens) {
     while (t_pos < base_tokens->pos) {
         Token* c = current();
 
-        if (is_operator(c) && is_foldable(c->data.enum_pos)) {
+        if (is_arith_operator(c) && is_foldable(c->data.enum_pos)) {
             // [[maybe]] just pass the current token and then edit it within the function
             //  and have it added here. Would add obsfuc.
             fold_operator(c);
         } else if (!is_skippable(c->type)) {
-            Token_vec_add(ftokens, *c);
+            token_arr_add(ftokens, *c);
         }
 
         consume();
@@ -113,7 +115,7 @@ void fold_operator(Token* operator) {
 
     //[[todo]] check err code of toAdd
 
-    Token_vec_add(ftokens, toAdd.token);
+    token_arr_add(ftokens, toAdd.token);
 }
 
 bool is_lit(TokenType type) {
@@ -131,6 +133,9 @@ bool is_lit(TokenType type) {
     }
 }
 
+// todo need to unify the is_un / is_bin checks & find a better way that these
+//  specific checks for ']' and ')' etc
+
 TokenWrapper fold_mult(Token* operator) {
     /*
      *      Could be a dereference e.g.   *p
@@ -143,9 +148,11 @@ TokenWrapper fold_mult(Token* operator) {
      *      binary mult only found AFTER_LIT or AFTER_PARENT_CLOSE   --don't need to verify that it is between LITs
      */
 
-    Token* past = justify();
+    const Token* prev = justify();
 
-    if (past && (is_lit(past->type) || past->type == PAREN_CLOSE)) {
+    const bool is_bin = prev && (is_lit(prev->type) || prev->type == PAREN_CLOSE || prev->type == BRACKET_CLOSE || prev->type == OP_UN_POST);
+
+    if (is_bin) {
         operator->type = OP_BIN;
         operator->data.enum_pos = MULT;
     }
@@ -210,11 +217,11 @@ TokenWrapper fold_plusminus(Token* operator) {
 
     Token* prev = justify();
 
-    bool is_bin = prev && (is_terminal(prev) || prev->type == CURLY_CLOSE) && next && (is_terminal(next) || next->type == CURLY_OPEN);
-    // [[todo]] is is_bin better?
-    bool is_un = !prev || (is_operator(prev) && prev->type != OP_UN_POST) || prev->type == EQU;
+    // bool is_bin = prev && (is_terminal(prev) || prev->type == CURLY_CLOSE) && next && (is_terminal(next) || next->type == CURLY_OPEN);
+    // bool is_un = !prev || (is_arith_operator(prev) && prev->type != OP_UN_POST);
+    const bool is_bin = prev && (is_lit(prev->type) || prev->type == PAREN_CLOSE || prev->type == BRACKET_CLOSE || prev->type == OP_UN_POST);
 
-    operator->type = is_un ? OP_UN_PRE : OP_BIN;
+    operator->type = is_bin ? OP_BIN : OP_UN_PRE;
 
     return (TokenWrapper){SUCCESS, *operator};
 }
@@ -240,11 +247,16 @@ TokenWrapper fold_pointer(Token* operator) {
         }
 
         if (ptr_level > 0xFFFF) {
-            //[[todo]] error out of range
+            return (TokenWrapper){lexerr(LEXERR_PTR_OFFSET_OUT_OF_RANGE, operator->pos, ptr_level)};
         }
 
         //[[todo]] need an assertion that the next token is a type token, and to error if not
         Token* type = consume();
+
+        if (type->type != TYPE) {
+            return (TokenWrapper){lexerr(LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET, type->pos, type)};
+        }
+
         type->data.type.ptr_offset = ptr_level;
 
         return (TokenWrapper){SUCCESS, *type};
@@ -264,7 +276,7 @@ TokenWrapper fold_ampersand(Token* operator) {
 
     bool is_bin = prev && (is_terminal(prev) || prev->type == CURLY_CLOSE) && next && (is_terminal(next) || next->type == CURLY_OPEN);
 
-//    bool is_un = !prev || (is_operator(prev) && prev->type != OP_UN_POST) || prev->type == EQU;
+//    bool is_un = !prev || (is_arith_operator(prev) && prev->type != OP_UN_POST) || prev->type == EQU;
 
     if (!is_bin) {
         operator->type == OP_UN_PRE;
@@ -281,10 +293,11 @@ bool is_valid_index(int index) {
     return index >= 0 && index < btokens->pos;
 }
 
+// todo: remove confungry like in parser
 Token* confungry(int offset, bool consume, bool ignore_whitespace,
                  bool ignore_newline) {
     if (offset == 0) {
-        return &btokens->arr[t_pos];
+        return arr_get(btokens, t_pos);
     }
 
     if (!ignore_whitespace) {
@@ -297,10 +310,10 @@ Token* confungry(int offset, bool consume, bool ignore_whitespace,
 
         if (consume) {
             t_pos += offset;
-            return &btokens->arr[t_pos];
+            return arr_get(btokens, t_pos);
         }
 
-        return &btokens->arr[t_pos + offset];
+        return arr_get(btokens, t_pos + offset);
     }
 
     int valid_skipped = 0;
@@ -316,7 +329,8 @@ Token* confungry(int offset, bool consume, bool ignore_whitespace,
             return NULL;
         }
 
-        if (is_whitespace_tkn(btokens->arr[t_pos + current_offset].type)) {
+        const Token t = token_arr_get(btokens, t_pos + current_offset);
+        if (is_whitespace_tkn(t.type)) {
             continue;
         }
 
@@ -325,10 +339,10 @@ Token* confungry(int offset, bool consume, bool ignore_whitespace,
 
     if (consume) {
         t_pos += current_offset;
-        return &btokens->arr[t_pos];
+        return arr_get(btokens, t_pos);
     }
 
-    return &btokens->arr[t_pos + current_offset];
+    return arr_get(btokens, t_pos + current_offset);
 }
 
 Token* peer(int amount) {
@@ -348,5 +362,5 @@ Token* consume(void) {
 }
 
 Token* current(void) {
-    return &btokens->arr[t_pos];
+    return arr_get(btokens, t_pos);
 }

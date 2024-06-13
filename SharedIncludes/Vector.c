@@ -4,10 +4,8 @@
 
 #include "Vector.h"
 
-VEC_ADD(int, int)
-
-bool vector_grow(Vector* vector, size_t new_size) {
-    if (new_size < vector->size) return false;
+bool vec_grow(Vector* vector, size_t new_size) {
+    if (new_size < vector->capacity) return false;
 
     void** array = realloc(vector->arr, new_size * sizeof(void*));
 
@@ -18,11 +16,15 @@ bool vector_grow(Vector* vector, size_t new_size) {
     return true;
 }
 
-bool vector_add(Vector* vector, void* data) {
+static bool vec_at_capacity(const Vector* arr) {
+    return arr->pos == arr->capacity;
+}
+
+bool vec_add(Vector* vector, void* data) {
     if (vector == NULL) return false;
 
-    if (vector->pos == vector->size) {
-        if (!vector_grow(vector, vector->size << 1)) return false; //double for now, shouldn't be in future
+    if (vec_at_capacity(vector)) {
+        if (!vec_grow(vector, vector->capacity << 1)) return false; //double for now, shouldn't be in future
     }
 
     vector->arr[vector->pos++] = data;
@@ -30,16 +32,16 @@ bool vector_add(Vector* vector, void* data) {
     return true;
 }
 
-VecRet vector_get(Vector* vector, size_t index) {
+void* vec_get(Vector* vector, size_t index) {
     //if you store NULL in the vector then you cannot do error checking, should this include an error code as well?
-    if (vector == NULL) return (VecRet) {NULL, 1};
+    if (vector == NULL) return NULL;
 
-    if (index > vector->pos) return (VecRet) {NULL, 1};
+    if (index >= vector->pos) return NULL;
 
-    return (VecRet) {vector->arr[index], 0};
+    return vector->arr[index];
 }
 
-Vector vector_create(size_t size) {
+Vector vec_create(size_t size) {
     void* arr = malloc(size * sizeof(void*));
 
     if (!arr) return (Vector) {NULL, -1, -1};
@@ -47,26 +49,26 @@ Vector vector_create(size_t size) {
     return (Vector){arr, size, 0};
 }
 
-void vector_destroy(Vector* vector) {
+void vec_destroy(Vector* vector) {
     if (vector == NULL) return;
 
     free(vector->arr);
 
-    *vector = (Vector) {NULL, -1, -1};
+    *vector = (Vector){NULL, -1, -1};
 }
 
-void vector_disseminate_destruction(Vector* vector) {
+void vec_disseminate_destruction(Vector* vector) {
     if (vector == NULL) return;
     for (uint i = 0; i < vector->pos; i++) {
         free(vector->arr[i]);
     }
-    vector_destroy(vector);
+    vec_destroy(vector);
 }
 
-VecRet vector_data_steal(Vector* vector) {
+VecRet vec_data_steal(Vector* vector) {
     if (vector == NULL) return (VecRet) {NULL, 1};
 
-    Vector new_vec = vector_create(vector->size);
+    Vector new_vec = vec_create(vector->capacity);
 
     if (new_vec.arr == NULL) return (VecRet) {NULL, 1};
 
@@ -75,30 +77,30 @@ VecRet vector_data_steal(Vector* vector) {
     return (VecRet) {vector->arr, 0};
 }
 
-VecRet vector_data_copy(Vector* vector) {
-    Vector vec2 = vector_create(vector->size);
+VecRet vec_data_copy(Vector* vector) {
+    Vector vec2 = vec_create(vector->capacity);
 
     if (vec2.arr == NULL) return (VecRet) {NULL, 1};
 
-    memcpy(vec2.arr, vector->arr, vector->size * sizeof(void*));
+    memcpy(vec2.arr, vector->arr, vector->capacity * sizeof(void*));
 
     return (VecRet) {vec2.arr, 0};
 }
 
-Vector vector_copy(Vector* vector) {
-    VecRet ret = vector_data_copy(vector);
+Vector vec_copy(Vector* vector) {
+    VecRet ret = vec_data_copy(vector);
 
     if (ret.retCode != 0) {
         return (Vector){NULL, -1, -1};
     }
 
-    return (Vector){ret.data, vector->size, vector->pos};
+    return (Vector){ret.data, vector->capacity, vector->pos};
 }
 
-VecRet vector_pop(Vector* vector) {
-    if (vector == NULL) return (VecRet) {NULL, 1};
+void* vec_pop(Vector* vector) {
+    if (vector == NULL) return NULL;
 
-    if (vector->pos == 0) return (VecRet) {NULL, 1};
+    if (vector->pos == 0) return NULL;
 
-    return (VecRet) {vector->arr[--(vector->pos)], 0};
+    return vector->arr[--(vector->pos)];
 }

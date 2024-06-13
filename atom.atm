@@ -1,6 +1,18 @@
+¬Test
+
+*a[b] = 12
+
+*a = 12
+
+a[12];
+
+my_arr_ptr: >>i4 = &my_arr
+
 for i to 10 do i++ {
-¬¬        my_arr[i] = i * 2
+    my_arr[i] = i * 2
+    print("Hello world!")
 }
+
 
 ¬ This is a test script for the atom lang
 
@@ -9,21 +21,19 @@ for i to 10 do i++ {
     gaze upon its ability to traverse multiple lines
 *¬
 
-my_arr_ptr: >>i4 = &my_arr
-
 i ¬*THis is an obtrusive comment*¬ : i4 = a++ + b * -c;
 
 main(12 + 2, 18 * 9, 8, a++ + b * -c)
 
-a : bool = not b;
+a: bool = not b;
 b: n8 = 2 + funca(1 + 3)
-c: i4 = (2 + -12.3524336645244) * 16 / 3 * *a - -b + funca(12 + 2);
+c: i4 = (2 + -12.3524336645244) * 16 / 3 * *a - -b + funca(12 + 2, 13);
 d: bool = a++
 ret 1 - a * b
 
 a = 123;
 
-func main(argc: i4, argv: > >chr): i4 {
+func main(argc: i4, argv: >>chr): i4 {
     a: i4 = 0
 
     bar: i4 = 0b00110
@@ -32,6 +42,8 @@ func main(argc: i4, argv: > >chr): i4 {
         print("Hello world!"); a++;
     }
 
+    times 20 {print("Hello world!")} ¬ todo parser does not yet allow single statement parsing
+
     b: i4 = 0b110
 
 ¬¬    c, d, e, f: i4 = 0xFFFC, 0o7723, 0d9876, 0t2112
@@ -39,6 +51,8 @@ func main(argc: i4, argv: > >chr): i4 {
     g: i8 = 0x7762
 
     r: r4 = 12.1123
+
+    pq: bool = not true;
 
     test: bool = true and false
 
@@ -57,18 +71,30 @@ func main(argc: i4, argv: > >chr): i4 {
     }
 
     for i to 10 do i++ {
-¬¬        my_arr[i] = i * 2
+        my_arr[i] = i * 2
     }
 
-¬¬    *(my_arr + 9) = *my_arr * 2
+    *(my_arr + 9) = *my_arr * 2
 
     my_char: chr = 'c'
 
-    a 12
+    mychar: chr
+
+    a : >i4
 
     ret a - a;
 }
 
-¬*
-    comment
+a = b = 14
+
+b: i4 = a[12] + b[b] + c[a[12] + d[b[c * 2]] * function(a, b[2])]
+
+*a = 12
+b[a] = 14
+*a[12] = b
+*a[b] = 12
+
+-funca(a[b++ * ++c] - -1, -b++)
+
+¬*    comment
 part of a comment*¬

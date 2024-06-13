@@ -5,9 +5,6 @@
 #ifndef ATOMIC_FLAG_PRE_H
 #define ATOMIC_FLAG_PRE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "../SharedIncludes/Helper_Math.h"
 #include "../SharedIncludes/Helper_File.h"

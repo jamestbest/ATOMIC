@@ -4,7 +4,7 @@
 
 #include "Parser.h"
 
-const Token_vec* ptokens;
+const Array* ptokens;
 const Vector* plines;
 int t_pos;
 
@@ -29,10 +29,13 @@ static NodeRet parse_proc_statement(void);
 static NodeRet parse_entry_statement(void);
 static NodeRet parse_continue_statement(void);
 static NodeRet parse_break_statement(void);
+static NodeRet parse_unary_statement(void);
 
 static NodeRet parse_subroutine_call(void);
 
 static NodeRet parse_un_op_statement(void);
+
+static NodeRet parse_expression_statement(void);
 
 static bool is_valid_index(int index);
 
@@ -48,28 +51,29 @@ static bool expect_op(TokenType type, ATOM_CT__LEX_OPERATORS_ENUM op);
 static bool expect_keyword(ATOM_CT__LEX_KEYWORD_ENUM keyword);
 static bool expect(TokenType type);
 
-static NodeRet parserr(ParsErrors errorCode, Token* parent_token, Token* issue_token, ...);
+// [[todo]] I've just realised that the Node* created are leaked if there are error! --yes I should have realised this earlier
 
-// [[todo]] I've just realised that the Node* created are leaked if there are error!
+void add_statement_to_children(Node* parentNode, Node* statement) {
+    if (statement->type != NODE_MULTIPLE_STATEMENTS) {
+        vec_add(&parentNode->children, statement);
+        return;
+    }
+
+    for (uint i = 0; i < statement->children.pos; ++i) {
+        Node* stmt = statement->children.arr[i];
+        vec_add(&file_global_node->children, stmt);
+    }
+    free_node_head(statement);
+}
 
 void add_statement(Node* statement) {
     if (statement == NULL) return;
 
-//    assert(statement->type); //[[todo]] temp dev
-
-    if (statement->type == NODE_MULTIPLE_STATEMENTS) {
-        for (uint i = 0; i < statement->children.pos; ++i) {
-            Node* stmt = statement->children.arr[i];
-            vector_add(&file_global_node->children, stmt);
-        }
-        free_node(statement);
-    } else {
-        vector_add(&file_global_node->children, statement);
-    }
+    add_statement_to_children(file_global_node, statement);
 }
 
-NodeRet parse(const Token_vec* token_vec, const Vector* lines) {
-    ptokens = token_vec;
+NodeRet parse(const Array* tokens, const Vector* lines) {
+    ptokens = tokens;
     plines = lines;
     t_pos = 0;
 
@@ -82,15 +86,16 @@ NodeRet parse(const Token_vec* token_vec, const Vector* lines) {
     while (c = current(), c != NULL) {
         const NodeRet ret = parse_statement();
 
+        if (ret.retCode == END) {
+            break;
+        }
+
         if (ret.retCode != SUCCESS) {
             ret_code = ret.retCode;
         }
 
         add_statement(ret.node);
     }
-
-    puts("END NODE");
-    print_top_level_node(file_global_node);
 
     return (NodeRet){file_global_node, ret_code};
 }
@@ -114,9 +119,7 @@ bool has_valid_statement_starter(void) {
         case IDENTIFIER:
         case KEYWORD:
         case CURLY_OPEN:
-        case LIT_INT: // todo temp
         case OP_UN_PRE:
-        case PAREN_OPEN:
             return true;
 
         default:
@@ -140,15 +143,9 @@ NodeRet parse_statement(void) {
     t = current();
 
     switch (t->type) {
-        case LIT_INT:
         case OP_UN_PRE:
-        case PAREN_OPEN: {
-            //[[todo]] this is temp!!
-            ShuntRet shuntData = shunt(ptokens, t_pos, false);
-            t_pos = shuntData.tok_end_pos;
-            ret = (NodeRet){shuntData.expressionNode, shuntData.err_code};
+            ret = parse_unary_statement();
             break;
-        }
 
         case IDENTIFIER:
             ret = parse_identifier_statement();
@@ -164,6 +161,7 @@ NodeRet parse_statement(void) {
 
         case TOKEN_INVALID:
         default:
+            parserr(PARSERR_UNEXPECTED_TOKEN_STATEMENT_START, NULL, t);
             consume();
             ret = construct_error_node(t);
             break;
@@ -198,30 +196,19 @@ NodeRet parse_var_assignment(void) {
      *  a += 12
      *  THIS WILL BE HANDLED SEPARATELY b::i4 = 12 + a  --implicit cast
      */
-    Token* identifier = consume();
+    Token* identifier = current();
 
-    Node* assignNode = create_parent_node(ST_VAR_ASS, identifier);
+    ShuntRet ret = shunt(ptokens, t_pos, false);
 
-    if (!expect(ASSIGN) && !expect(ARITH_ASSIGN)) {
+    if (ret.err_code != SUCCESS) {
         assert(false);
     }
+    t_pos = ret.tok_end_pos;
 
-    Token* operator = consume(); // eat `=` or `+=`
+    Node* var_assign = create_parent_node(ST_VAR_ASS, identifier);
+    vec_add(&var_assign->children, ret.expressionNode);
 
-    ShuntRet assign_value = shunt(ptokens, t_pos, false);
-
-    if (assign_value.err_code != SUCCESS) {
-        assert(false);
-    }
-    t_pos = assign_value.tok_end_pos;
-
-    Node* assign_expr = assign_value.expressionNode;
-
-    vector_add(&assignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-    vector_add(&assignNode->children, create_leaf_node(TOKEN_WRAPPER, operator));
-    vector_add(&assignNode->children, assign_expr);
-
-    return (NodeRet){assignNode, SUCCESS};
+    return (NodeRet){var_assign, SUCCESS};
 }
 
 NodeRet parse_var_declaration(void) {
@@ -240,10 +227,10 @@ NodeRet parse_var_declaration(void) {
 
     Node* declNode = create_parent_node(ST_VAR_DECL, type_op);
 
-    vector_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-    vector_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, type));
+    vec_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
+    vec_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, type));
 
-    if (!expect(ASSIGN)) {
+    if (!expect(OP_ASSIGN)) {
         return (NodeRet){declNode, SUCCESS};
     }
 
@@ -251,8 +238,8 @@ NodeRet parse_var_declaration(void) {
     Node* ret = create_parent_node(NODE_MULTIPLE_STATEMENTS, NULL);
     Node* assignNode = create_parent_node(ST_VAR_ASS, assign);
 
-    vector_add(&ret->children, declNode);
-    vector_add(&ret->children, assignNode);
+    vec_add(&ret->children, declNode);
+    vec_add(&ret->children, assignNode);
 
     ShuntRet exprInfo = shunt(ptokens, t_pos, false);
 
@@ -260,7 +247,11 @@ NodeRet parse_var_declaration(void) {
         assert(false);
     t_pos = exprInfo.tok_end_pos;
 
-    vector_add(&assignNode->children, exprInfo.expressionNode);
+    Node* assignEqNode = create_parent_node(EXPR_BIN, assign);
+    vec_add(&assignEqNode->children, create_leaf_node(EX_LIT, identifier));
+    vec_add(&assignEqNode->children, exprInfo.expressionNode);
+
+    vec_add(&assignNode->children, assignEqNode);
 
     return (NodeRet){ret, SUCCESS};
 }
@@ -283,15 +274,26 @@ NodeRet parse_identifier_statement(void) {
             return parse_var_declaration();
         case PAREN_OPEN:
             return parse_subroutine_call();
-        case ASSIGN:
-        case ARITH_ASSIGN:
+        case OP_ASSIGN:
+        case OP_ARITH_ASSIGN:
             return parse_var_assignment();
         case OP_UN_POST:
             return parse_un_op_statement();
+        case BRACKET_OPEN:
+            return parse_expression_statement();
         default:
             consume(); // eat the error identifier
             return parserr(PARSERR_UNEXPECTED_TOKEN_IDENTIFIER_STATEMENT, identifier, next);
     }
+}
+
+/*  This could be:
+ *      ++var
+ *      *(ptr)
+ *      *(ptr) = <>
+ */
+NodeRet parse_unary_statement(void) {
+    return parse_expression_statement();
 }
 
 uint extract_error_code(uint errCode) {
@@ -322,7 +324,7 @@ NodeRet parse_statement_block(void) {
 
     child = parse_statement();
     while (child.retCode == SUCCESS) {
-        vector_add(&parent_node->children, child.node);
+        add_statement_to_children(parent_node, child.node);
 
         if (current() && current()->type == CURLY_CLOSE)
             break;
@@ -337,10 +339,6 @@ NodeRet parse_statement_block(void) {
     consume(); // eat the CURLY_CLOSE
 
     uint retErr = extract_error_code(child.retCode);
-
-    if (retErr != SUCCESS) {
-        printf("WTF");
-    }
 
     return (NodeRet){parent_node, retErr};
 }
@@ -388,7 +386,7 @@ NodeRet parse_variable_decl_statement(void) {
      * var: type                --DECLARATION
      * var: type = expr         --DECLARATION + ASSIGNMENT
      * var := expr              --DECLARATION + ASSIGNMENT
-     * var :: type = expr       --IMPLICIT CAST + DECL + ASSIGN
+     * var :: type = expr       --IMPLICIT CAST + DECL + OP_ASSIGN
      */
 
 
@@ -405,7 +403,7 @@ NodeRet parse_variable_statement(void) {
      * var: type                --DECLARATION
      * var: type = expr         --DECLARATION + ASSIGNMENT
      * var := expr              --DECLARATION + ASSIGNMENT
-     * var :: type = expr       --IMPLICIT CAST + DECL + ASSIGN
+     * var :: type = expr       --IMPLICIT CAST + DECL + OP_ASSIGN
      * var = expr               --ASSIGNMENT
      *
      * [[todo]] implicit cast&decl&assign's syntax means that it does not
@@ -448,8 +446,8 @@ NodeRet parse_param(void) {
 
     Node* paramNode = create_parent_node(SUB_PARAM, identifier);
 
-    vector_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-    vector_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, type));
+    vec_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
+    vec_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, type));
 
     return (NodeRet){paramNode, SUCCESS};
 }
@@ -470,7 +468,7 @@ NodeRet parse_params(void) {
             assert(false);
         }
 
-        vector_add(&params->children, param.node);
+        vec_add(&params->children, param.node);
 
         if (!expect(COMMA))
             break;
@@ -528,13 +526,13 @@ NodeRet parse_sub_statement(bool isFunc) {
     NodeRet body = parse_statement_block();
 
     if (body.retCode != SUCCESS) {
-        assert(false);
+        parserr(PARSERR_SUB_STATEMENT_ERROR_IN_BODY, keyword, current());
     }
 
-    vector_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
-    vector_add(&funcNode->children, params.node);
-    if (isFunc) vector_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, type));
-    vector_add(&funcNode->children, body.node);
+    vec_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
+    vec_add(&funcNode->children, params.node);
+    if (isFunc) vec_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, type));
+    vec_add(&funcNode->children, body.node);
 
     return (NodeRet){funcNode, SUCCESS};
 }
@@ -595,7 +593,7 @@ NodeRet parse_ret_statement(void) {
     }
 
     t_pos = exprData.tok_end_pos;
-    vector_add(&retNode->children, exprData.expressionNode);
+    vec_add(&retNode->children, exprData.expressionNode);
 
     return (NodeRet){retNode, SUCCESS};
 }
@@ -615,7 +613,7 @@ NodeRet parse_for_setup(void) {
     //[[todo]] do
 
     switch (c->type) {
-        case ASSIGN: {
+        case OP_ASSIGN: {
             consume(); // eat the `=`
 
             ShuntRet expr = shunt(ptokens, t_pos, false);
@@ -626,8 +624,8 @@ NodeRet parse_for_setup(void) {
             t_pos = expr.tok_end_pos;
 
             Node* assignNode = create_parent_node(ST_VAR_ASS, identifier);
-            vector_add(&assignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-            vector_add(&assignNode->children, expr.expressionNode);
+            vec_add(&assignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
+            vec_add(&assignNode->children, expr.expressionNode);
 
             return (NodeRet){assignNode, SUCCESS};
         }
@@ -641,17 +639,17 @@ NodeRet parse_for_setup(void) {
             Token* type = consume();
 
             Node* varDeclNode = create_parent_node(ST_VAR_DECL, identifier);
-            vector_add(&varDeclNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-            vector_add(&varDeclNode->children, create_leaf_node(TOKEN_WRAPPER, type));
+            vec_add(&varDeclNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
+            vec_add(&varDeclNode->children, create_leaf_node(TOKEN_WRAPPER, type));
 
-            if (!expect(ASSIGN)) {
+            if (!expect(OP_ASSIGN)) {
                 // in this case it's just a:type, and so we will assume it is set to 0
                 // [[todo]] but where do we assume this??, I'm going to say later, just so I don't have to generate tokens
                 return (NodeRet){varDeclNode, SUCCESS};
             }
 
             Node* ret = create_parent_node(NODE_MULTIPLE_STATEMENTS, NULL);
-            vector_add(&ret->children, varDeclNode);
+            vec_add(&ret->children, varDeclNode);
 
             ShuntRet expr = shunt(ptokens, t_pos, false);
 
@@ -661,10 +659,10 @@ NodeRet parse_for_setup(void) {
             t_pos = expr.tok_end_pos;
 
             Node* varAssignNode = create_parent_node(ST_VAR_ASS, identifier);
-            vector_add(&varAssignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-            vector_add(&varAssignNode->children, expr.expressionNode);
+            vec_add(&varAssignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
+            vec_add(&varAssignNode->children, expr.expressionNode);
 
-            vector_add(&ret->children, varAssignNode);
+            vec_add(&ret->children, varAssignNode);
 
             return (NodeRet){ret, SUCCESS};
         }
@@ -676,7 +674,7 @@ NodeRet parse_for_setup(void) {
 
 NodeRet parse_for_cond(void) {
     Token* next = peek();
-    if (next && next->type == ASSIGN) {
+    if (next && next->type == OP_ASSIGN) {
         if (!expect(IDENTIFIER)) {
             assert(false);
         }
@@ -694,8 +692,8 @@ NodeRet parse_for_cond(void) {
         t_pos = expr.tok_end_pos;
 
         Node* assignNode = create_parent_node(ST_VAR_ASS, identifier);
-        vector_add(&assignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-        vector_add(&assignNode->children, expr.expressionNode);
+        vec_add(&assignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
+        vec_add(&assignNode->children, expr.expressionNode);
 
         return (NodeRet){assignNode, SUCCESS};
     }
@@ -766,10 +764,10 @@ NodeRet parse_for_statement(void) {
 
     Node* forNode = create_parent_node(ST_FOR, keyword);
 
-    vector_add(&forNode->children, setup.node);
-    vector_add(&forNode->children, cond.node);
-    if (hasDo) vector_add(&forNode->children, change.node);
-    vector_add(&forNode->children, body.node);
+    vec_add(&forNode->children, setup.node);
+    vec_add(&forNode->children, cond.node);
+    if (hasDo) vec_add(&forNode->children, change.node);
+    vec_add(&forNode->children, body.node);
 
     return (NodeRet){forNode, SUCCESS};
 }
@@ -801,8 +799,8 @@ NodeRet parse_while_statement(void) {
 
     Node* whileNode = create_parent_node(ST_WHILE, keyword);
 
-    vector_add(&whileNode->children, expr.expressionNode);
-    vector_add(&whileNode->children, body.node);
+    vec_add(&whileNode->children, expr.expressionNode);
+    vec_add(&whileNode->children, body.node);
 
     return (NodeRet){whileNode, SUCCESS};
 }
@@ -835,8 +833,8 @@ NodeRet parse_foreach_statement(void) {
 
     Node* foreachNode = create_parent_node(ST_FOREACH, keyword);
 
-    vector_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, element));
-    vector_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, array));
+    vec_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, element));
+    vec_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, array));
 
     if (expect_keyword(WITH)) {
         consume(); // eat `with`
@@ -847,7 +845,7 @@ NodeRet parse_foreach_statement(void) {
 
         Token* index = consume();
 
-        vector_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, index));
+        vec_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, index));
     }
 
     if (!expect(CURLY_OPEN)) {
@@ -860,7 +858,7 @@ NodeRet parse_foreach_statement(void) {
         assert(false);
     }
 
-    vector_add(&foreachNode->children, body.node);
+    vec_add(&foreachNode->children, body.node);
 
     return (NodeRet){foreachNode, SUCCESS};
 }
@@ -881,6 +879,7 @@ NodeRet parse_times_statement(void) {
 
     t_pos = expr.tok_end_pos;
 
+    // todo: this does not allow for single statements following if/for/etc
     if (!expect(CURLY_OPEN)) {
         assert(false);
     }
@@ -893,8 +892,8 @@ NodeRet parse_times_statement(void) {
 
     Node* timesNode = create_parent_node(ST_TIMES, keyword);
 
-    vector_add(&timesNode->children, expr.expressionNode);
-    vector_add(&timesNode->children, body.node);
+    vec_add(&timesNode->children, expr.expressionNode);
+    vec_add(&timesNode->children, body.node);
 
     return (NodeRet){timesNode, SUCCESS};
 }
@@ -917,20 +916,20 @@ NodeRet parse_ifelif_statement(bool isIf) {
     t_pos = shuntData.tok_end_pos;
 
     Node* conditionNode = shuntData.expressionNode;
-    vector_add(&ifNode->children, conditionNode);
+    vec_add(&ifNode->children, conditionNode);
 
     Token* c = current();
 
     if (c->type != CURLY_OPEN)
         assert(false);
 
-    NodeRet statement = parse_statement();
+    NodeRet statement = parse_statement_block();
 
     if (statement.retCode != SUCCESS)
         assert(false);
 
     Node* statementBlockNode = statement.node;
-    vector_add(&ifNode->children, statementBlockNode);
+    vec_add(&ifNode->children, statementBlockNode);
 
     return (NodeRet){ifNode, SUCCESS};
 }
@@ -943,13 +942,13 @@ NodeRet parse_else_statement(void) {
     if (!expect(CURLY_OPEN))
         assert(false);
 
-    NodeRet statement = parse_statement();
+    NodeRet statement = parse_statement_block();
 
     if (statement.retCode != SUCCESS)
         assert(false);
 
     Node* statementBlockNode = statement.node;
-    vector_add(&elseNode->children, statementBlockNode);
+    vec_add(&elseNode->children, statementBlockNode);
 
     return (NodeRet){elseNode, SUCCESS};
 }
@@ -970,7 +969,7 @@ NodeRet parse_if_statement(void) {
     if (ifNode.retCode != SUCCESS)
         assert(false);
 
-    vector_add(&node->children, ifNode.node);
+    vec_add(&node->children, ifNode.node);
 
     Token* c;
     while (c = current(), c->type == KEYWORD && c->data.enum_pos == ELIF) {
@@ -979,7 +978,7 @@ NodeRet parse_if_statement(void) {
         if (elifNode.retCode != SUCCESS)
             assert(false);
 
-        vector_add(&node->children, elifNode.node);
+        vec_add(&node->children, elifNode.node);
     }
 
     c = current();
@@ -989,39 +988,25 @@ NodeRet parse_if_statement(void) {
         if (elseNode.retCode != SUCCESS)
             assert(false);
 
-        vector_add(&node->children, elseNode.node);
+        vec_add(&node->children, elseNode.node);
     }
 
     return (NodeRet){node, SUCCESS};
 }
 
-bool verify_token_for_print(Token* token) {
-    return token && token->pos.start_line < plines->pos && token->pos.start_line == token->pos.end_line;
-}
+NodeRet parse_expression_statement(void) {
+    ShuntRet expr = shunt(ptokens, t_pos, false);
 
-NodeRet parserr(const ParsErrors errorCode, Token* parent_token, Token* issue_token, ...) {
-    putz(C_RED"PARSERROR"C_RST": ");
-
-    switch (errorCode) {
-        case PARSERR_BLOCK_MISSING_BRACE:
-            puts(ATOM_CT__PARSERR_BLOCK_MISSING_BRACE);
-            break;
-        case PARSERR_SUB_CALL_PARSE_ERROR:
-            puts(ATOM_CT__PARSERR_SUB_CALL_PARSE_ERROR);
-            break;
-        case PARSERR_SUB_CALL_EXPECTED_GOT_EXPR:
-            puts(ATOM_CT__PARSERR_SUB_CALL_EXPECTED_GOT_EXPR);
-            break;
-        case PARSERR_UNEXPECTED_TOKEN_IDENTIFIER_STATEMENT:
-            puts(ATOM_CT__PARSERR_UNEXPECTED_TOKEN_IDENTIFIER_STATEMENT);
-            break;
-        default:
-            assert(false);
+    if (expr.err_code != SUCCESS) {
+        assert(false);
     }
+    t_pos = expr.tok_end_pos;
 
-    highlight_line_start_and_error(parent_token, issue_token, plines);
+    Node* exprStatement = create_parent_node(ST_EXPR, NULL);
 
-    return (NodeRet){NULL, errorCode};
+    vec_add(&exprStatement->children, expr.expressionNode);
+
+    return (NodeRet){exprStatement, SUCCESS};
 }
 
 NodeRet parse_un_op_statement(void) {
@@ -1062,7 +1047,7 @@ Token* peer(int amount) {
         return NULL;
     }
 
-    return &ptokens->arr[t_pos + amount];
+    return arr_get(ptokens, t_pos + amount);
 }
 
 Token* peek(void) {
@@ -1070,7 +1055,7 @@ Token* peek(void) {
         return NULL;
     }
 
-    return &ptokens->arr[t_pos + 1];
+    return arr_get(ptokens, t_pos + 1);
 }
 
 Token* justify(void) {
@@ -1078,7 +1063,7 @@ Token* justify(void) {
         return NULL;
     }
 
-    return &ptokens->arr[t_pos - 1];
+    return arr_get(ptokens, t_pos - 1);
 }
 
 Token* consume(void) {
@@ -1086,7 +1071,7 @@ Token* consume(void) {
         return NULL;
     }
 
-    return &ptokens->arr[t_pos++];
+    return arr_get(ptokens, t_pos++);
 }
 
 Token* current(void) {
@@ -1094,7 +1079,7 @@ Token* current(void) {
         return NULL;
     }
 
-    return &ptokens->arr[t_pos];
+    return arr_get(ptokens, t_pos);
 }
 
 bool expect_op(TokenType type, ATOM_CT__LEX_OPERATORS_ENUM op) {

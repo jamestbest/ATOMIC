@@ -5,10 +5,8 @@
 #ifndef ATOMIC_QUEUE_H
 #define ATOMIC_QUEUE_H
 
-#include <stdint.h>
-#include <malloc.h>
-#include <stdbool.h>
-#include <string.h>
+#include "../Commons.h"
+
 
 #define MIN_QUEUE_SIZE 10
 

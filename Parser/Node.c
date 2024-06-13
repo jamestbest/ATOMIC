@@ -4,8 +4,10 @@
 
 #include "Node.h"
 
-static void print_node_basic(Node* node, int_vec* levels);
+static void print_node_basic(Node* node, Array* levels);
 static void printpostfix(Node* node);
+
+ARRAY_ADD(NodeLevelPrintType, nodeLevelEnum)
 
 static char* nodeTypeToString(NodeType type) {
     switch (type) {
@@ -71,6 +73,8 @@ static char* nodeTypeToString(NodeType type) {
             return "PARAMETERS";
         case SUB_PARAM:
             return "PARAMETER";
+        case ST_EXPR:
+            return "EXPR STATEMENT";
     }
     assert(false);
 }
@@ -99,7 +103,7 @@ Node* create_node_basic(NodeType type, Token* token, bool has_children) {
     node->token = token;
 
     if (has_children) {
-        node->children = vector_create(MIN_CHILDREN);
+        node->children = vec_create(MIN_CHILDREN);
     }
     else {
         node->children = (Vector){NULL, -1, -1};
@@ -121,33 +125,51 @@ NodeRet construct_error_node(Token *token) {
     return (NodeRet){node, FAIL};
 }
 
-void free_node(Node* node) {
+void free_node_rec(Node* node) {
+    if (node->children.arr == NULL) {
+        goto free_just_node;
+    }
+
+    for (uint i = 0; i < node->children.pos; ++i) {
+        Node* child = node->children.arr[i];
+
+        free_node_rec(child);
+    }
+
+free_just_node:
+    free_node_head(node);
+}
+
+void free_node_head(Node* node) {
+    if (node->children.arr != NULL)
+        free(node->children.arr);
+
     free(node);
 }
 
 void print_top_level_node(Node* tl_node) {
-    int_vec levels = int_vec_create(10);
+    Array levels = arr_construct(sizeof (NodeLevelPrintType), 10);
 
     print_node_basic(tl_node, &levels);
 }
 
-void print_node_levels(int_vec* levels) {
+void print_node_levels(Array* levels) {
     for (uint i = 0; i < levels->pos; ++i) {
-        putz(nodeLevelToString(levels->arr[i]));
+        putz(nodeLevelToString(nodeLevelEnum_arr_get(levels, i)));
     }
 }
 
-void print_node_end_child(Node* child, int_vec* levels) {
+void print_node_end_child(Node* child, Array* levels) {
     print_node_levels(levels);
 
     putz(nodeLevelToString(LINK_END));
 
-    int_vec_add(levels, BLANK);
+    nodeLevelEnum_arr_add(levels, BLANK);
     print_node_basic(child, levels);
-    int_vec_pop(levels);
+    nodeLevelEnum_arr_pop(levels);
 }
 
-void print_node_multi_child(Node* parent, int_vec* levels) {
+void print_node_multi_child(Node* parent, Array* levels) {
     for (uint i = 0; i < parent->children.pos - 1; ++i) {
         Node* child = parent->children.arr[i];
 
@@ -155,9 +177,9 @@ void print_node_multi_child(Node* parent, int_vec* levels) {
 
         putz(nodeLevelToString(LINK));
 
-        int_vec_add(levels, DRAW_DOWN);
+        nodeLevelEnum_arr_add(levels, DRAW_DOWN);
         print_node_basic(child, levels);
-        int_vec_pop(levels);
+        nodeLevelEnum_arr_pop(levels);
     }
 
     print_node_end_child(parent->children.arr[parent->children.pos - 1], levels);
@@ -167,8 +189,67 @@ static bool is_expr_node(Node* node) {
     return node->type == EXPR || node->type == EXPR_UN || node->type == EXPR_BIN;
 }
 
-void print_node_basic(Node *node, int_vec *levels) {
+Position include_position(Position c_pos, Position n_pos) {
+    bool nStartLineBefore = n_pos.start_line < c_pos.start_line;
+    bool nEndLineAfter = n_pos.end_line > c_pos.end_line;
+    bool sameLine = n_pos.start_line == c_pos.start_line && n_pos.end_line == c_pos.end_line;
+
+    bool nStartColBefore = n_pos.start_col < c_pos.start_col;
+    bool nEndColAfter = n_pos.end_col > c_pos.end_col;
+
+    if (sameLine) {
+        if (nStartColBefore) c_pos.start_col = n_pos.start_col;
+        if (nEndColAfter) c_pos.end_col = n_pos.end_col;
+        return c_pos;
+    }
+
+    if (nStartLineBefore) {
+        c_pos.start_line = n_pos.start_line;
+        c_pos.start_col = n_pos.start_col;
+    }
+
+    if (nEndLineAfter) {
+        c_pos.end_line = n_pos.end_line;
+        c_pos.end_col = n_pos.end_col;
+    }
+
+    return c_pos;
+}
+
+Position get_node_wrapping_position(Node* node) {
+    if (node == NULL) return (Position){-1,-1,-1,-1};
+
+    if (node->children.arr == NULL || node->children.pos == 0) {
+        if (node->token == NULL) return (Position){-1,-1,-1,-1};
+        return node->token->pos;
+    }
+
+    Position tmp = (Position){-1, -1, -1, -1};
+
+    if (node->token) tmp = node->token->pos;
+
+    for (uint i = 0; i < node->children.pos; ++i) {
+        Node* child = node->children.arr[i];
+
+        if (tmp.start_line == -1) tmp = get_node_wrapping_position(child);
+        else tmp = include_position(tmp, get_node_wrapping_position(child));
+    }
+
+    return tmp;
+}
+
+void print_node_basic(Node *node, Array *levels) {
+    if (node == NULL) {
+        puts("[[DEV]] NULL NODE IN PRINTING");
+        return;
+    }
     putz(nodeTypeToString(node->type));
+
+    if (node->children.arr && node->children.pos != 0) {
+        putz("; "C_YLW);
+        print_position(get_node_wrapping_position(node));
+        putz(C_RST);
+    }
 
     if (node->token && node->type != TOKEN_WRAPPER) {
         putz("; TOK: ");
@@ -179,7 +260,7 @@ void print_node_basic(Node *node, int_vec *levels) {
     if (is_expr_node(node)) {
         putz(C_MGN"  POSTFIX:"C_RST" { ");
         printpostfix(node);
-        putchar('}');
+        putz(" }");
     }
 
     putchar('\n');
@@ -190,15 +271,7 @@ void print_node_basic(Node *node, int_vec *levels) {
 }
 
 static void printpostfix_value(Node* node) {
-    switch (node->type) {
-        case EXPR:
-        case EXPR_BIN:
-        case EXPR_UN:
-        case EX_LIT: {
-            Token* tok = node->token;
-            print_token_value(tok);
-        }
-    }
+    print_token_value(node->token);
 }
 
 void printpostfix(Node* node) {
@@ -207,11 +280,13 @@ void printpostfix(Node* node) {
         Node* fchild = node->children.arr[0];
 
         bool is_postfix = node->token->type == OP_UN_POST;
+        bool is_single_child = fchild->children.arr == NULL;
 
         if (!is_postfix) printpostfix_value(node);
-        printpostfix_value(fchild);
+        if (!is_single_child) putchar('('); // these are for when an unary is on another node that is more than a literal
+        printpostfix(fchild);
+        if (!is_single_child) putchar(')');
         if (is_postfix) printpostfix_value(node);
-        putchar(' ');
         return;
     }
 
@@ -221,14 +296,26 @@ void printpostfix(Node* node) {
         Node* args = node->children.arr[1];
 
         print_token_value(func_name->token);
-        putz("( ");
+        putchar('(');
         for (uint i = 0; i < args->children.pos; ++i) {
             Node* arg = args->children.arr[i];
             printpostfix(arg);
 
             if (i != args->children.pos - 1) putz(", ");
         }
-        putz(") ");
+        putchar(')');
+        return;
+    }
+
+    if (node->type == EXPR_BIN && node->token->type == BRACKET_OPEN) {
+        Node* identifier = node->children.arr[0];
+        Node* expr = node->children.arr[1];
+
+        print_token_value(identifier->token);
+        putchar('[');
+        printpostfix(expr);
+        putchar(']');
+
         return;
     }
 
@@ -237,9 +324,10 @@ void printpostfix(Node* node) {
             Node *child = node->children.arr[i];
 
             printpostfix(child);
+
+            putchar(' ');
         }
     }
 
     printpostfix_value(node);
-    putchar(' ');
 }

@@ -21,16 +21,10 @@ int flag_int_to_index(long long int fi) {
 			return ATOM_CT__FLAG_VLTOK_OUT;
 		case ATOM_CT__FLAG_AST_OUT_HASH:
 			return ATOM_CT__FLAG_AST_OUT;
-		case ATOM_CT__FLAG_TESTER_OUT_HASH:
-			return ATOM_CT__FLAG_TESTER_OUT;
-		case ATOM_CT__FLAG_TEST_HASH:
-			return ATOM_CT__FLAG_TEST;
-		case ATOM_CT__FLAG_ANOTHER_FLAG_HASH:
-			return ATOM_CT__FLAG_ANOTHER_FLAG;
-		case ATOM_CT__FLAG_TEST_FLAG_HASH:
-			return ATOM_CT__FLAG_TEST_FLAG;
-		case ATOM_CT__FLAG_TEST_FOUR_HASH:
-			return ATOM_CT__FLAG_TEST_FOUR;
+		case ATOM_CT__FLAG_FLAGS_OUT_HASH:
+			return ATOM_CT__FLAG_FLAGS_OUT;
+		case ATOM_CT__FLAG_HADRON_EXPAND_HASH:
+			return ATOM_CT__FLAG_HADRON_EXPAND;
 		default:
 			return -1;
         //%%END%%
@@ -52,16 +46,10 @@ char* flag_index_to_string(int index) {
 			return ATOM_CT__FLAG_VLTOK_OUT_STR;
 		case ATOM_CT__FLAG_AST_OUT:
 			return ATOM_CT__FLAG_AST_OUT_STR;
-		case ATOM_CT__FLAG_TESTER_OUT:
-			return ATOM_CT__FLAG_TESTER_OUT_STR;
-		case ATOM_CT__FLAG_TEST:
-			return ATOM_CT__FLAG_TEST_STR;
-		case ATOM_CT__FLAG_ANOTHER_FLAG:
-			return ATOM_CT__FLAG_ANOTHER_FLAG_STR;
-		case ATOM_CT__FLAG_TEST_FLAG:
-			return ATOM_CT__FLAG_TEST_FLAG_STR;
-		case ATOM_CT__FLAG_TEST_FOUR:
-			return ATOM_CT__FLAG_TEST_FOUR_STR;
+		case ATOM_CT__FLAG_FLAGS_OUT:
+			return ATOM_CT__FLAG_FLAGS_OUT_STR;
+		case ATOM_CT__FLAG_HADRON_EXPAND:
+			return ATOM_CT__FLAG_HADRON_EXPAND_STR;
 		default:
 			return "ERROR NO ENUM NAME";
         //%%END%%

@@ -4,9 +4,7 @@
 #ifndef ATOMIC_HELPER_MATH_H
 #define ATOMIC_HELPER_MATH_H
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include "../Commons.h"
 
 typedef unsigned int uint;
 

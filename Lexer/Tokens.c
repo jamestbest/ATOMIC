@@ -132,7 +132,7 @@ int print_position(Position pos) {
         ret += printf("-%d:%d", pos.end_line, pos.end_col);
     }
 
-    ret += printf("> ");
+    ret += printf(">");
 
     return ret;
 }
@@ -165,8 +165,8 @@ const char* get_token_color(TokenType type) {
         case OP_BIN_OR_UN:
         case OP_UN_PRE:
         case OP_UN_POST:
-        case ASSIGN:
-        case ARITH_ASSIGN:
+        case OP_ASSIGN:
+        case OP_ARITH_ASSIGN:
         case COMMA:
         case CARROT:
         case TYPE_SET:
@@ -184,11 +184,8 @@ const char* get_token_color(TokenType type) {
     }
 }
 
-//this is dynamically allocated memory so be sure to free
-const char* cons_token_type_colored(TokenType type) {
-    const char* colour = get_token_color(type);
-    const char* title = "INVALID";
-    const char* end = C_RST;
+const char* get_token_type_string(TokenType type) {
+    const char* title;
     switch (type) {
         case IDENTIFIER:
             title = "IDENTIFIER";
@@ -217,10 +214,10 @@ const char* cons_token_type_colored(TokenType type) {
         case LIT_NAV:
             title = "NAV";
             break;
-        case ASSIGN:
-            title = "ASSIGN";
+        case OP_ASSIGN:
+            title = "OP_ASSIGN";
             break;
-        case ARITH_ASSIGN:
+        case OP_ARITH_ASSIGN:
             title = "ARITHMETIC_ASSIGN";
             break;
         case OP_BIN_OR_UN:
@@ -281,15 +278,24 @@ const char* cons_token_type_colored(TokenType type) {
         case TOKEN_INVALID:
             title = "INVALID";
             break;
+        default:
+            assert(false);
     }
-    const uint length = strlen(colour) + strlen(title) + strlen(end) + 1;
-    char* ret = malloc(sizeof(char) * length);
-    snprintf(ret, length, "%s%s%s", colour, title, end);
-
-    return ret;
+    return title;
 }
 
-void print_token_value(Token* token) {
+void print_token_type(TokenType type) {
+    putz(get_token_type_string(type));
+}
+
+void print_token_type_coloured(TokenType type) {
+    putz(get_token_color(type));
+    print_token_type(type);
+    putz(C_RST);
+}
+
+void print_token_value(const Token* token) {
+    if (token == NULL) return;
     switch (token->type) {
         case BRACKET_OPEN:
             putchar('[');
@@ -334,19 +340,19 @@ void print_token_value(Token* token) {
         }
         case IDENTIFIER:
         case LIT_BOOL:
-            printf("%s", (char*)token->data.ptr);
+            printf("%s", token->data.ptr);
             break;
 
         case LIT_STR:
-            printf("\"%s\"", (char*)token->data.ptr);
+            printf("\"%s\"", token->data.ptr);
             break;
 
         case LIT_CHR:
-            printf("\'%s\'", (char*)token->data.ptr);
+            printf("\'%s\'", token->data.ptr);
             break;
 
         case COMMENT:
-            printf("%s", (char*)token->data.ptr);
+            printf("%s", token->data.ptr);
             break;
 
         case LIT_NAV:
@@ -359,11 +365,11 @@ void print_token_value(Token* token) {
         case OP_UN_PRE:
         case OP_TRINARY:
         case OP_BIN_OR_UN:
-        case ARITH_ASSIGN:
+        case OP_ARITH_ASSIGN:
             printf("%s", ATOM_CT__LEX_OPERATORS.arr[token->data.enum_pos]);
             break;
 
-        case ASSIGN:
+        case OP_ASSIGN:
             putchar('=');
             break;
         case COMMA:
@@ -393,7 +399,7 @@ void print_token_value(Token* token) {
     }
 }
 
-void print_token(Token* token) {
+void print_token(const Token* token) {
     if (!token) return;
 
     //{<POSITION> TYPE: VALUE}
@@ -402,10 +408,12 @@ void print_token(Token* token) {
     pos.end_col = (token->type == NEWLINE) ? 0 : pos.end_col;
 
     print_position(pos);
-    const char* title = cons_token_type_colored(token->type);
-    printf("%s: '", title);
-    free((void*)title);
 
+    putchar(' ');
+
+    print_token_type_coloured(token->type);
+
+    putz(" '");
     print_token_value(token);
     printf("'}");
 }
@@ -442,7 +450,7 @@ TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
         case ASS_BOR:
         case ASS_SHL:
         case ASS_SHR:
-            return ARITH_ASSIGN;
+            return OP_ARITH_ASSIGN;
 
         case LAND:
         case LOR:
@@ -462,7 +470,7 @@ TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
             return OP_TRINARY;
 
         case ASSIGNMENT:
-            return ASSIGN;
+            return OP_ASSIGN;
 
         case EQU:
         case NEQ:
@@ -473,6 +481,7 @@ TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
         case SWAP:
         case RANGE:
         case ARROW:
+        case TYPE_CONVERSION:
             return OP_BIN;
 
         default:
@@ -505,6 +514,18 @@ bool is_r_paren(Token* tok) {
     return tok->type == PAREN_CLOSE;
 }
 
+bool is_l_square_bracket(Token* tok) {
+    return tok->type == BRACKET_OPEN;
+}
+
+bool is_r_square_bracket(Token* tok) {
+    return tok->type == BRACKET_CLOSE;
+}
+
+bool is_square_bracket(Token* tok) {
+    return is_l_square_bracket(tok) || is_r_square_bracket(tok);
+}
+
 bool is_terminal(Token* tok) {
     switch (tok->type) {
         case IDENTIFIER:
@@ -522,7 +543,7 @@ bool is_terminal(Token* tok) {
     }
 }
 
-bool is_operator(Token* tok) {
+bool is_arith_operator(Token* tok) {
     switch (tok->type) {
         case OP_BIN:
         case OP_BIN_OR_UN:
@@ -535,6 +556,20 @@ bool is_operator(Token* tok) {
         default:
             return false;
     }
+}
+
+bool is_assigning_operator(Token* tok) {
+    switch (tok->type) {
+        case OP_ASSIGN:
+        case OP_ARITH_ASSIGN:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool is_any_operator(Token* tok) {
+    return is_arith_operator(tok) || is_assigning_operator(tok);
 }
 
 void consolidate(Token* base_token, Token* token_to_eat) {

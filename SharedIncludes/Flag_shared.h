@@ -5,8 +5,8 @@
 #ifndef ATOMIC_FLAG_SHARED_H
 #define ATOMIC_FLAG_SHARED_H
 
+#include "../Commons.h"
 #include "Helper_String.h"
-#include "Helper_Math.h"
 
 typedef long long int llint;
 

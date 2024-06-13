@@ -225,3 +225,32 @@ bool is_newline(const uint32_t a) {
 void putz(const char* string) {
     fputs(string, stdout);
 }
+
+// remove those pesky `\`
+void putz_santitize(const char* string) {
+    uint pos = 0;
+    while (string[pos] != '\0') {
+        switch (string[pos]) {
+            case '\n':
+                putz("\\n");
+                break;
+            case '\r':
+                putz("\\r");
+                break;
+            case '\t':
+                putz("\\t");
+                break;
+            default:
+                if (string[pos] < 0x20) {
+                    printf("%03o", string[pos]);
+                } else {
+                    putchar(string[pos]);
+                }
+        }
+        pos++;
+    }
+}
+
+void newline() {
+    putchar('\n');
+}

@@ -5,15 +5,6 @@
 #ifndef ATOMIC_LEXER_H
 #define ATOMIC_LEXER_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <error.h>
-#include <assert.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdarg.h>
 
 #include "../Lexer/Lexerr.h"
 #include "../SharedIncludes/Buffer.h"

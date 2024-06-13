@@ -29,6 +29,7 @@ add_executable(ATOMICLI
         Parser/Node.h
         Parser/Parserr.h
         Errors.c
+        Parser/Parserr.c
         Parser/ShuntingYard.c
         Parser/ShuntingYard.h
         SharedIncludes/Queue.c
@@ -37,7 +38,16 @@ add_executable(ATOMICLI
         SharedIncludes/Stack.h
         Lexer/OpFolder.c
         Lexer/OpFolder.h
+        Lexer/Lexerr.c
+        Commons.h
+        SharedIncludes/Array.c
+        SharedIncludes/Array.h
+
+        hadron/hadron.c
+        hadron/hadron_internal.h
 )
+
+#target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a)
 
 add_executable(Flag_preprocessor
         FLAG-PREPROCESSOR/Flag_Preprocessor.c
@@ -50,6 +60,10 @@ add_executable(Flag_preprocessor
         SharedIncludes/Helper_String.c
         SharedIncludes/Helper_Math.c
         SharedIncludes/Helper_File.c
+        Commons.h
+
+        hadron/hadron.c
+        hadron/hadron_internal.h
 )
 
 # [[todo]] need to create a lib from these

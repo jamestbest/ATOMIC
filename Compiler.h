@@ -5,7 +5,7 @@
 #ifndef ATOMIC_COMPILER_H
 #define ATOMIC_COMPILER_H
 
-#include <stdio.h>
+#include "Commons.h"
 
 #include "SharedIncludes/Vector.h"
 #include "Flags.h"
@@ -18,19 +18,15 @@
 
 #define BUFF_SIZE 100
 
-VEC_PROTO(char*, charp)
-
 typedef struct CompileRet {
     int code;
     const char* info;
 } CompileRet;
 
-CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, charp_vec files);
+CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, Vector files);
 CompileRet compile_file(const char* entry_point, const char* out_format, FILE* fp);
 
-void print_tokens_with_flag_check(Token_vec* tokens, Vector* lines);
-
-void free_tokens(Token_vec* tokens);
-void free_nodes(Node_vec *nodes);
+void print_tokens_with_flag_check(Array* tokens, Vector* lines, const char* print_header);
+void print_ast_with_flag_check(Node* tl_node);
 
 #endif //ATOMIC_COMPILER_H

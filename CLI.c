@@ -4,10 +4,12 @@
 
 #include "CLI.h"
 
+#include "SharedIncludes/Helper_File.h"
+
 char* ATOM_VR__CLI_ENTRY_POINT = NULL;
 char* ATOM_VR__CLI_OUTPUT_NAME = ATOM_CT__CLI_DEFAULT_OUT;
 
-charp_vec ATOM_VR__CLI_FILES;
+Vector ATOM_VR__CLI_FILES;
 
 /* main entry point for the compiler
  *
@@ -19,7 +21,7 @@ charp_vec ATOM_VR__CLI_FILES;
 int main(int argc, char** argv) {
     puts("Welcome to the ATOMIC CLI!");
 
-    ATOM_VR__CLI_FILES = charp_vec_create(ATOM_CT__CLI_DEFAULT_FILE_BUFF_SIZE);
+    ATOM_VR__CLI_FILES = vec_create(ATOM_CT__CLI_DEFAULT_FILE_BUFF_SIZE);
 
     if (!verify_args(argc, argv)) {
         return 1;
@@ -27,14 +29,15 @@ int main(int argc, char** argv) {
 
     parse_args(argc, argv);
 
-    print_flags();
+    if (flag_get(ATOM_CT__FLAG_FLAGS_OUT))
+        print_flags();
 
     printf("Entry point: %s\n"
            "Output format: %s\n", ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME);
 
     putchar('\n');
     for (uint i = 0; i < ATOM_VR__CLI_FILES.pos; i++) {
-        char* filename = charp_vec_get(&ATOM_VR__CLI_FILES, i);
+        char* filename = vec_get(&ATOM_VR__CLI_FILES, i);
 
         printf("File: %s\n", filename);
     }
@@ -118,22 +121,22 @@ void parse_args(int argc, char** argv) {
 }
 
 void parse_file(char* file) {
-    charp_vec_add(&ATOM_VR__CLI_FILES, file);
+    vec_add(&ATOM_VR__CLI_FILES, file);
 }
 
-void parse_option_entry(charp_vec* args) {
+void parse_option_entry(Vector* args) {
     if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, ATOM_CT__OPTION_E_STR);
 
-    ATOM_VR__CLI_ENTRY_POINT = charp_vec_get(args, 0);
+    ATOM_VR__CLI_ENTRY_POINT = vec_get(args, 0);
 }
 
-void parse_option_output(charp_vec* args) {
+void parse_option_output(Vector* args) {
     if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, ATOM_CT__OPTION_O_STR);
 
-    ATOM_VR__CLI_OUTPUT_NAME = charp_vec_get(args, 0);
+    ATOM_VR__CLI_OUTPUT_NAME = vec_get(args, 0);
 }
 
-void parse_option_out(charp_vec* args) {
+void parse_option_out(Vector* args) {
     //for each arg get the string arg + "-out", then hash and set the flag
 
     for (uint i = 0; i < args->pos; i++) {
@@ -158,7 +161,7 @@ void parse_option_out(charp_vec* args) {
 void parse_option(char *arg, char **argv, int argc, int *i) {
     llint option_hash = flag_to_int(&arg[1]);
 
-    charp_vec args = get_option_args(argv, i, argc);
+    Vector args = get_option_args(argv, i, argc);
 
     if (args.pos == 0) {
         PError(ATOM_CT__CLI_ERR_OPT_ARG, arg);
@@ -180,14 +183,14 @@ void parse_option(char *arg, char **argv, int argc, int *i) {
             break;
     }
 
-    charp_vec_destroy(&args);
+    vec_destroy(&args);
 }
 
-charp_vec get_option_args(char** argv, int* argp, int argc) {
-    charp_vec args = charp_vec_create(4);
+Vector get_option_args(char** argv, int* argp, int argc) {
+    Vector args = vec_create(ATOM_CT__CLI_DEFAULT_OPTION_BUFF_SIZE);
 
     while (*argp + 1 < argc && argv[*argp + 1][0] != '-') {
-        charp_vec_add(&args, argv[*argp + 1]);
+        vec_add(&args, argv[*argp + 1]);
         (*argp)++;
     }
 

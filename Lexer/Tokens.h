@@ -5,13 +5,12 @@
 #ifndef ATOMIC_TOKENS_H
 #define ATOMIC_TOKENS_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
+#include "../Commons.h"
+
 
 #include "../SharedIncludes/Vector.h"
-#include "../SharedIncludes/Colours.h"
 #include "../SharedIncludes/Helper_String.h"
+#include "../SharedIncludes/Colours.h"
 
 typedef struct Arr {
     char** arr;
@@ -40,8 +39,8 @@ typedef enum TokenType {
     OP_TRINARY,
     OP_BIN_OR_UN,
 
-    ASSIGN,
-    ARITH_ASSIGN,
+    OP_ASSIGN,
+    OP_ARITH_ASSIGN,
 
     BRACKET_OPEN,
     BRACKET_CLOSE,
@@ -178,7 +177,7 @@ typedef struct encodedType {
 typedef struct Token {
     TokenType type;
     union { //not sure if this is a good idea
-        void* ptr;
+        char* ptr;
         int64_t integer;
         uint64_t natural;
         long double real;
@@ -213,17 +212,23 @@ bool type_needs_free(TokenType type);
 bool is_whitespace_tkn(TokenType type);
 
 int print_position(Position pos);
-void print_token_value(Token* token);
-void print_token(Token* token);
+void print_token_value(const Token* token);
+void print_token(const Token* token);
 void print_token_ln(Token* token);
+
+const char* get_token_type_string(TokenType type);
 
 void consolidate(Token* base_token, Token* token_to_eat);
 
 bool is_l_paren(Token* tok);
 bool is_r_paren(Token* tok);
 bool is_terminal(Token* tok);
-bool is_operator(Token* tok);
+bool is_arith_operator(Token* tok);
+bool is_assigning_operator(Token* tok);
+bool is_any_operator(Token* tok);
 
-VEC_PROTO(Token, Token)
+bool is_l_square_bracket(Token* tok);
+bool is_r_square_bracket(Token* tok);
+bool is_square_bracket(Token* tok);
 
 #endif //ATOMIC_TOKENS_H

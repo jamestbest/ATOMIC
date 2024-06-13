@@ -5,10 +5,8 @@
 #ifndef ATOMIC_STACK_H
 #define ATOMIC_STACK_H
 
-#include <stdint.h>
-#include <malloc.h>
-#include <stdbool.h>
-#include <string.h>
+#include "../Commons.h"
+
 
 #define MIN_STACK_SIZE 10
 

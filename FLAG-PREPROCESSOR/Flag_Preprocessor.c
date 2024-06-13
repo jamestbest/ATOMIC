@@ -4,8 +4,6 @@
 
 #include "Flag_Preprocessor.h"
 
-VEC_ADD(char*, charp)
-
 int main(int argc, char** argv) {
     puts("Welcome to the Flag preprocessor for ATOMIC\n");
 
@@ -48,8 +46,8 @@ int main(int argc, char** argv) {
         exit(2);
     }
 
-    charp_vec flag_enums = charp_vec_create(16);
-    charp_vec option_enums = charp_vec_create(16);
+    Vector flag_enums = vec_create(16);
+    Vector option_enums = vec_create(16);
 
     parse_h(hptr, nhptr, &flag_enums, &option_enums);
     parse_c(cptr, ncptr, &flag_enums);
@@ -67,8 +65,8 @@ int main(int argc, char** argv) {
         exit(4);
     }
 
-    int renh = rename(nhpath, hpath);
-    int renc = rename(ncpath, cpath);
+    const int renh = rename(nhpath, hpath);
+    const int renc = rename(ncpath, cpath);
 
     if (renh != 0 || renc != 0) {
         puts(Error("FileIO", ": Unable to rename temp files to permanent\n"));
@@ -81,22 +79,22 @@ int main(int argc, char** argv) {
     free(nhpath);
     free(ncpath);
 
-    charp_vec_destroy(&flag_enums);
-    charp_vec_destroy(&option_enums);
+    vec_destroy(&flag_enums);
+    vec_destroy(&option_enums);
 
     printf("SUCCESS! Files parsed and renamed");
 
     return 0;
 }
 
-void free_enums(charp_vec* enums) {
+void free_enums(Vector* enums) {
     for (uint i = 0; i < enums->pos; i++) {
-        free(charp_vec_get(enums, i));
+        free(vec_get(enums, i));
     }
 
     free(enums->arr);
 
-    *enums = (charp_vec) {NULL, -1, -1};
+    *enums = (Vector){NULL, -1, -1};
 }
 
 void close_files(uint file_count, ...) {
@@ -113,7 +111,7 @@ void close_files(uint file_count, ...) {
     }
 }
 
-void parse_h(FILE* hptr, FILE* nhptr, charp_vec* flag_enums, charp_vec* option_enums) {
+void parse_h(FILE* hptr, FILE* nhptr, Vector* flag_enums, Vector* option_enums) {
     Buffer buffer = buffer_create(32);
 
     while (get_line(hptr, &buffer)) {
@@ -123,7 +121,7 @@ void parse_h(FILE* hptr, FILE* nhptr, charp_vec* flag_enums, charp_vec* option_e
         else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_ENUM) != -1) {
             collect_enums(hptr, nhptr, ATOM_CT__FLAGS_PRE_FLG_START, &buffer, flag_enums);
 
-            char* countEnum = charp_vec_pop(flag_enums); //remove the count
+            char* countEnum = vec_pop(flag_enums); //remove the count
             free(countEnum);
         }
         else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_OPT_DEF) != -1) {
@@ -146,7 +144,7 @@ void parse_h(FILE* hptr, FILE* nhptr, charp_vec* flag_enums, charp_vec* option_e
     buffer_destroy(&buffer);
 }
 
-void parse_string(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, Buffer* buffer) {
+void parse_string(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Buffer* buffer) {
     fputs(buffer->data, nfile); //write the //%%XXXX STRINGS%%
 
     for (uint i = 0; i < enums->pos; i++) {
@@ -158,7 +156,7 @@ void parse_string(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix,
     cleanup_skip(file, nfile, buffer);
 }
 
-void parse_def(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, Buffer* buffer) {
+void parse_def(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Buffer* buffer) {
     fputs(buffer->data, nfile); //write the //%%XXXX DEFINE%%
 
     for (uint i = 0; i < enums->pos; i++) {
@@ -173,7 +171,7 @@ void parse_def(FILE* file, FILE* nfile, charp_vec* enums, const char* prefix, Bu
     cleanup_skip(file, nfile, buffer);
 }
 
-void parse_c(FILE* cptr, FILE* ncptr, charp_vec* flag_enums) {
+void parse_c(FILE* cptr, FILE* ncptr, Vector* flag_enums) {
     Buffer buffer = buffer_create(32);
     while (get_line(cptr,&buffer)) {
         if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_IDX_SWT) != -1) {
@@ -192,7 +190,7 @@ void parse_c(FILE* cptr, FILE* ncptr, charp_vec* flag_enums) {
 
 void parse_switch(FILE* file, FILE* nfile, const char* prefix,
                   const char* to, const char* from, const char* default_value,
-                  Buffer* buffer, charp_vec* flag_enums) {
+                  Buffer* buffer, Vector* flag_enums) {
 
     fputs(buffer->data, nfile); //write the %%XX%%
 
@@ -234,7 +232,7 @@ void cleanup_skip(FILE* file, FILE* nfile, Buffer* buffer) {
     fputs(buffer->data, nfile); //write the `//%%END%%`
 }
 
-void collect_enums(FILE* file, FILE* nfile, const char* prefix, Buffer* buffer, charp_vec* enum_vec) {
+void collect_enums(FILE* file, FILE* nfile, const char* prefix, Buffer* buffer, Vector* enum_vec) {
     //We're at the //%%XXXX ENUM%% label so write this to the file
     fputs(buffer->data, nfile);
 
@@ -258,7 +256,7 @@ void collect_enums(FILE* file, FILE* nfile, const char* prefix, Buffer* buffer, 
         memcpy(s_enum, &buffer->data[pos], tot_length);
         s_enum[tot_length - 1] = '\0';
 
-        charp_vec_add(enum_vec, s_enum);
+        vec_add(enum_vec, s_enum);
     }
     cleanup_write(file, nfile, buffer);
 }

@@ -40,25 +40,22 @@ static char* gourge(int amount);
 static uint32_t get_utf_char_bytes(const char* character);
 static uint32_t consume_utf_char(char *start, bool consume, char** next_char);
 
-static void highlight_current_line_err(Position pos);
-static char* lexerr_process_char(char a, char buff[2]);
-static void lexwarn(Lexwarns warnCode, Position pos, ...);
-static uint lexerr(Lexerrors errorCode, Position pos, ...);
-
 uint line_num, col_num;
 char* c_char;
 
-Token_vec base_tokens;
+Array* ltokens;
 FILE* c_file;
 Buffer line_buffer;
 Vector *llines;
+
+#include "../../hadron/hadron.h"
 
 bool load_line(void) {
     update_line_count();
     c_char = line_buffer.data;
     bool success = get_line(c_file, &line_buffer);
 
-    if (success) vector_add(llines, buffer_copy(&line_buffer));
+    if (success) vec_add(llines, buffer_copy(&line_buffer));
 
     return success;
 }
@@ -66,19 +63,18 @@ bool load_line(void) {
 //new plan for the lexer
 //it will print out any errors it finds, makes more sense to use the information held inside
 //it will not return an error code as multiple errors could have occurred so just err code 1
-uint lex(FILE* file, Token_vec* folded_tokens, Vector *lines) {
+uint lex(FILE* file, Array* tokens, Vector *lines) {
     line_num = 0;
     col_num = 1;
     c_char = NULL;
     llines = lines;
+    ltokens = tokens;
 
     line_buffer = buffer_create(BUFF_MIN);
 
     c_file = file;
 
     uint retCode = SUCCESS;
-
-    base_tokens = Token_vec_create(folded_tokens->size);
 
     while (load_line()) {
         const uint errcode = lex_line(&line_buffer);
@@ -87,10 +83,6 @@ uint lex(FILE* file, Token_vec* folded_tokens, Vector *lines) {
             retCode = errcode;
         }
     }
-
-    fold(&base_tokens, folded_tokens);
-
-    Token_vec_destroy(&base_tokens);
 
     buffer_destroy(&line_buffer);
     return retCode;
@@ -194,20 +186,20 @@ uint lex_line(const Buffer* line) {
     return SUCCESS;
 }
 
-void print_tokens(Token_vec* token_vec, bool include_ws, bool include_comments) {
-    puts("TOKENS");
-    for (uint i = 0; i < token_vec->pos; i++) {
-        TokenType type = token_vec->arr[i].type;
+void print_tokens(Array* tokens, bool include_ws, bool include_comments) {
+    for (uint i = 0; i < tokens->pos; i++) {
+        Token t = token_arr_get(tokens, i);
+        const TokenType type = t.type;
 
         if ((type == WS_S || type == WS_T) && !include_ws) continue;
         if ((type == COMMENT) && !include_comments) continue;
 
-        print_token_ln(&token_vec->arr[i]);
+        print_token_ln(&t);
     }
 }
 
-void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels) {
-    if (token_vec == NULL || lines == NULL) {
+void print_verbose_tokens(Array* tokens, Vector* lines, bool print_labels) {
+    if (tokens == NULL || lines == NULL) {
         printf("ERROR PRINTING TOKENS, found NULL for lines or token storage");
         return;
     }
@@ -221,13 +213,13 @@ void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels
             C_GRN"OPERATORS\n\n");
 
     //[[todo]] perhaps change to errors
-    if (token_vec->pos == 0) {
+    if (tokens->pos == 0) {
         printf("NO TOKENS FOUND");
         return;
     }
 
     uint current_tok_pos = 0;
-    Token* current_tok = &token_vec->arr[current_tok_pos];
+    const Token* current_tok = arr_get(tokens, current_tok_pos);
 
     for (uint i = 0; i < lines->pos; i++) {
         bool printable_token_on_line = false;
@@ -237,8 +229,8 @@ void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels
             print_token_value(current_tok);
             printf(C_RST);
 
-            if (++current_tok_pos >= token_vec->pos) break;
-            current_tok = &token_vec->arr[current_tok_pos];
+            if (++current_tok_pos >= tokens->pos) break;
+            current_tok = arr_get(tokens, current_tok_pos);
         }
         if (printable_token_on_line) putchar('\n');
     }
@@ -312,10 +304,12 @@ int create_multiline_value(const char* starter, const char* delimiter, const Tok
 
     if (!include_delimiter) gourge(len(starter));
 
-    const char* starting_pos = c_char + strlen(starter);
+    const char* starting_pos = c_char;
 
-    const char* comment_end = strstr(starting_pos, delimiter);
-    if (comment_end == NULL) {
+    const char* ending_pos = strstr(starting_pos, delimiter);
+    bool sameLine = true;
+    if (ending_pos == NULL) {
+        sameLine = false;
         do {
             buffer_concat(&ml_comment_buff, c_char);
 
@@ -326,30 +320,33 @@ int create_multiline_value(const char* starter, const char* delimiter, const Tok
 
             if (!ret) goto create_multiline_value_fail;
 
-            comment_end = strstr(c_char, delimiter);
-        } while (comment_end == NULL);
+            ending_pos = strstr(c_char, delimiter);
+        } while (ending_pos == NULL);
     }
     //the current line contains the comment end
 
-    if (include_delimiter) comment_end += strlen(delimiter);
+    if (include_delimiter) ending_pos += strlen(delimiter);
 
-    const uint32_t d_size = comment_end - c_char;
+    const uint32_t d_size = ending_pos - c_char;
     buffer_nconcat(&ml_comment_buff, c_char, d_size);
 
-    uint end_col = 0;
+    uint end_col = sameLine ? start_col : 0;
 
-    while (c_char < comment_end) {
+    while (c_char < ending_pos) {
         end_col++;
         c_char += get_utf_char_bytes(c_char);
+    }
+
+    if (!include_delimiter) {
+        const size_t length = len(delimiter);
+        gourge(length);
+        end_col += length;
     }
 
     col_num = end_col;
 
     add_token(construct_multiline_token(type, buffer_steal(&ml_comment_buff, 0), start_col, end_col, start_line));
 
-    if (!include_delimiter) gourge(len(delimiter));
-
-    buffer_destroy(&ml_comment_buff);
     return SUCCESS;
 
 create_multiline_value_fail:
@@ -418,7 +415,7 @@ int lex_multiline_comment(void) {
 uint lex_operator(const PosCharp operator) {
     const uint32_t op_size = strlen(ATOM_CT__LEX_OPERATORS.arr[operator.arr_pos]);
 
-    add_token(create_token(operator_to_type(operator.arr_pos), (void*)&(operator.arr_pos), sizeof(int), col_num, col_num + op_size));
+    add_token(create_token(operator_to_type(operator.arr_pos), (void*)&(operator.arr_pos), sizeof(int), col_num, col_num + op_size - 1));
 
     gourge(op_size);
     return SUCCESS;
@@ -460,9 +457,8 @@ uint lex_number(void) {
                 base = 16;
                 break;
             default:
-                lexerr(LEXERR_INT_INVALID_BASE, (Position){line_num, col_num, line_num, col_num},
+                return lexerr(LEXERR_INT_INVALID_BASE, (Position){line_num, col_num, line_num, col_num},
                        c_char);
-                return FAIL;
         }
         consume(); //eat the base
     }
@@ -603,7 +599,7 @@ void lex_word(void) {
         }
 
         token.pos.start_col = col_num;
-        token.pos.end_col = col_num + len(ATOM_CT__LEX_OP_IDENTIFIERS.arr[info.arr_pos]);
+        token.pos.end_col = col_num + len(ATOM_CT__LEX_OP_IDENTIFIERS.arr[info.arr_pos]) - 1;
 
         add_token(token);
         gourge(info.next_char - c_char);
@@ -769,7 +765,7 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
         case COMMENT:
             t.data.ptr = malloc(d_size + 1);
             memcpy(t.data.ptr, data, d_size);
-            ((char*)t.data.ptr)[d_size] = '\0';
+            t.data.ptr[d_size] = '\0';
             break;
         case LIT_INT:
             t.data.integer = *(llint*)data;
@@ -783,14 +779,14 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
         case OP_UN_POST:
         case OP_TRINARY:
         case OP_BIN_OR_UN:
-        case ARITH_ASSIGN:
+        case OP_ARITH_ASSIGN:
+        case OP_ASSIGN:
         case KEYWORD:
             t.data.enum_pos = *(int *)data;
             break;
         case TYPE:
             t.data.type = *(encodedType *)data;
             break;
-        case ASSIGN:
         case BRACKET_OPEN:
         case BRACKET_CLOSE:
         case CURLY_OPEN:
@@ -814,7 +810,7 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
 }
 
 void add_token(Token t) {
-    Token_vec_add(&base_tokens, t);
+    token_arr_add(ltokens, t);
 }
 
 uint32_t current_char(void) {
@@ -922,93 +918,3 @@ uint32_t consume_utf_char(char *start, bool consume, char** next_char) {
     return ret;
 }
 
-char* lexerr_process_char(char a, char buff[2]) {
-    if (a == '\n') return "\\n";
-    if (a == '\t') return "\\t";
-
-    buff[0] = a;
-    return buff;
-}
-
-uint lexerr(const Lexerrors errorCode, const Position pos, ...) {
-    va_list args;
-
-    va_start(args, pos);
-
-    char buff1[2] = {'f', '\0'};
-    char buff2[2] = {'f', '\0'};
-
-    printf(C_RED"LEXERR: "C_RST);
-
-    bool print_current_line = true;
-
-    //the line we are on is still in its buffer
-    switch (errorCode) {
-        case LEXERR_INT_INVALID_INT: {
-            char* atom_end = lexerr_process_char(*va_arg(args, char*), buff1);
-            char* strtoll_end = lexerr_process_char(*va_arg(args, char*), buff2);
-                    printf(ATOM_CT__LEXERR_INT_INVALID_INT,
-                           atom_end,
-                           strtoll_end);
-            break;
-        }
-        case LEXERR_INT_INVALID_BASE: {
-            char* end_char = lexerr_process_char(*va_arg(args, char*), buff1);
-            printf(ATOM_CT__LEXERR_INT_INVALID_BASE,
-                   end_char);
-            break;
-        }
-        case LEXERR_INT_INVALID_DIGIT_FOR_BASE: {
-            int base = va_arg(args, int);
-            char* start_char = lexerr_process_char(*va_arg(args, char*), buff1);
-            printf(ATOM_CT__LEXERR_INT_INVALID_DIGIT_FOR_BASE,
-                   base,
-                   start_char);
-            break;
-        }
-        case LEXERR_FLOAT_TRAILING_DECIMAL: {
-            printf(ATOM_CT__LEXERR_FLOAT_TRAILING_DECIMAL);
-            break;
-        }
-        case LEXERR_FLOAT_INVALID_FLOAT: {
-            char* atom_end = lexerr_process_char(*va_arg(args, char*), buff1);
-            char* strtold_end = lexerr_process_char(*va_arg(args, char*), buff2);
-            printf(ATOM_CT__LEXERR_FLOAT_INVALID_FLOAT,
-                   atom_end,
-                   strtold_end);
-            break;
-        }
-        case LEXERR_COMMENT_MULTILINE_NO_END: {
-            printf(ATOM_CT__LEXERR_COMMENT_MULTILINE_NO_END);
-            print_current_line = false;
-            break;
-        }
-    }
-
-    if (print_current_line) highlight_current_line_err(pos);
-    else {
-        print_position(pos);
-        printf("\n");
-    }
-
-    va_end(args);
-
-    return errorCode;
-}
-
-void lexwarn(Lexwarns warnCode, Position pos, ...) {
-    va_list args;
-
-    va_start(args, pos);
-
-    //the line we are on is still in its buffer
-    switch (warnCode) {
-        case LEXWARN_INT_MISSING_BASE:
-            break;
-    }
-    highlight_current_line_err(pos);
-}
-
-void highlight_current_line_err(Position pos) {
-    highlight_line_err(pos, line_buffer.data);
-}

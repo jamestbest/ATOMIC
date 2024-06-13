@@ -5,7 +5,10 @@
 #ifndef ATOMIC_LEXERR_H
 #define ATOMIC_LEXERR_H
 
+#include "../Commons.h"
 #include "../Errors.h"
+
+extern Vector* llines;
 
 typedef enum Lexerrors {
     LEXERR_INT_INVALID_BASE,
@@ -16,11 +19,18 @@ typedef enum Lexerrors {
     LEXERR_FLOAT_INVALID_FLOAT,
 
     LEXERR_COMMENT_MULTILINE_NO_END,
+
+    LEXERR_PTR_OFFSET_OUT_OF_RANGE,
+
+    LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET,
 } Lexerrors;
 
 typedef enum Lexwarns {
     LEXWARN_INT_MISSING_BASE,
 } Lexwarns;
+
+void lexwarn(Lexwarns warnCode, Position pos, ...);
+uint lexerr(Lexerrors errorCode, Position pos, ...);
 
 //WARNINGS
 #define ATOM_CT__LEX_WRN_INT_LIT_BASE_MISSING \
@@ -50,5 +60,12 @@ typedef enum Lexwarns {
 
 #define ATOM_CT__LEXERR_COMMENT_MULTILINE_NO_END \
             "Multiline comment started but does not end, reaches EOF. Place *¬ to end the comment\n"
+
+#define ATOM_CT__LEXERR_PTR_OFFSET_OUT_OF_RANGE \
+            "Pointer offset of %d is out of range (0, 0xFFFF), you may want to reconsider your design choice\n"
+
+#define ATOM_CT__LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET \
+            "Expected to find a type (i4, n8, char, etc.) after the pointer qualifier `>` that was found after a type set `:`\n" \
+            "Found token of type %s\n"
 
 #endif // ATOMIC_LEXERR_H

@@ -5,11 +5,8 @@
 #ifndef ATOMIC_HELPER_STRING_H
 #define ATOMIC_HELPER_STRING_H
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdio.h>
+#include "../Commons.h"
+
 
 typedef unsigned int uint;
 
@@ -55,5 +52,8 @@ bool is_whitespace(uint32_t a);
 bool is_newline(uint32_t a);
 
 void putz(const char* string);
+void putz_santitize(const char* string);
+
+void newline();
 
 #endif //ATOMIC_HELPER_STRING_H

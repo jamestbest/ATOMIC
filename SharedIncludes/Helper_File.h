@@ -5,11 +5,9 @@
 #ifndef ATOMIC_HELPER_FILE_H
 #define ATOMIC_HELPER_FILE_H
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include "../Commons.h"
 
-#include "Helper_String.h"
+
 #include "Buffer.h"
 
 typedef unsigned int uint;

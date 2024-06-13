@@ -4,6 +4,8 @@
 
 #include "ShuntingYard.h"
 
+#include "../Lexer/Lexer.h"
+
 static bool is_valid_index(ShuntData data, uint index);
 
 static Token* current(ShuntData data);
@@ -34,7 +36,7 @@ bool c_is_valid_expr_cont(Token *current_t, STATE current_state) {
         case EXPECTING_LEFT:
             return is_terminal(current_t) || is_l_paren(current_t) || current_t->type == OP_UN_PRE;
         case EXPECTING_CENTRE:
-            return (is_operator(current_t) && current_t->type != OP_UN_PRE) || is_r_paren(current_t);
+            return (is_any_operator(current_t) && current_t->type != OP_UN_PRE) || is_r_paren(current_t) || is_square_bracket(current_t);
         default:
             assert(false);
     }
@@ -48,7 +50,7 @@ STATE get_next_state(STATE current_state, Token *current_t) {
             if (current_t->type == OP_UN_PRE || current_t->type == PAREN_OPEN) return EXPECTING_LEFT;
             return EXPECTING_CENTRE;
         case EXPECTING_CENTRE:
-            if (current_t->type == OP_UN_POST || current_t->type == PAREN_CLOSE) return EXPECTING_CENTRE;
+            if (current_t->type == OP_UN_POST || current_t->type == PAREN_CLOSE || current_t->type == BRACKET_CLOSE) return EXPECTING_CENTRE;
             return EXPECTING_LEFT;
     }
     assert(false);
@@ -250,7 +252,7 @@ Node* parse_subroutine_call_arguments(ShuntData data) {
 
         if (arg.err_code != SUCCESS) assert(false);
 
-        vector_add(&argsNode->children, arg.expressionNode);
+        vec_add(&argsNode->children, arg.expressionNode);
     } while(c = current(data), c && c->type == COMMA);
 
     return argsNode;
@@ -270,13 +272,13 @@ Node* parse_subroutine_call(ShuntData data) {
 
     consume(data); // eat the )
 
-    vector_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
-    vector_add(&funcNode->children, args);
+    vec_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
+    vec_add(&funcNode->children, args);
 
     return funcNode;
 }
 
-void parse_identifier(ShuntData data, Token* current, Token* next, Stack* output_s) {
+void parse_identifier(ShuntData data, Token* next, Stack* output_s) {
     /*  Could be an identifier or a function call
      *      - Identifier: push to the output q
      *      - Function call: need to shunt the arguments
@@ -285,11 +287,11 @@ void parse_identifier(ShuntData data, Token* current, Token* next, Stack* output
     if (next->type == PAREN_OPEN) {
         stack_push(output_s, parse_subroutine_call(data));
     } else {
-        stack_push(output_s, create_leaf_node(EX_LIT, current));
+        stack_push(output_s, create_leaf_node(EX_LIT, consume(data)));
     }
 }
 
-ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
+ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
     Stack output_s = stack_create(MIN_QUEUE_SIZE);
     Stack operator_s = stack_create(MIN_STACK_SIZE);
 
@@ -315,19 +317,22 @@ ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
             case LIT_CHR:
             case LIT_NAV:
             case TYPE:
-                stack_push(&output_s, create_leaf_node(EX_LIT, c));
+                stack_push(&output_s, create_leaf_node(EX_LIT, consume(data)));
                 break;
             case IDENTIFIER:
-                parse_identifier(data, c, peek(data), &output_s);
+                parse_identifier(data, peek(data), &output_s);
                 break;
             case OP_BIN:
             case OP_BIN_OR_UN:
             case OP_TRINARY:
             case OP_UN:
             case OP_UN_PRE:
+            case OP_ASSIGN:
+            case OP_ARITH_ASSIGN:
             case OP_UN_POST: {
                 Token* o2;
-                while (o2 = stack_peek(&operator_s), o2 && o2->type != PAREN_OPEN &&
+                consume(data);
+                while (o2 = stack_peek(&operator_s), o2 && !(o2->type == PAREN_OPEN || o2->type == BRACKET_OPEN) &&
                         (get_token_pres(o2) < get_token_pres(c) ||
                         (get_token_pres(o2) == get_token_pres(c) && get_token_ass(c) == LEFT))
                       ) {
@@ -338,7 +343,7 @@ ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
                 break;
             }
             case PAREN_OPEN:
-                stack_push(&operator_s, c);
+                stack_push(&operator_s, consume(data));
                 break;
             case PAREN_CLOSE: {
                 Token* o1;
@@ -354,12 +359,67 @@ ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens) {
                     goto shunt_end_of_while; // we don't want to continue shunting, there is no more parsing to do
                 }
 
+                consume(data);
                 stack_pop(&operator_s);
                 break;
             }
+            case BRACKET_OPEN:
+                stack_push(&operator_s, consume(data));
+                break;
+            case BRACKET_CLOSE: {
+                /*  This is <var>[<expr>]
+                 *      Once we reach a close bracket we just need to:
+                 *          1. check if the top of the operator stack is a BRACKET_OPEN
+                 *          2. check that there is something in the output stack
+                 *          3. if there isn't then throw an error for empty bracket expression
+                 *          4. else add it to the Node and pop the BRACKET_OPEN, add result to output
+                 */
+                Token* o1;
+                while (o1 = stack_peek(&operator_s), o1 && o1->type != BRACKET_OPEN) {
+                    Node* op_node = form_operator_node(stack_pop(&operator_s), &output_s);
+                    stack_push(&output_s, op_node);
+                }
+
+                if (o1 = stack_peek(&operator_s), !o1 || o1->type != BRACKET_OPEN) { //[[maybe]] is the && correct here?
+                    if (!ignoreTrailingParens)
+                        assert(false);
+                }
+
+                Token* l_bracket = stack_peek(&operator_s);
+
+                if (!l_bracket || l_bracket->type != BRACKET_OPEN) {
+                    assert(false);
+                }
+
+                Node* out = stack_peek(&output_s);
+
+                if (!out) {
+                    assert(false);
+                }
+
+                // todo: should this still be an expr binary??? or should this start to specialise at this point!?
+                Node* arrayNode = create_parent_node(EXPR_BIN, stack_pop(&operator_s));
+
+                Node* expr = stack_pop(&output_s);
+                Node* identifier = stack_pop(&output_s);
+
+                if (!identifier) {
+                    assert(false);
+                }
+
+                if (identifier->type != EX_LIT || identifier->token->type != IDENTIFIER) {
+                    assert(false);
+                }
+
+                vec_add(&arrayNode->children, identifier);
+                vec_add(&arrayNode->children, expr);
+
+                stack_push(&output_s, arrayNode);
+
+                consume(data); // eat the ']'
+            }
         }
         c_state = get_next_state(c_state, c);
-        consume(data);
     }
 
 shunt_end_of_while:
@@ -378,7 +438,7 @@ shunt_end_of_while:
         stack_push(&output_s,expr_node);
     }
 
-    Node* ret = (Node*)stack_pop(&output_s);
+    Node* ret = stack_pop(&output_s);
 
     if (expr_dbg) {
         puts("END EXPR: ");
@@ -401,7 +461,7 @@ Node* form_un_op_node(Token* op_token, Stack* output_s) {
 
     Node* op_node = create_parent_node(EXPR_UN, op_token);
 
-    vector_add(&op_node->children, child);
+    vec_add(&op_node->children, child);
 
     return op_node;
 }
@@ -416,8 +476,8 @@ Node* form_bin_op_node(Token* op_token, Stack* output_s) {
 
     Node* op_node = create_parent_node(EXPR_BIN, op_token);
 
-    vector_add(&op_node->children, l_expr);
-    vector_add(&op_node->children, r_expr);
+    vec_add(&op_node->children, l_expr);
+    vec_add(&op_node->children, r_expr);
 
     return op_node;
 }
@@ -433,6 +493,8 @@ Node* form_operator_node(Token* op_token, Stack *output_s) {
         case OP_UN_POST:
             return form_un_op_node(op_token, output_s);
         case OP_BIN:
+        case OP_ARITH_ASSIGN:
+        case OP_ASSIGN:
             return form_bin_op_node(op_token, output_s);
         case OP_TRINARY:
             return form_tri_op_node(op_token, output_s);
@@ -451,7 +513,7 @@ Token* current(ShuntData data) {
         return NULL;
     }
 
-    return &data.tokens->arr[*data.t_pos];
+    return arr_get(data.tokens, *data.t_pos);
 }
 
 Token* peek(ShuntData data) {
@@ -459,14 +521,15 @@ Token* peek(ShuntData data) {
         return NULL;
     }
 
-    return &data.tokens->arr[(*data.t_pos) + 1];
+    return arr_get(data.tokens, *data.t_pos + 1);
 }
 
 Token* consume(ShuntData data) {
     if (!is_valid_index(data, *data.t_pos)) {
         return NULL;
     }
-    return &data.tokens->arr[(*data.t_pos)++];
+
+    return arr_get(data.tokens, (*data.t_pos)++);
 }
 
 bool expect(ShuntData data, TokenType type) {

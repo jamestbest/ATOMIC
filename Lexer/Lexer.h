@@ -5,21 +5,20 @@
 #ifndef ATOMIC_LEXER_H
 #define ATOMIC_LEXER_H
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdint.h>
+#include "../Commons.h"
 
-#include "Lexerr.h"
+
 #include "Tokens.h"
 
-#include "OpFolder.h"
-
-#include "../SharedIncludes/Buffer.h"
-#include "../SharedIncludes/Helper_File.h"
 #include "../SharedIncludes/Helper_String.h"
+#include "../SharedIncludes/Helper_File.h"
+#include "../SharedIncludes/Buffer.h"
+
+#include "../SharedIncludes/Array.h"
+
+#include "Lexerr.h"
+
+ARRAY_PROTO(Token, token)
 
 typedef struct PosCharp{
     int arr_pos;
@@ -36,9 +35,9 @@ typedef struct ArrPosCharp {
 typedef long long int llint;
 typedef unsigned char uchar;
 
-uint lex(FILE *file, Token_vec *folded_tokens, Vector *lines);
+uint lex(FILE* file, Array* tokens, Vector* lines);
 
-void print_tokens(Token_vec* token_vec, bool include_ws, bool include_comments);
-void print_verbose_tokens(Token_vec* token_vec, Vector* lines, bool print_labels);
+void print_tokens(Array* token_vec, bool include_ws, bool include_comments);
+void print_verbose_tokens(Array* tokens, Vector* lines, bool print_labels);
 
 #endif //ATOMIC_LEXER_H

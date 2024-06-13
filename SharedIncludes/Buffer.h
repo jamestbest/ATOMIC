@@ -5,10 +5,7 @@
 #ifndef ATOMIC_BUFFER_H
 #define ATOMIC_BUFFER_H
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdint.h>
+#include "../Commons.h"
 
 #include "Helper_String.h"
 

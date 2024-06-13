@@ -5,6 +5,8 @@
 #ifndef NODE_H
 #define NODE_H
 
+#include "../Commons.h"
+
 #include "../SharedIncludes/Vector.h"
 #include "../Lexer/Tokens.h"
 
@@ -50,6 +52,8 @@ typedef enum NodeType {
     SUB_PARAMS,
     SUB_PARAM,
 
+    ST_EXPR,
+
     EXPR,
     EXPR_BIN,
     EXPR_UN,
@@ -75,15 +79,16 @@ typedef enum NodeLevelPrintType {
     LINK_END        // `-
 } NodeLevelPrintType;
 
+ARRAY_PROTO(NodeLevelPrintType, nodeLevelEnum)
+
 Node* create_node_basic(NodeType type, Token* token, bool has_children);
 Node* create_leaf_node(NodeType type, Token* token);
 Node* create_parent_node(NodeType type, Token* token);
 NodeRet construct_error_node(Token *token);
 
-void free_node(Node* node);
+void free_node_rec(Node* node);
+void free_node_head(Node* node);
 
 void print_top_level_node(Node* node);
-
-VEC_PROTO(Node, Node)
 
 #endif //NODE_H

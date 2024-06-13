@@ -48,8 +48,11 @@ void highlight_line_multiple(const char* line, const Position displayPos, char* 
 }
 
 void highlight_line(Position pos, const char* line, const char* colour) {
+    // todo: this won't work if there is a special printout in the error printout e.g. \r then the col position will be offset by 1 after
     int position_length = print_position(pos);
-    printf("|    %s", line);
+    putz("|    ");
+    putz_santitize(line);
+    newline();
 
     if (position_length < 0) goto skip_position_offset;
     for (uint i = 0; i < (uint)position_length; i++) {
@@ -57,11 +60,12 @@ void highlight_line(Position pos, const char* line, const char* colour) {
     }
 
 skip_position_offset:
-    printf("     ");
+    printf("|    ");
 
+    putz(colour);
     for (uint i = 1; i <= pos.end_col; i++) {
         if (i < pos.start_col) putchar(' ');
-        else printf("%s^", colour);
+        else putchar(i == pos.start_col || i == pos.end_col ? '^' : '~');
     }
     puts(C_RST);
 }
@@ -79,7 +83,7 @@ void highlight_line_info(Position pos, const char* line) {
 }
 
 void highlight_line_start_and_error(Token* parent, Token* issue, const Vector* lines) {
-    if (!parent)
+    if (!parent && !issue)
         assert(false);
 
     Position startPos = parent->pos;

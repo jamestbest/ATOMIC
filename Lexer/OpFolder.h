@@ -5,9 +5,10 @@
 #ifndef ATOMIC_OPFOLDER_H
 #define ATOMIC_OPFOLDER_H
 
-#include "Lexerr.h"
+#include "../Commons.h"
 #include "Tokens.h"
+#include "Lexerr.h"
 
-uint fold(Token_vec* base_tokens, Token_vec* folded_tokens);
+uint fold(Array* base_tokens, Array* folded_tokens);
 
 #endif //ATOMIC_OPFOLDER_H

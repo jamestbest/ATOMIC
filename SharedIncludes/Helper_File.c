@@ -2,8 +2,6 @@
 // Created by jamescoward on 11/11/2023.
 //
 
-#include <unistd.h>
-#include <assert.h>
 #include "Helper_File.h"
 
 FILE* validate_file(const char* filename, const char* mode) {

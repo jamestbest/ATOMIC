@@ -5,6 +5,8 @@
 #ifndef ATOMIC_SHUNTINGYARD_H
 #define ATOMIC_SHUNTINGYARD_H
 
+#include "../Commons.h"
+
 #include "Node.h"
 #include "../Lexer/Tokens.h"
 
@@ -34,10 +36,10 @@ typedef struct ShuntRet {
 } ShuntRet;
 
 typedef struct ShuntData {
-    const Token_vec* tokens;
+    const Array* tokens;
     uint* t_pos;
 } ShuntData;
 
-ShuntRet shunt(const Token_vec *tokens, uint t_pos, bool ignoreTrailingParens);
+ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens);
 
 #endif //ATOMIC_SHUNTINGYARD_H
