@@ -18,6 +18,17 @@ typedef struct TypeInformation {
     uint16_t pointer_level;
 } TypeInformation;
 
+typedef struct {
+    uint _exported: 1;
+} SubroutineModifiers;
+
+typedef struct {
+    uint _exported: 1;
+    uint _imported: 1;
+    uint _mutable: 1;
+    uint _volatile: 1;
+} VariableModifiers;
+
 NodeRet parse(const Array* token_vec, const Vector* lines);
 
 #endif //PARSER_H

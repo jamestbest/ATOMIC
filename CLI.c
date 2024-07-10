@@ -21,7 +21,7 @@ Vector ATOM_VR__CLI_FILES;
 int main(int argc, char** argv) {
     puts("Welcome to the ATOMIC CLI!");
 
-    ATOM_VR__CLI_FILES = vec_create(ATOM_CT__CLI_DEFAULT_FILE_BUFF_SIZE);
+    ATOM_VR__CLI_FILES = vector_create(ATOM_CT__CLI_DEFAULT_FILE_BUFF_SIZE);
 
     if (!verify_args(argc, argv)) {
         return 1;
@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
 
     putchar('\n');
     for (uint i = 0; i < ATOM_VR__CLI_FILES.pos; i++) {
-        char* filename = vec_get(&ATOM_VR__CLI_FILES, i);
+        char* filename = vector_get_unsafe(&ATOM_VR__CLI_FILES, i);
 
         printf("File: %s\n", filename);
     }
@@ -121,19 +121,19 @@ void parse_args(int argc, char** argv) {
 }
 
 void parse_file(char* file) {
-    vec_add(&ATOM_VR__CLI_FILES, file);
+    vector_add(&ATOM_VR__CLI_FILES, file);
 }
 
 void parse_option_entry(Vector* args) {
     if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, ATOM_CT__OPTION_E_STR);
 
-    ATOM_VR__CLI_ENTRY_POINT = vec_get(args, 0);
+    ATOM_VR__CLI_ENTRY_POINT = vector_get_unsafe(args, 0);
 }
 
 void parse_option_output(Vector* args) {
     if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, ATOM_CT__OPTION_O_STR);
 
-    ATOM_VR__CLI_OUTPUT_NAME = vec_get(args, 0);
+    ATOM_VR__CLI_OUTPUT_NAME = vector_get_unsafe(args, 0);
 }
 
 void parse_option_out(Vector* args) {
@@ -152,6 +152,14 @@ void parse_option_out(Vector* args) {
         }
 
         flag_set_from_idx(index, true);
+    }
+}
+
+void parse_option_hadron(const Vector* args) {
+    for (uint i = 0; i < args->pos; ++i) {
+        const char* arg = args->arr[i];
+
+        
     }
 }
 
@@ -183,14 +191,14 @@ void parse_option(char *arg, char **argv, int argc, int *i) {
             break;
     }
 
-    vec_destroy(&args);
+    vector_destroy(&args);
 }
 
 Vector get_option_args(char** argv, int* argp, int argc) {
-    Vector args = vec_create(ATOM_CT__CLI_DEFAULT_OPTION_BUFF_SIZE);
+    Vector args = vector_create(ATOM_CT__CLI_DEFAULT_OPTION_BUFF_SIZE);
 
     while (*argp + 1 < argc && argv[*argp + 1][0] != '-') {
-        vec_add(&args, argv[*argp + 1]);
+        vector_add(&args, argv[*argp + 1]);
         (*argp)++;
     }
 

@@ -23,6 +23,11 @@ typedef struct LenSize {
     uint32_t size; //byte count
 } LenSize;
 
+typedef struct {
+    uint32_t value;
+    uint bytes;
+} UTF8Pos;
+
 int find_last(char* string, char pattern);
 int starts_with_ips(const char* string, const char* pattern);
 int starts_with(const char* string, const char* pattern);
@@ -52,7 +57,9 @@ bool is_whitespace(uint32_t a);
 bool is_newline(uint32_t a);
 
 void putz(const char* string);
-void putz_santitize(const char* string);
+void putz_santitize(char* string);
+
+char* remove_ws_prefix(char* string);
 
 void newline();
 

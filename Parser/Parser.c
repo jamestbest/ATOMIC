@@ -8,6 +8,8 @@ const Array* ptokens;
 const Vector* plines;
 int t_pos;
 
+uint64_t stmt_uid = 0;
+
 Node* file_global_node;
 
 static void add_statement(Node* statement);
@@ -52,24 +54,60 @@ static bool expect_keyword(ATOM_CT__LEX_KEYWORD_ENUM keyword);
 static bool expect(TokenType type);
 
 // [[todo]] I've just realised that the Node* created are leaked if there are error! --yes I should have realised this earlier
+void attatch_stmt_id(Node* stmt) {
+    stmt->statement_id = stmt_uid++;
+}
 
-void add_statement_to_children(Node* parentNode, Node* statement) {
-    if (statement->type != NODE_MULTIPLE_STATEMENTS) {
-        vec_add(&parentNode->children, statement);
+void propagate_stmt_uid(Node* node, uint64_t stmt_uid) {
+    if (!node->children.arr) return;
+
+    for (uint i = 0; i < node->children.pos; ++i) {
+        Node* child = node->children.arr[i];
+
+        if (child->statement_id != -1) propagate_stmt_uid(child, child->statement_id);
+        else {
+            child->statement_id = stmt_uid;
+            propagate_stmt_uid(child, stmt_uid);
+        }
+    }
+}
+
+void _add_node_to_children(Node* parentNode, Node* node, bool is_stmt) {
+    if (!parentNode || !node) {
+        printf(C_RED"DEVERR: <<NULL>> parent (%p) or statement (%p) in add statement"C_RST, parentNode, node);
         return;
     }
 
-    for (uint i = 0; i < statement->children.pos; ++i) {
-        Node* stmt = statement->children.arr[i];
-        vec_add(&file_global_node->children, stmt);
+    if (node->type != NODE_MULTIPLE_STATEMENTS) {
+        if (is_stmt) {
+            attatch_stmt_id(node);
+            propagate_stmt_uid(node, node->statement_id);
+        }
+        vector_add(&parentNode->children, node);
+        return;
     }
-    free_node_head(statement);
+
+    for (uint i = 0; i < node->children.pos; ++i) {
+        Node* stmt = node->children.arr[i];
+        if (is_stmt) {
+            attatch_stmt_id(stmt);
+            propagate_stmt_uid(stmt, stmt->statement_id);
+        }
+        vector_add(&parentNode->children, stmt);
+    }
+    free_node_head(node);
+}
+
+void add_statement_to_children(Node* parentNode, Node* statement) {
+    _add_node_to_children(parentNode, statement, true);
 }
 
 void add_statement(Node* statement) {
-    if (statement == NULL) return;
-
     add_statement_to_children(file_global_node, statement);
+}
+
+void add_node_to_children(Node* parentNode, Node* node) {
+    _add_node_to_children(parentNode, node, false);
 }
 
 NodeRet parse(const Array* tokens, const Vector* lines) {
@@ -172,10 +210,20 @@ NodeRet parse_statement(void) {
     return ret;
 }
 
+NodeRet parse_subroutine_call_modifier(void) {
+    Token* modifier = current();
+
+    //todo
+}
+
+NodeRet parse_variable_declaration_modifier(void) {
+
+}
+
 NodeRet parse_subroutine_call(void) {
     Token* identifier = current();
 
-    ShuntRet sub_call = shunt(ptokens, t_pos, false);
+    const ShuntRet sub_call = shunt(ptokens, t_pos, false);
 
     if (sub_call.err_code != SUCCESS) {
         return parserr(PARSERR_SUB_CALL_PARSE_ERROR, current(), NULL);
@@ -206,7 +254,7 @@ NodeRet parse_var_assignment(void) {
     t_pos = ret.tok_end_pos;
 
     Node* var_assign = create_parent_node(ST_VAR_ASS, identifier);
-    vec_add(&var_assign->children, ret.expressionNode);
+    vector_add(&var_assign->children, ret.expressionNode);
 
     return (NodeRet){var_assign, SUCCESS};
 }
@@ -227,8 +275,8 @@ NodeRet parse_var_declaration(void) {
 
     Node* declNode = create_parent_node(ST_VAR_DECL, type_op);
 
-    vec_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-    vec_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, type));
+    vector_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
+    vector_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, type));
 
     if (!expect(OP_ASSIGN)) {
         return (NodeRet){declNode, SUCCESS};
@@ -238,8 +286,8 @@ NodeRet parse_var_declaration(void) {
     Node* ret = create_parent_node(NODE_MULTIPLE_STATEMENTS, NULL);
     Node* assignNode = create_parent_node(ST_VAR_ASS, assign);
 
-    vec_add(&ret->children, declNode);
-    vec_add(&ret->children, assignNode);
+    vector_add(&ret->children, declNode);
+    vector_add(&ret->children, assignNode);
 
     ShuntRet exprInfo = shunt(ptokens, t_pos, false);
 
@@ -248,10 +296,10 @@ NodeRet parse_var_declaration(void) {
     t_pos = exprInfo.tok_end_pos;
 
     Node* assignEqNode = create_parent_node(EXPR_BIN, assign);
-    vec_add(&assignEqNode->children, create_leaf_node(EX_LIT, identifier));
-    vec_add(&assignEqNode->children, exprInfo.expressionNode);
+    vector_add(&assignEqNode->children, create_leaf_node(EX_LIT, identifier));
+    vector_add(&assignEqNode->children, exprInfo.expressionNode);
 
-    vec_add(&assignNode->children, assignEqNode);
+    vector_add(&assignNode->children, assignEqNode);
 
     return (NodeRet){ret, SUCCESS};
 }
@@ -344,7 +392,7 @@ NodeRet parse_statement_block(void) {
 }
 
 NodeRet parse_keyword(void) {
-    Token* t = current();
+    const Token* t = current();
 
     switch ((ATOM_CT__LEX_KEYWORD_ENUM) t->data.enum_pos) {
         case FOR:
@@ -446,8 +494,8 @@ NodeRet parse_param(void) {
 
     Node* paramNode = create_parent_node(SUB_PARAM, identifier);
 
-    vec_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-    vec_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, type));
+    vector_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
+    vector_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, type));
 
     return (NodeRet){paramNode, SUCCESS};
 }
@@ -468,7 +516,7 @@ NodeRet parse_params(void) {
             assert(false);
         }
 
-        vec_add(&params->children, param.node);
+        vector_add(&params->children, param.node);
 
         if (!expect(COMMA))
             break;
@@ -485,10 +533,10 @@ NodeRet parse_params(void) {
     return (NodeRet){params, SUCCESS};
 }
 
-NodeRet parse_sub_statement(bool isFunc) {
+NodeRet parse_subroutine_statement(bool is_func) {
     Token* keyword = consume();
 
-    Node* funcNode = create_parent_node(ST_FUNC, keyword);
+    Node* sub_node = create_parent_node(is_func ? ST_FUNC : ST_PROC, keyword);
 
     //[[todo]] for now just assuming there are no keyword modifiers
 
@@ -496,16 +544,16 @@ NodeRet parse_sub_statement(bool isFunc) {
         assert(false);
     }
 
-    Token* func_name = consume();
+    Token* sub_name = consume();
 
-    NodeRet params = parse_params();
+    const NodeRet params = parse_params();
 
     if (params.retCode != SUCCESS) {
         assert(false);
     }
 
     Token* type;
-    if (isFunc) {
+    if (is_func) {
         if (!expect(TYPE_SET)) {
             assert(false);
         }
@@ -523,26 +571,26 @@ NodeRet parse_sub_statement(bool isFunc) {
         assert(false);
     }
 
-    NodeRet body = parse_statement_block();
+    const NodeRet body = parse_statement_block();
 
     if (body.retCode != SUCCESS) {
         parserr(PARSERR_SUB_STATEMENT_ERROR_IN_BODY, keyword, current());
     }
 
-    vec_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
-    vec_add(&funcNode->children, params.node);
-    if (isFunc) vec_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, type));
-    vec_add(&funcNode->children, body.node);
+    vector_add(&sub_node->children, create_leaf_node(TOKEN_WRAPPER, sub_name));
+    vector_add(&sub_node->children, params.node);
+    if (is_func) vector_add(&sub_node->children, create_leaf_node(TOKEN_WRAPPER, type));
+    vector_add(&sub_node->children, body.node);
 
-    return (NodeRet){funcNode, SUCCESS};
+    return (NodeRet){sub_node, SUCCESS};
 }
 
 NodeRet parse_func_statement(void) {
-    return parse_sub_statement(true);
+    return parse_subroutine_statement(true);
 }
 
 NodeRet parse_proc_statement(void) {
-    return parse_sub_statement(false);
+    return parse_subroutine_statement(false);
 }
 
 NodeRet parse_entry_statement(void) {
@@ -593,110 +641,66 @@ NodeRet parse_ret_statement(void) {
     }
 
     t_pos = exprData.tok_end_pos;
-    vec_add(&retNode->children, exprData.expressionNode);
+    vector_add(&retNode->children, exprData.expressionNode);
 
     return (NodeRet){retNode, SUCCESS};
 }
 
 NodeRet parse_for_setup(void) {
     // assume start is one after `for` keyword
-    //  can be [var] [var = expr] [var: type] [var: type = expr]
+    //  can be a statement or a statement chain
+
+    /*  Valid statements
+     *   - variable declarations    - i: i4 = 12
+     *   - variable assignments     - i = 10
+     */
 
     if (!expect(IDENTIFIER)) {
         assert(false);
     }
 
-    Token* identifier = consume();
+    Node* stmt_chain = create_parent_node(ST_CHAIN, NULL);
 
-    Token* c = current();
+    while (true) {
+        if (expect_keyword(TO)) break;
 
-    //[[todo]] do
+        const Token* n = peek();
 
-    switch (c->type) {
-        case OP_ASSIGN: {
-            consume(); // eat the `=`
+        if (!n) assert(false);
 
-            ShuntRet expr = shunt(ptokens, t_pos, false);
+        if (n->type == TYPE_SET || n->type == TYPE_IMPL_CAST) {
+            const NodeRet setup = parse_var_declaration();
 
-            if (expr.err_code != SUCCESS) {
-                assert(false);
-            }
-            t_pos = expr.tok_end_pos;
+            if (setup.retCode != SUCCESS) assert(false);
 
-            Node* assignNode = create_parent_node(ST_VAR_ASS, identifier);
-            vec_add(&assignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-            vec_add(&assignNode->children, expr.expressionNode);
+            add_statement_to_children(stmt_chain, setup.node);
+        } else if (n->type == OP_ASSIGN || n->type == OP_ARITH_ASSIGN) {
+            const NodeRet assignment = parse_var_assignment();
 
-            return (NodeRet){assignNode, SUCCESS};
+            if (assignment.retCode != SUCCESS) assert(false);
+
+            add_statement_to_children(stmt_chain, assignment.node);
+        } else {
+            assert(false);
         }
-        case TYPE_SET: {
-            consume(); // eat the ':'
 
-            if (!expect(TYPE)) {
-                assert(false);
-            }
+        if (!expect(DELIMITER)) break;
 
-            Token* type = consume();
-
-            Node* varDeclNode = create_parent_node(ST_VAR_DECL, identifier);
-            vec_add(&varDeclNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-            vec_add(&varDeclNode->children, create_leaf_node(TOKEN_WRAPPER, type));
-
-            if (!expect(OP_ASSIGN)) {
-                // in this case it's just a:type, and so we will assume it is set to 0
-                // [[todo]] but where do we assume this??, I'm going to say later, just so I don't have to generate tokens
-                return (NodeRet){varDeclNode, SUCCESS};
-            }
-
-            Node* ret = create_parent_node(NODE_MULTIPLE_STATEMENTS, NULL);
-            vec_add(&ret->children, varDeclNode);
-
-            ShuntRet expr = shunt(ptokens, t_pos, false);
-
-            if (expr.err_code != SUCCESS) {
-                assert(false);
-            }
-            t_pos = expr.tok_end_pos;
-
-            Node* varAssignNode = create_parent_node(ST_VAR_ASS, identifier);
-            vec_add(&varAssignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-            vec_add(&varAssignNode->children, expr.expressionNode);
-
-            vec_add(&ret->children, varAssignNode);
-
-            return (NodeRet){ret, SUCCESS};
-        }
-        default:
-            // assume it's just an identifier
-            return (NodeRet){create_leaf_node(EX_LIT, identifier), SUCCESS};
+        skip_all_skippables();
     }
+
+    if (stmt_chain->children.pos == 1) {
+        const NodeRet ret = (NodeRet){stmt_chain->children.arr[0], SUCCESS};
+        free_node_head(stmt_chain);
+
+        return ret;
+    }
+
+    return (NodeRet){stmt_chain, SUCCESS};
 }
 
 NodeRet parse_for_cond(void) {
-    Token* next = peek();
-    if (next && next->type == OP_ASSIGN) {
-        if (!expect(IDENTIFIER)) {
-            assert(false);
-        }
-
-        Token* identifier = consume();
-
-        consume(); // eat `=`
-
-        ShuntRet expr = shunt(ptokens, t_pos, false);
-
-        if (expr.err_code != SUCCESS) {
-            assert(false);
-        }
-
-        t_pos = expr.tok_end_pos;
-
-        Node* assignNode = create_parent_node(ST_VAR_ASS, identifier);
-        vec_add(&assignNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-        vec_add(&assignNode->children, expr.expressionNode);
-
-        return (NodeRet){assignNode, SUCCESS};
-    }
+    //* An expression (that evaluates to a boolean (Not the job of this parse phase))
 
     ShuntRet expr = shunt(ptokens, t_pos, true); // we want to ignore trailing because `do` is optional and this could be in parens
 
@@ -710,7 +714,7 @@ NodeRet parse_for_cond(void) {
 }
 
 NodeRet parse_for_change(void) {
-    ShuntRet expr = shunt(ptokens, t_pos, true);
+    const ShuntRet expr = shunt(ptokens, t_pos, true);
 
     if (expr.err_code != SUCCESS) {
         assert(false);
@@ -724,17 +728,19 @@ NodeRet parse_for_statement(void) {
     /*
      * FOR [x] to [y] do [z] statement
      *
-     * [x] can be [var] [var = expr] [var: type] [var: type = expr]
-     * [y] can be [var] [var = expr] [var [op] expr] [expr]
-     * [z] can be [arithAssignExpr/inc/dec] (for now, any expr)
+     * [x] is a list of statments seperated by `;`
+     * [y] is an expression (that evaluates to a boolean)
+     * [z] is an expression
+     *
+     * All are optional
      */
     Token* keyword = consume();
 
-    bool usingParens = expect(PAREN_OPEN);
+    const bool usingParens = expect(PAREN_OPEN);
 
     if (usingParens) consume();
 
-    NodeRet setup = parse_for_setup();
+    const NodeRet setup = parse_for_setup();
 
     if (!expect_keyword(TO)) {
         assert(false);
@@ -742,9 +748,9 @@ NodeRet parse_for_statement(void) {
 
     consume(); // eat `to`
 
-    NodeRet cond = parse_for_cond();
+    const NodeRet cond = parse_for_cond();
 
-    bool hasDo = expect_keyword(DO);
+    const bool hasDo = expect_keyword(DO);
     NodeRet change;
     if (hasDo) {
         consume(); // eat `do`
@@ -756,7 +762,7 @@ NodeRet parse_for_statement(void) {
         }
     }
 
-    NodeRet body = parse_statement_block();
+    const NodeRet body = parse_statement_block();
 
     if (body.retCode != SUCCESS) {
         assert(false);
@@ -764,10 +770,11 @@ NodeRet parse_for_statement(void) {
 
     Node* forNode = create_parent_node(ST_FOR, keyword);
 
-    vec_add(&forNode->children, setup.node);
-    vec_add(&forNode->children, cond.node);
-    if (hasDo) vec_add(&forNode->children, change.node);
-    vec_add(&forNode->children, body.node);
+    add_statement_to_children(forNode, setup.node);
+    add_node_to_children(forNode, cond.node);
+    if (hasDo) add_node_to_children(forNode, change.node);
+
+    vector_add(&forNode->children, body.node);
 
     return (NodeRet){forNode, SUCCESS};
 }
@@ -799,8 +806,8 @@ NodeRet parse_while_statement(void) {
 
     Node* whileNode = create_parent_node(ST_WHILE, keyword);
 
-    vec_add(&whileNode->children, expr.expressionNode);
-    vec_add(&whileNode->children, body.node);
+    vector_add(&whileNode->children, expr.expressionNode);
+    vector_add(&whileNode->children, body.node);
 
     return (NodeRet){whileNode, SUCCESS};
 }
@@ -833,8 +840,8 @@ NodeRet parse_foreach_statement(void) {
 
     Node* foreachNode = create_parent_node(ST_FOREACH, keyword);
 
-    vec_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, element));
-    vec_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, array));
+    vector_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, element));
+    vector_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, array));
 
     if (expect_keyword(WITH)) {
         consume(); // eat `with`
@@ -845,7 +852,7 @@ NodeRet parse_foreach_statement(void) {
 
         Token* index = consume();
 
-        vec_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, index));
+        vector_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, index));
     }
 
     if (!expect(CURLY_OPEN)) {
@@ -858,7 +865,7 @@ NodeRet parse_foreach_statement(void) {
         assert(false);
     }
 
-    vec_add(&foreachNode->children, body.node);
+    vector_add(&foreachNode->children, body.node);
 
     return (NodeRet){foreachNode, SUCCESS};
 }
@@ -892,8 +899,8 @@ NodeRet parse_times_statement(void) {
 
     Node* timesNode = create_parent_node(ST_TIMES, keyword);
 
-    vec_add(&timesNode->children, expr.expressionNode);
-    vec_add(&timesNode->children, body.node);
+    vector_add(&timesNode->children, expr.expressionNode);
+    vector_add(&timesNode->children, body.node);
 
     return (NodeRet){timesNode, SUCCESS};
 }
@@ -916,7 +923,7 @@ NodeRet parse_ifelif_statement(bool isIf) {
     t_pos = shuntData.tok_end_pos;
 
     Node* conditionNode = shuntData.expressionNode;
-    vec_add(&ifNode->children, conditionNode);
+    vector_add(&ifNode->children, conditionNode);
 
     Token* c = current();
 
@@ -929,7 +936,7 @@ NodeRet parse_ifelif_statement(bool isIf) {
         assert(false);
 
     Node* statementBlockNode = statement.node;
-    vec_add(&ifNode->children, statementBlockNode);
+    vector_add(&ifNode->children, statementBlockNode);
 
     return (NodeRet){ifNode, SUCCESS};
 }
@@ -948,7 +955,7 @@ NodeRet parse_else_statement(void) {
         assert(false);
 
     Node* statementBlockNode = statement.node;
-    vec_add(&elseNode->children, statementBlockNode);
+    vector_add(&elseNode->children, statementBlockNode);
 
     return (NodeRet){elseNode, SUCCESS};
 }
@@ -969,7 +976,7 @@ NodeRet parse_if_statement(void) {
     if (ifNode.retCode != SUCCESS)
         assert(false);
 
-    vec_add(&node->children, ifNode.node);
+    vector_add(&node->children, ifNode.node);
 
     Token* c;
     while (c = current(), c->type == KEYWORD && c->data.enum_pos == ELIF) {
@@ -978,7 +985,7 @@ NodeRet parse_if_statement(void) {
         if (elifNode.retCode != SUCCESS)
             assert(false);
 
-        vec_add(&node->children, elifNode.node);
+        vector_add(&node->children, elifNode.node);
     }
 
     c = current();
@@ -988,14 +995,14 @@ NodeRet parse_if_statement(void) {
         if (elseNode.retCode != SUCCESS)
             assert(false);
 
-        vec_add(&node->children, elseNode.node);
+        vector_add(&node->children, elseNode.node);
     }
 
     return (NodeRet){node, SUCCESS};
 }
 
 NodeRet parse_expression_statement(void) {
-    ShuntRet expr = shunt(ptokens, t_pos, false);
+    const ShuntRet expr = shunt(ptokens, t_pos, false);
 
     if (expr.err_code != SUCCESS) {
         assert(false);
@@ -1004,13 +1011,13 @@ NodeRet parse_expression_statement(void) {
 
     Node* exprStatement = create_parent_node(ST_EXPR, NULL);
 
-    vec_add(&exprStatement->children, expr.expressionNode);
+    vector_add(&exprStatement->children, expr.expressionNode);
 
     return (NodeRet){exprStatement, SUCCESS};
 }
 
 NodeRet parse_un_op_statement(void) {
-    ShuntRet expr = shunt(ptokens, t_pos, false);
+    const ShuntRet expr = shunt(ptokens, t_pos, false);
 
     if (expr.err_code != SUCCESS) {
         assert(false);

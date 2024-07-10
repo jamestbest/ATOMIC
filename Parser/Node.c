@@ -9,6 +9,46 @@ static void printpostfix(Node* node);
 
 ARRAY_ADD(NodeLevelPrintType, nodeLevelEnum)
 
+bool is_stmt(const NodeType type) {
+    switch (type) {
+        case NODE_INVALID:
+        case NODE_MULTIPLE_STATEMENTS:
+        case TOKEN_WRAPPER:
+        case EXPR:
+        case EXPR_BIN:
+        case EXPR_UN:
+        case EX_LIT:
+        case SUB_CALL:
+        case SUB_CALL_ARGS:
+        case SUB_PARAMS:
+        case SUB_PARAM:
+            return false;
+
+        case NODE_ROOT:
+        case ST_BLOCK:
+        case ST_CHAIN:
+        case ST_FOREACH:
+        case ST_WHILE:
+        case ST_TIMES:
+        case ST_FOR:
+        case ST_CONT:
+        case ST_BRK:
+        case ST_IF_TOP_LEVEL:
+        case ST_IF:
+        case ST_ELIF:
+        case ST_ELSE:
+        case ST_RET:
+        case ST_VAR_DECL:
+        case ST_VAR_ASS:
+        case ST_FUNC:
+        case ST_PROC:
+        case ST_EXPR:
+            return true;
+    }
+
+    assert(false);
+}
+
 static char* nodeTypeToString(NodeType type) {
     switch (type) {
         case NODE_INVALID:
@@ -55,12 +95,6 @@ static char* nodeTypeToString(NodeType type) {
             return "ST RET";
         case NODE_MULTIPLE_STATEMENTS:
             return "[[DEV]] MULTIPLE STATEMENTS";
-        case ST_FOR_SETUP:
-            return "ST FOR SETUP";
-        case ST_FOR_LOOP:
-            return "ST FOR INC";
-        case ST_FOR_COND:
-            return "ST FOR COND";
         case ST_CONT:
             return "ST CONTINUE";
         case ST_BRK:
@@ -75,6 +109,8 @@ static char* nodeTypeToString(NodeType type) {
             return "PARAMETER";
         case ST_EXPR:
             return "EXPR STATEMENT";
+        case ST_CHAIN:
+            return "ST CHAIN";
     }
     assert(false);
 }
@@ -103,11 +139,16 @@ Node* create_node_basic(NodeType type, Token* token, bool has_children) {
     node->token = token;
 
     if (has_children) {
-        node->children = vec_create(MIN_CHILDREN);
+        node->children = vector_create(MIN_CHILDREN);
     }
     else {
         node->children = (Vector){NULL, -1, -1};
     }
+
+    node->statement_id = -1;
+    node->uid = -1;
+
+    node->data.scope = NULL;
 
     return node;
 }
@@ -250,6 +291,21 @@ void print_node_basic(Node *node, Array *levels) {
         print_position(get_node_wrapping_position(node));
         putz(C_RST);
     }
+
+    const bool has_uid = node->uid != -1;
+    const bool has_stmt_uid = node->statement_id != -1;
+
+    if (has_stmt_uid || has_uid) {
+        putz(C_RED"<");
+
+        if (has_stmt_uid) printf("STMT_UID: %llu", node->statement_id);
+        if (has_stmt_uid && has_uid) putz("; ");
+        if (has_uid) printf("UID: %llu", node->uid);
+
+        putz(">"C_RST);
+    }
+
+    if (node->data.scope) putz(C_GRN"I HAVE A SCOPE LINKED! "C_RST);
 
     if (node->token && node->type != TOKEN_WRAPPER) {
         putz("; TOK: ");

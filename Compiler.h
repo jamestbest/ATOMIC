@@ -29,4 +29,8 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 void print_tokens_with_flag_check(Array* tokens, Vector* lines, const char* print_header);
 void print_ast_with_flag_check(Node* tl_node);
 
+static int ATOM_VR__COMPILER_DISPLAY_FLAGS = false;
+static int ATOM_VR__COMPILER_DISPLAY_TOKENS = false;
+static int ATOM_VR__COMPILER_DISPLAY_AST = false;
+
 #endif //ATOMIC_COMPILER_H

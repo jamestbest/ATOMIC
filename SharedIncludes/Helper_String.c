@@ -226,31 +226,86 @@ void putz(const char* string) {
     fputs(string, stdout);
 }
 
+UTF8Pos getutf8(const char* string) {
+    const unsigned char fbyte = *string;
+    uint32_t ret = fbyte;
+
+    uint inc = 1;
+
+    if (fbyte < 0x80) {
+        //1 byte character
+    }
+    else if ((fbyte & 0xE0) == 0xC0) {
+        ret = ((fbyte & 0x1F) << 6)             |
+                (string[1] & 0x3f);
+        inc = 2;
+    }
+    else if ((fbyte & 0xf0) == 0xe0) {
+        ret = ((fbyte & 0x0f) << 12)            |
+                ((string[1] & 0x3f) << 6)        |
+                (string[2] & 0x3f);
+        inc = 3;
+    }
+    else if ((fbyte & 0xf8) == 0xf0 && (fbyte <= 0xf4)) {
+        ret = ((fbyte & 0x07) << 18)            |
+                ((string[1] & 0x3f) << 12)       |
+                ((string[2] & 0x3f) << 6)        |
+                ((string[3] & 0x3f));
+        inc = 4;
+    }
+    else {
+        ret = -1; //allow it to skip the byte if consume();
+    }
+
+    return (UTF8Pos){ret, inc};
+}
+
+uint pututf8(const char* string) {
+    const UTF8Pos info = getutf8(string);
+
+    if (info.value != -1) printf("%lc", info.value);
+
+    return info.bytes;
+}
+
 // remove those pesky `\`
-void putz_santitize(const char* string) {
+void putz_santitize(char* string) {
     uint pos = 0;
+    const char* start_point = string;
+    const char* buff;
+
     while (string[pos] != '\0') {
         switch (string[pos]) {
             case '\n':
-                putz("\\n");
+                buff = "\\n";
                 break;
             case '\r':
-                putz("\\r");
+                buff = "\\r";
                 break;
             case '\t':
-                putz("\\t");
+                buff = "\\t";
                 break;
             default:
-                if (string[pos] < 0x20) {
-                    printf("%03o", string[pos]);
-                } else {
-                    putchar(string[pos]);
-                }
+                pos++;
+                continue;
         }
-        pos++;
+        const char save = string[pos];
+        string[pos] = '\0';
+        printf("%s%s", start_point, buff);
+        string[pos] = save;
+
+        start_point = &string[++pos];
     }
+
+    printf("%s", start_point);
 }
 
 void newline() {
     putchar('\n');
+}
+
+char* remove_ws_prefix(char* string) {
+    uint pos = 0;
+    while (is_whitespace(string[pos++])){}
+    return &string[pos];
 }

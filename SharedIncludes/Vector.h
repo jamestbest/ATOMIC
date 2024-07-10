@@ -11,8 +11,8 @@ typedef unsigned int uint;
 
 typedef struct {
     void** arr;
-    size_t capacity;
     size_t pos;
+    size_t capacity;
 } Vector;
 
 typedef struct VecRet {
@@ -20,15 +20,19 @@ typedef struct VecRet {
     uint retCode;
 } VecRet;
 
-bool vec_grow(Vector* vector, size_t new_size);
-bool vec_add(Vector* vector, void* data);
-void* vec_get(Vector* vector, size_t index);
-Vector vec_create(size_t size);
-void vec_destroy(Vector* vector);
-void vec_disseminate_destruction(Vector* vector);
-VecRet vec_data_steal(Vector* vector);
-VecRet vec_data_copy(Vector* vector);
-Vector vec_copy(Vector* vector);
-void* vec_pop(Vector* vector);
+Vector vector_create(size_t element_count);
+bool vector_at_capacity(const Vector* vec);
+bool vector_verify(const Vector* vec);
+bool vector_resize(Vector* vec, size_t new_element_count);
+bool vector_add(Vector* vec, void* element);
+VecRet vector_remove(Vector* vec, uint index);
+void* vector_remove_unsafe(Vector* vec, uint index);
+VecRet vector_pop(Vector* vec);
+void* vector_pop_unsafe(Vector* vec);
+VecRet vector_get(const Vector* vec, uint index);
+void* vector_get_unsafe(const Vector* vec, uint index);
+void vector_destroy(Vector* vec);
+void vector_disseminate_destruction(Vector* vec);
+
 
 #endif //ATOMIC_VECTOR_H

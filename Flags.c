@@ -23,6 +23,8 @@ int flag_int_to_index(long long int fi) {
 			return ATOM_CT__FLAG_AST_OUT;
 		case ATOM_CT__FLAG_FLAGS_OUT_HASH:
 			return ATOM_CT__FLAG_FLAGS_OUT;
+		case ATOM_CT__FLAG_SCOPE_OUT_HASH:
+			return ATOM_CT__FLAG_SCOPE_OUT;
 		case ATOM_CT__FLAG_HADRON_EXPAND_HASH:
 			return ATOM_CT__FLAG_HADRON_EXPAND;
 		default:
@@ -48,6 +50,8 @@ char* flag_index_to_string(int index) {
 			return ATOM_CT__FLAG_AST_OUT_STR;
 		case ATOM_CT__FLAG_FLAGS_OUT:
 			return ATOM_CT__FLAG_FLAGS_OUT_STR;
+		case ATOM_CT__FLAG_SCOPE_OUT:
+			return ATOM_CT__FLAG_SCOPE_OUT_STR;
 		case ATOM_CT__FLAG_HADRON_EXPAND:
 			return ATOM_CT__FLAG_HADRON_EXPAND_STR;
 		default:

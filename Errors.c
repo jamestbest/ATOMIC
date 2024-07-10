@@ -4,7 +4,9 @@
 
 #include "Errors.h"
 
-static void highlight_line(Position pos, const char* line, const char* colour);
+#include "SharedIncludes/Helper_Math.h"
+
+static void highlight_line(Position pos, char* line, const char* colour, const uint min_pos_printout);
 
 void highlight_line_multiple(const char* line, const Position displayPos, char* colours[], ...) {
     if (colours[0] == NULL) return;
@@ -17,7 +19,7 @@ void highlight_line_multiple(const char* line, const Position displayPos, char* 
     uint colPos = 1;
     uint colourPos = 0;
 
-    int position_length = print_position(displayPos);
+    const int position_length = print_position(displayPos);
     printf("|    %s", line);
 
     for (uint i = 0; i < (uint)position_length; i++) {
@@ -28,7 +30,7 @@ void highlight_line_multiple(const char* line, const Position displayPos, char* 
 
     // todo: refactor; changes added but not written well
     while (colours[colourPos] != NULL) {
-        Position pos = va_arg(args, Position);
+        const Position pos = va_arg(args, Position);
 
         while (colPos < pos.start_col) {putchar(' '); colPos++;};
 
@@ -47,15 +49,24 @@ void highlight_line_multiple(const char* line, const Position displayPos, char* 
     putchar('\n');
 }
 
-void highlight_line(Position pos, const char* line, const char* colour) {
+void highlight_line(Position pos, char* line, const char* colour, const uint min_pos_printout) {
     // todo: this won't work if there is a special printout in the error printout e.g. \r then the col position will be offset by 1 after
     int position_length = print_position(pos);
+
+    if (position_length > 0 && min_pos_printout != -1) {
+        const int diff = min_pos_printout - position_length;
+        position_length = min_pos_printout;
+
+        for (int i = 0; i < diff; ++i) {
+            putchar(' ');
+        }
+    }
     putz("|    ");
     putz_santitize(line);
     newline();
 
     if (position_length < 0) goto skip_position_offset;
-    for (uint i = 0; i < (uint)position_length; i++) {
+    for (int i = 0; i < position_length; i++) {
         putchar(' ');
     }
 
@@ -70,38 +81,49 @@ skip_position_offset:
     puts(C_RST);
 }
 
-void highlight_line_err(Position pos, const char* line) {
-    highlight_line(pos, line, C_RED);
+void highlight_line_err(Position pos, char* line, const uint min_pos_printout) {
+    highlight_line(pos, line, C_RED, min_pos_printout);
 }
 
-void highlight_line_warning(Position pos, const char* line) {
-    highlight_line(pos, line, C_MGN);
+void highlight_line_warning(Position pos, char* line, const uint min_pos_printout) {
+    highlight_line(pos, line, C_MGN, min_pos_printout);
 }
 
-void highlight_line_info(Position pos, const char* line) {
-    highlight_line(pos, line, C_BLU);
+void highlight_line_info(Position pos, char* line, const uint min_pos_printout) {
+    highlight_line(pos, line, C_BLU, min_pos_printout);
 }
 
 void highlight_line_start_and_error(Token* parent, Token* issue, const Vector* lines) {
     if (!parent && !issue)
         assert(false);
 
-    Position startPos = parent->pos;
-    char* startLine = lines->arr[startPos.start_line - 1];
+    if (!parent || !issue) {
+        const Token* token = parent ? parent : issue;
+        const Position pos = token->pos;
+        char* line = lines->arr[pos.start_line - 1];
 
-    if (!issue) {
-        highlight_line_info(startPos, startLine);
+        if (parent) highlight_line_info(pos, line, -1);
+        else highlight_line_err(pos, line, -1);
+
         return;
     }
 
-    Position errorPos = issue->pos;
+    const Position startPos = parent->pos;
+    char* startLine = lines->arr[startPos.start_line - 1];
+
+    const Position errorPos = issue->pos;
     char* errorLine = lines->arr[errorPos.start_line - 1];
 
-    bool sameLine = startPos.start_line == errorPos.start_line && startPos.end_line == errorPos.end_line;
+    const bool sameLine = startPos.start_line == errorPos.start_line && startPos.end_line == errorPos.end_line;
 
     if (!sameLine) {
-        highlight_line_info(startPos, startLine);
-        highlight_line_err(errorPos, errorLine);
+        const uint start_len = length_of_position_printout(startPos);
+        const uint err_len = length_of_position_printout(errorPos);
+
+        const uint max_len = max(start_len, err_len);
+
+        highlight_line_info(startPos, startLine, max_len);
+        highlight_line_err(errorPos, errorLine, max_len);
 
         return;
     }

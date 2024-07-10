@@ -13,7 +13,7 @@ char* lexerr_process_char(char a, char buff[2]) {
 }
 
 void highlight_current_line_err(Position pos) {
-    highlight_line_err(pos, llines->arr[pos.start_line - 1]);
+    highlight_line_err(pos, llines->arr[pos.start_line - 1], -1);
 }
 
 uint lexerr(const Lexerrors errorCode, const Position pos, ...) {

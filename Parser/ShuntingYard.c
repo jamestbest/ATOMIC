@@ -252,7 +252,7 @@ Node* parse_subroutine_call_arguments(ShuntData data) {
 
         if (arg.err_code != SUCCESS) assert(false);
 
-        vec_add(&argsNode->children, arg.expressionNode);
+        vector_add(&argsNode->children, arg.expressionNode);
     } while(c = current(data), c && c->type == COMMA);
 
     return argsNode;
@@ -272,8 +272,8 @@ Node* parse_subroutine_call(ShuntData data) {
 
     consume(data); // eat the )
 
-    vec_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
-    vec_add(&funcNode->children, args);
+    vector_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
+    vector_add(&funcNode->children, args);
 
     return funcNode;
 }
@@ -411,8 +411,8 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
                     assert(false);
                 }
 
-                vec_add(&arrayNode->children, identifier);
-                vec_add(&arrayNode->children, expr);
+                vector_add(&arrayNode->children, identifier);
+                vector_add(&arrayNode->children, expr);
 
                 stack_push(&output_s, arrayNode);
 
@@ -461,7 +461,7 @@ Node* form_un_op_node(Token* op_token, Stack* output_s) {
 
     Node* op_node = create_parent_node(EXPR_UN, op_token);
 
-    vec_add(&op_node->children, child);
+    vector_add(&op_node->children, child);
 
     return op_node;
 }
@@ -476,8 +476,8 @@ Node* form_bin_op_node(Token* op_token, Stack* output_s) {
 
     Node* op_node = create_parent_node(EXPR_BIN, op_token);
 
-    vec_add(&op_node->children, l_expr);
-    vec_add(&op_node->children, r_expr);
+    vector_add(&op_node->children, l_expr);
+    vector_add(&op_node->children, r_expr);
 
     return op_node;
 }

@@ -198,6 +198,8 @@ extern Arr ATOM_CT__LEX_TYPES;
 extern char* ATOM_CT__LEX_TYPES_RAW[];
 extern Arr ATOM_CT__LEX_TYPES_GENERAL;
 extern char* ATOM_CT__LEX_TYPES_GENERAL_RAW[];
+extern Arr ATOM_CT__LEX_TYPES_GENERAL_SMALL;
+extern char* ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW[];
 extern Arr ATOM_CT__LEX_LIT_BOOLS;
 extern char* ATOM_CT__LEX_LIT_BOOLS_RAW[];
 extern Arr ATOM_CT__LEX_OPERATORS;
@@ -211,6 +213,8 @@ const char* cons_token_type_colored(TokenType type);
 bool type_needs_free(TokenType type);
 bool is_whitespace_tkn(TokenType type);
 
+uint length_of_number_printout(const long long int n);
+uint length_of_position_printout(Position pos);
 int print_position(Position pos);
 void print_token_value(const Token* token);
 void print_token(const Token* token);

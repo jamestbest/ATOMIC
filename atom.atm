@@ -1,14 +1,33 @@
 ¬Test
+a: i4 = b ¬¬ *s
 
+{
+ i: i4
+ {
+    i: i8 = b_ron
+ }
+}
+
+my_arr: >i4
+my_arr_ptr: >>i4 = &my_arr
+a: i4 = 143
 *a[b] = 12
+b: i8
 
-*a = 12
+*a = n
 
 a[12];
 
-my_arr_ptr: >>i4 = &my_arr
 
-for i to 10 do i++ {
+for i: i4 to i < 10 do i++ {
+    b: i8 = 15;
+    print("Hello world!");
+    {
+        j: i8 = b + 1
+    }
+}
+
+for i: i8 to 10 do i++ {
     my_arr[i] = i * 2
     print("Hello world!")
 }
@@ -33,7 +52,19 @@ ret 1 - a * b
 
 a = 123;
 
+top_level: i4
+
 func main(argc: i4, argv: >>chr): i4 {
+    func cleanup(my_str: str, my_other_int: i8, my_real: r8): i4 {
+        my_int: i8 = i_dont_exist
+
+        ret my_int
+    }
+
+    proc cleans(what: chr, my_chr: >chr) {
+        yup: str = &what;
+    }
+
     a: i4 = 0
 
     bar: i4 = 0b00110
@@ -56,22 +87,16 @@ func main(argc: i4, argv: >>chr): i4 {
 
     test: bool = true and false
 
-    for i: i4 to 10 do i++ {
-
-    }
-
     my_arr: >i4 = malloc(10);
 
     if my_arr == nav {
         ret -1 as n4;
     } elif my_arr > 1 {
         print("AAAAAAAAAAAAAAAAAA");
+    } elif my_arr < 1 {
+        print("WElcomne");
     } else {
         print("nice")
-    }
-
-    for i to 10 do i++ {
-        my_arr[i] = i * 2
     }
 
     *(my_arr + 9) = *my_arr * 2
@@ -95,6 +120,10 @@ b[a] = 14
 *a[b] = 12
 
 -funca(a[b++ * ++c] - -1, -b++)
+
+for i: i4 = 10; j: i8 to 10 do i++ {
+    my_arr[i] = i * 2
+}
 
 ¬*    comment
 part of a comment*¬

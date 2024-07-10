@@ -46,8 +46,8 @@ int main(int argc, char** argv) {
         exit(2);
     }
 
-    Vector flag_enums = vec_create(16);
-    Vector option_enums = vec_create(16);
+    Vector flag_enums = vector_create(16);
+    Vector option_enums = vector_create(16);
 
     parse_h(hptr, nhptr, &flag_enums, &option_enums);
     parse_c(cptr, ncptr, &flag_enums);
@@ -79,8 +79,8 @@ int main(int argc, char** argv) {
     free(nhpath);
     free(ncpath);
 
-    vec_destroy(&flag_enums);
-    vec_destroy(&option_enums);
+    vector_destroy(&flag_enums);
+    vector_destroy(&option_enums);
 
     printf("SUCCESS! Files parsed and renamed");
 
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
 
 void free_enums(Vector* enums) {
     for (uint i = 0; i < enums->pos; i++) {
-        free(vec_get(enums, i));
+        free(vector_get_unsafe(enums, i));
     }
 
     free(enums->arr);
@@ -121,7 +121,7 @@ void parse_h(FILE* hptr, FILE* nhptr, Vector* flag_enums, Vector* option_enums) 
         else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_ENUM) != -1) {
             collect_enums(hptr, nhptr, ATOM_CT__FLAGS_PRE_FLG_START, &buffer, flag_enums);
 
-            char* countEnum = vec_pop(flag_enums); //remove the count
+            char* countEnum = vector_pop_unsafe(flag_enums); //remove the count
             free(countEnum);
         }
         else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_OPT_DEF) != -1) {
@@ -256,7 +256,7 @@ void collect_enums(FILE* file, FILE* nfile, const char* prefix, Buffer* buffer, 
         memcpy(s_enum, &buffer->data[pos], tot_length);
         s_enum[tot_length - 1] = '\0';
 
-        vec_add(enum_vec, s_enum);
+        vector_add(enum_vec, s_enum);
     }
     cleanup_write(file, nfile, buffer);
 }

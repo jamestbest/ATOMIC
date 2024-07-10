@@ -22,14 +22,12 @@ typedef enum NodeType {
     NODE_ROOT,
 
     ST_BLOCK,
+    ST_CHAIN,
 
     ST_FOREACH,
     ST_WHILE,
     ST_TIMES,
     ST_FOR,
-    ST_FOR_SETUP,
-    ST_FOR_LOOP,
-    ST_FOR_COND,
 
     ST_CONT,
     ST_BRK,
@@ -65,6 +63,13 @@ typedef struct Node {
     NodeType type;
     Token* token;
     Vector children;
+
+    uint64_t statement_id;
+    uint64_t uid;
+
+    union {
+        struct Scope* scope; // this won't work if the union has other things as I use the validity of scope to check if it has one
+    } data;
 } Node;
 
 typedef struct NodeRet {
@@ -80,6 +85,8 @@ typedef enum NodeLevelPrintType {
 } NodeLevelPrintType;
 
 ARRAY_PROTO(NodeLevelPrintType, nodeLevelEnum)
+
+bool is_stmt(const NodeType type);
 
 Node* create_node_basic(NodeType type, Token* token, bool has_children);
 Node* create_leaf_node(NodeType type, Token* token);

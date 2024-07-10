@@ -11,9 +11,8 @@
 #include "Lexer/Tokens.h"
 
 
-void highlight_line_err(Position pos, const char* line);
-void highlight_line_start_and_error(Token* parent, Token* issue,
-                                    const Vector* lines);
+void highlight_line_err(Position pos, char* line, const uint min_pos_printout);
+void highlight_line_start_and_error(Token* parent, Token* issue, const Vector* lines);
 
 #define FAIL    -1
 #define SUCCESS 0
