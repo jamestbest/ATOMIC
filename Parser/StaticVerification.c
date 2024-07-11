@@ -155,16 +155,16 @@ Scope* generate_scope(Node* creation_node, Node* brace_node, const bool is_globa
     for (uint i = 0; i < brace_node->children.pos; ++i) {
         Node* child_node = brace_node->children.arr[i];
 
-        if (has_scope(child_node)) {
-            continue;
-        }
-
         if (child_node->type == ST_VAR_DECL) {
             add_variable_to_scope(child_node, scope);
         }
 
         if (child_node->type == ST_FUNC || child_node->type == ST_PROC) {
             add_subroutine_to_scope(child_node, scope);
+        }
+
+        if (has_scope(child_node)) {
+            continue;
         }
     }
 
@@ -199,8 +199,6 @@ InScopeRet variable_is_in_scope(const Scope* scope, Node* variable,
         const Node* variable_name = variable_decl->children.arr[0];
 
         if (str_eq(variable_name->token->data.ptr, variable->token->data.ptr)) {
-            // if (am_parent_scope) return (InScopeRet){variable_decl, true};
-
             return (InScopeRet){variable_already_defined(variable_decl, variable) ? variable_decl : NULL, am_parent_scope};
         }
     }
@@ -225,52 +223,115 @@ InScopeRet subroutine_is_in_scope(const Scope* scope, Node* subroutine, bool is_
     return subroutine_is_in_scope(scope->parent, subroutine, true);
 }
 
-void t2_expr(Node* expr, Scope* scope, const Node* stmt) {
-    if ((expr->type == EX_LIT || expr->type == TOKEN_WRAPPER) && expr->token->type == IDENTIFIER) {
-        const InScopeRet scope_check = variable_is_in_scope(scope, expr, false);
-
-        const bool decl_exists = scope_check.decl;
-        if (decl_exists) expr->uid = scope_check.decl->uid;
-
-        if (!decl_exists) printf("VARIABLE NOT IN SCOPE: "C_BLU"%s"C_RST"\n", expr->token->data.ptr);
-
-        return;
+void verify_node_in_scope(Node* node, const Scope* scope, bool is_sub) {
+    InScopeRet scope_check;
+    if (is_sub) {
+        scope_check = subroutine_is_in_scope(scope, node, false);
+    } else {
+        scope_check = variable_is_in_scope(scope, node, false);
     }
 
-    if (!expr->children.arr) return;
+    const bool decl_exists = scope_check.decl;
 
-    for (uint i = 0; i < expr->children.pos; ++i) {
-        Node* child_node = expr->children.arr[i];
+    if (decl_exists) {
+        node->uid = scope_check.decl->uid;
+        node->link = scope_check.decl;
+    }
 
-        t2_expr(child_node, scope, stmt);
+    if (!decl_exists) {
+        const Node* brace = scope->scope ? scope->scope : scope->creation_node;
+        parserr(PARSERR_SA_NOT_IN_SCOPE, brace ? brace->token : NULL, node->token);
     }
 }
 
-void t(Node* node, Scope* c_scope, const Node* c_stmt) {
+void verify_scope(Node* node, Scope* c_scope, const Node* c_stmt) {
     if (node->data.scope) c_scope = node->data.scope;
 
     if ((node->type == EX_LIT || node->type == TOKEN_WRAPPER) && node->token->type == IDENTIFIER) {
-        const InScopeRet scope_check = variable_is_in_scope(c_scope, node, false);
-        const bool decl_exists = scope_check.decl;
-
-        if (decl_exists) node->uid = scope_check.decl->uid;
-
-        if (!decl_exists) {
-            const Node* brace = c_scope->scope ? c_scope->scope : c_scope->creation_node;
-            parserr(PARSERR_SA_NOT_IN_SCOPE, brace ? brace->token : NULL, node->token);
-        }
+        verify_node_in_scope(node, c_scope, false);
     }
-
-    if (node->type == ST_VAR_DECL) return;
 
     fflush(stdout);
 
-    if (!node->children.arr) return;
+    if (node->type == ST_VAR_DECL) return;
+    switch (node->type) {
+        case ST_VAR_DECL:
+            return;
+        case SUB_CALL: {
+            verify_node_in_scope(node->children.arr[0], c_scope, true);
+            verify_scope(node->children.arr[1], c_scope, c_stmt);
+            break;
+        }
+        case ST_FUNC:
+        case ST_PROC: {
+            verify_scope(node->children.arr[node->children.pos - 1], c_scope, node);
+            break;
+        }
+        default: {
+            if (!node->children.arr) return;
+
+            for (uint i = 0; i < node->children.pos; ++i) {
+                Node* child_node = node->children.arr[i];
+                if (child_node->data.scope) verify_scope(child_node, child_node->data.scope, child_node);
+                else verify_scope(child_node, c_scope, (is_stmt(child_node->type) && child_node->token) ? child_node : c_stmt);
+            }
+            break;
+        }
+    }
+}
+
+bool l_r_op_types_valid(Node* operator, encodedType l_type, encodedType r_type) {
+    return true;
+}
+
+encodedType verify_expr_types(Node* expr, Scope* scope) {
+    if (expr->type == TOKEN_WRAPPER || expr->type == EX_LIT) {
+        Token* token = expr->token;
+
+        switch (token->type) {
+            case IDENTIFIER:
+                return ((Node*)expr->link->children.arr[1])->token->data.type;
+            case LIT_CHR:
+                return (encodedType){.general_type = CHAR, .enum_position = CHR, .ptr_offset = 0, .size = 1};
+            case LIT_INT:
+                return (encodedType){.general_type = INTEGER, .enum_position = I4, .ptr_offset = 0, .size = 4};
+        }
+    }
+
+    if (expr->type == SUB_CALL) {
+        return ((Node*)expr->link->children.arr[1])->token->data.type;
+    }
+
+    if (expr->type == EXPR_BIN) {
+        Node* l_node = expr->children.arr[0];
+        Node* r_node = expr->children.arr[1];
+
+        const encodedType l_type = verify_expr_types(l_node, scope);
+        const encodedType r_type = verify_expr_types(r_node, scope);
+
+        const bool valid = l_r_op_types_valid(expr, l_type, r_type);
+
+        printf("valid: %d", valid);
+    }
+}
+
+void verify_types(Node* node, Scope* scope, Node* c_sub) {
+    //need to find every expression and verify types with operators
+    //don't need to find declarations and verify types as the decl & ass are split up
+
+    // SPECIAL CASES:
+    //  ret statements care about the function return type
+
+    if (node->type == ST_FUNC || node->type == ST_PROC) c_sub = node;
+
+    if (node->type == EXPR || node->type == EXPR_BIN || node->type == EXPR_UN) {
+        verify_expr_types(node, scope);
+    }
 
     for (uint i = 0; i < node->children.pos; ++i) {
         Node* child_node = node->children.arr[i];
-        if (child_node->data.scope) t(child_node, child_node->data.scope, child_node);
-        else t(child_node, c_scope, (is_stmt(child_node->type) && child_node->token) ? child_node : c_stmt);
+
+        verify_types(child_node, scope, c_sub);
     }
 }
 
@@ -278,7 +339,7 @@ void print_variable(const Node* variable) {
     const Node* identifier = variable->children.arr[0];
     const Node* type = variable->children.arr[1];
 
-    printf("VARIABLE: ");
+    putz("VARIABLE: ");
     print_token(identifier->token);
     print_token(type->token);
     newline();
@@ -388,6 +449,9 @@ void print_scope(const Scope* scope) {
 
     printf("\nCreation Node: ");
     print_token(scope->creation_node ? scope->creation_node->token : NULL);
+    putz(" Peek(");
+    putz_santitize(scope->creation_node ? (char*)plines->arr[scope->creation_node->token->pos.start_line - 1] : NULL);
+    putz(")");
 
     printf("\nParent Scope: ");
     if (!scope->parent) putz("<>");

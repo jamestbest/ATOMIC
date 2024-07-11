@@ -130,6 +130,8 @@ static char* nodeLevelToString(NodeLevelPrintType level) {
     }
 }
 
+uint64_t stmt_uid = 0;
+
 Node* create_node_basic(NodeType type, Token* token, bool has_children) {
     Node* node = malloc(sizeof(Node));
 
@@ -145,10 +147,11 @@ Node* create_node_basic(NodeType type, Token* token, bool has_children) {
         node->children = (Vector){NULL, -1, -1};
     }
 
-    node->statement_id = -1;
+    node->statement_id = is_stmt(type) ? stmt_uid++ : -1;
     node->uid = -1;
 
     node->data.scope = NULL;
+    node->link = NULL;
 
     return node;
 }
@@ -231,12 +234,12 @@ static bool is_expr_node(Node* node) {
 }
 
 Position include_position(Position c_pos, Position n_pos) {
-    bool nStartLineBefore = n_pos.start_line < c_pos.start_line;
-    bool nEndLineAfter = n_pos.end_line > c_pos.end_line;
-    bool sameLine = n_pos.start_line == c_pos.start_line && n_pos.end_line == c_pos.end_line;
+    const bool nStartLineBefore = n_pos.start_line < c_pos.start_line;
+    const bool nEndLineAfter = n_pos.end_line > c_pos.end_line;
+    const bool sameLine = n_pos.start_line == c_pos.start_line && n_pos.end_line == c_pos.end_line;
 
-    bool nStartColBefore = n_pos.start_col < c_pos.start_col;
-    bool nEndColAfter = n_pos.end_col > c_pos.end_col;
+    const bool nStartColBefore = n_pos.start_col < c_pos.start_col;
+    const bool nEndColAfter = n_pos.end_col > c_pos.end_col;
 
     if (sameLine) {
         if (nStartColBefore) c_pos.start_col = n_pos.start_col;
@@ -279,6 +282,19 @@ Position get_node_wrapping_position(Node* node) {
     return tmp;
 }
 
+// single line information on node
+// NODETYPE::<TOKEN>::<scope:stmt_id:uid:link>::<children_len>
+void print_node_summary(const Node* node) {
+    printf("%s::", nodeTypeToString(node->type));
+    print_token(node->token);
+    printf("::<s="C_YLW"0x%lx"C_RST";stmt="C_RED"%llu"C_RST";uid="C_RED"%llu"C_RST";l="C_YLW"0x%lx"C_RST">::<c=%llu>",
+        (uintptr_t)node->data.scope,
+        node->statement_id,
+        node->uid,
+        (uintptr_t)node->link,
+        node->children.arr ? node->children.pos : 0);
+}
+
 void print_node_basic(Node *node, Array *levels) {
     if (node == NULL) {
         puts("[[DEV]] NULL NODE IN PRINTING");
@@ -294,6 +310,7 @@ void print_node_basic(Node *node, Array *levels) {
 
     const bool has_uid = node->uid != -1;
     const bool has_stmt_uid = node->statement_id != -1;
+    const bool has_link = node->link;
 
     if (has_stmt_uid || has_uid) {
         putz(C_RED"<");
@@ -301,6 +318,9 @@ void print_node_basic(Node *node, Array *levels) {
         if (has_stmt_uid) printf("STMT_UID: %llu", node->statement_id);
         if (has_stmt_uid && has_uid) putz("; ");
         if (has_uid) printf("UID: %llu", node->uid);
+
+        if (has_stmt_uid && has_link) putz("; LINK: "C_RST);
+        if (has_link) print_node_summary(node->link);
 
         putz(">"C_RST);
     }

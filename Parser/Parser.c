@@ -8,8 +8,6 @@ const Array* ptokens;
 const Vector* plines;
 int t_pos;
 
-uint64_t stmt_uid = 0;
-
 Node* file_global_node;
 
 static void add_statement(Node* statement);
@@ -54,9 +52,7 @@ static bool expect_keyword(ATOM_CT__LEX_KEYWORD_ENUM keyword);
 static bool expect(TokenType type);
 
 // [[todo]] I've just realised that the Node* created are leaked if there are error! --yes I should have realised this earlier
-void attatch_stmt_id(Node* stmt) {
-    stmt->statement_id = stmt_uid++;
-}
+
 
 void propagate_stmt_uid(Node* node, uint64_t stmt_uid) {
     if (!node->children.arr) return;
@@ -80,7 +76,6 @@ void _add_node_to_children(Node* parentNode, Node* node, bool is_stmt) {
 
     if (node->type != NODE_MULTIPLE_STATEMENTS) {
         if (is_stmt) {
-            attatch_stmt_id(node);
             propagate_stmt_uid(node, node->statement_id);
         }
         vector_add(&parentNode->children, node);
@@ -90,7 +85,6 @@ void _add_node_to_children(Node* parentNode, Node* node, bool is_stmt) {
     for (uint i = 0; i < node->children.pos; ++i) {
         Node* stmt = node->children.arr[i];
         if (is_stmt) {
-            attatch_stmt_id(stmt);
             propagate_stmt_uid(stmt, stmt->statement_id);
         }
         vector_add(&parentNode->children, stmt);
@@ -510,7 +504,7 @@ NodeRet parse_params(void) {
     Node* params = create_parent_node(SUB_PARAMS, NULL);
 
     while (expect(IDENTIFIER)) {
-        NodeRet param = parse_param();
+        const NodeRet param = parse_param();
 
         if (param.retCode != SUCCESS) {
             assert(false);

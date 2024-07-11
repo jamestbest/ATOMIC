@@ -59,6 +59,14 @@ typedef enum NodeType {
     EX_LIT,
 } NodeType;
 
+typedef enum NodeGeneralType {
+    STATEMENT,
+    EXPRESSION,
+    DECLARATION,
+
+    NODEGT_INVALID
+} NodeGeneralType;
+
 typedef struct Node {
     NodeType type;
     Token* token;
@@ -66,6 +74,8 @@ typedef struct Node {
 
     uint64_t statement_id;
     uint64_t uid;
+
+    struct Node* link;
 
     union {
         struct Scope* scope; // this won't work if the union has other things as I use the validity of scope to check if it has one

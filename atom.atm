@@ -127,3 +127,8 @@ for i: i4 = 10; j: i8 to 10 do i++ {
 
 ¬*    comment
 part of a comment*¬
+
+proc print(string: str) {
+    ¬ code?
+    string[0] = 'a'
+}

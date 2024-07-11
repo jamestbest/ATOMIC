@@ -270,6 +270,11 @@ uint pututf8(const char* string) {
 
 // remove those pesky `\`
 void putz_santitize(char* string) {
+    if (!string) {
+        putz("<<NULL>>");
+        return;
+    }
+
     uint pos = 0;
     const char* start_point = string;
     const char* buff;

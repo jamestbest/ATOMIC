@@ -1,0 +1,8 @@
+func a(b: i4): i4 {
+    print("Hello world")
+    ret b
+}
+
+proc print(string: str) {
+    string[0] = 'a'
+}

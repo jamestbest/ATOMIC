@@ -104,7 +104,9 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     if (flag_get(ATOM_CT__FLAG_SCOPE_OUT))
         print_scope(global_scope);
 
-    t(parseRet.node, global_scope, parseRet.node);
+    verify_scope(parseRet.node, global_scope, parseRet.node);
+
+    verify_types(parseRet.node, global_scope, parseRet.node);
 
     print_ast_with_flag_check(parseRet.node);
 

@@ -55,6 +55,8 @@ Scope* generate_global_scope(Node* ast);
 void print_scope(const Scope* scope);
 
 void in_scope_verification(const Node* ast, Scope* global_scope);
-void t(Node* node, Scope* c_scope, const Node* c_stmt);
+void verify_scope(Node* node, Scope* c_scope, const Node* c_stmt);
+
+void verify_types(Node* node, Scope* scope, Node* c_sub);
 
 #endif //STATICVERIFICATION_H
