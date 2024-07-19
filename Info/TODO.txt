@@ -1,0 +1,20 @@
+PLAN:
+
+Refactor variable declaration + assignment to same node
+Remove assignment as a valid operator in the shunting yard - may need to remove from OP_BIN
+
+does foreach have with i?
+
+
+identifiers - a
+brackets - a[idx]
+paren - (a)
+dereference - *a
+member - a.b
+arrow - a->b
+
+problems
+How is the name resolution for -> supposed to work?
+`-could tag at the lexical opfolder stage as only identifiers are supposed to follow ->
+
+
