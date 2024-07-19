@@ -3,6 +3,7 @@
 //
 
 #include "StaticVerification.h"
+#include "StaticVerificationInternal.h"
 
 #include "Parserr.h"
 
@@ -192,6 +193,10 @@ bool variable_already_defined(const Node* var_decl, const Node* variable_usage) 
     return var_decl->statement_id < variable_usage->statement_id;
 }
 
+bool am_global_scope(const Scope* scope) {
+    return !scope->parent;
+}
+
 InScopeRet variable_is_in_scope(const Scope* scope, Node* variable,
                                 const bool am_parent_scope) {
     for (uint i = 0; i < scope->variables.pos; ++i) {
@@ -199,7 +204,13 @@ InScopeRet variable_is_in_scope(const Scope* scope, Node* variable,
         const Node* variable_name = variable_decl->children.arr[0];
 
         if (str_eq(variable_name->token->data.ptr, variable->token->data.ptr)) {
-            return (InScopeRet){variable_already_defined(variable_decl, variable) ? variable_decl : NULL, am_parent_scope};
+            if (am_global_scope(scope)) return (InScopeRet){variable_decl, am_parent_scope};
+
+            const bool is_defined = variable_already_defined(variable_decl, variable);
+
+            if (!is_defined) continue;
+
+            return (InScopeRet){variable_decl, am_parent_scope};
         }
     }
 
@@ -273,7 +284,7 @@ void verify_scope(Node* node, Scope* c_scope, const Node* c_stmt) {
             for (uint i = 0; i < node->children.pos; ++i) {
                 Node* child_node = node->children.arr[i];
                 if (child_node->data.scope) verify_scope(child_node, child_node->data.scope, child_node);
-                else verify_scope(child_node, c_scope, (is_stmt(child_node->type) && child_node->token) ? child_node : c_stmt);
+                else verify_scope(child_node, c_scope, (is_stmt(child_node->gtype) && child_node->token) ? child_node : c_stmt);
             }
             break;
         }
@@ -281,7 +292,23 @@ void verify_scope(Node* node, Scope* c_scope, const Node* c_stmt) {
 }
 
 bool l_r_op_types_valid(Node* operator, encodedType l_type, encodedType r_type) {
-    return true;
+    // ValidTypeOperations operations = valid_type_operations[operator->token->data.enum_pos];
+
+    // for (uint i = 0; i < sizeof (operations.general_types) ; ++i) {
+
+    // }
+}
+
+void fold_expr(const Node* expr) {
+
+}
+
+struct t {
+    bool matched;
+    encodedType r_actual_type;
+};
+struct t verify_expr_with_expected(const Node* expr, encodedType required_type) {
+
 }
 
 encodedType verify_expr_types(Node* expr, Scope* scope) {
@@ -298,7 +325,13 @@ encodedType verify_expr_types(Node* expr, Scope* scope) {
         }
     }
 
+    fflush(stdout);
+
     if (expr->type == SUB_CALL) {
+        Node* def = ((Node*)expr->children.arr[0])->link;
+
+
+
         return ((Node*)expr->link->children.arr[1])->token->data.type;
     }
 
@@ -324,15 +357,23 @@ void verify_types(Node* node, Scope* scope, Node* c_sub) {
 
     if (node->type == ST_FUNC || node->type == ST_PROC) c_sub = node;
 
-    if (node->type == EXPR || node->type == EXPR_BIN || node->type == EXPR_UN) {
-        verify_expr_types(node, scope);
+    if (node->gtype == DECLARATION) return;
+
+    if (node->gtype == STATEMENT || node->gtype == NODEGT_ROOT) {
+        if (!node->children.arr) return;
+
+        for (uint i = 0; i < node->children.pos; ++i) {
+            Node* child_node = node->children.arr[i];
+
+            verify_types(child_node, scope, c_sub);
+        }
+
+        return;
     }
 
-    for (uint i = 0; i < node->children.pos; ++i) {
-        Node* child_node = node->children.arr[i];
+    if (node->gtype != EXPRESSION) assert(false);
 
-        verify_types(child_node, scope, c_sub);
-    }
+    verify_expr_types(node, scope);
 }
 
 void print_variable(const Node* variable) {

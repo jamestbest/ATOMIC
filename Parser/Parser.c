@@ -29,13 +29,15 @@ static NodeRet parse_proc_statement(void);
 static NodeRet parse_entry_statement(void);
 static NodeRet parse_continue_statement(void);
 static NodeRet parse_break_statement(void);
-static NodeRet parse_unary_statement(void);
+static NodeRet RETIRED_parse_unary_statement(void);
 
 static NodeRet parse_subroutine_call(void);
 
-static NodeRet parse_un_op_statement(void);
+static NodeRet RETIRED_parse_un_op_statement(void);
 
 static NodeRet parse_expression_statement(void);
+
+static Node* construct_assignment_node(Node* lvalue, Node* operator, Node* rvalue);
 
 static bool is_valid_index(int index);
 
@@ -113,7 +115,7 @@ NodeRet parse(const Array* tokens, const Vector* lines) {
 
     Token* c;
 
-    file_global_node = create_parent_node(NODE_ROOT, NULL);
+    file_global_node = create_parent_node(NODEGT_ROOT, NODE_ROOT,NULL);
 
     while (c = current(), c != NULL) {
         const NodeRet ret = parse_statement();
@@ -159,6 +161,16 @@ bool has_valid_statement_starter(void) {
     }
 }
 
+Node* construct_assignment_node(Node* lvalue, Node* operator, Node* rvalue) {
+    Node* assigment = create_parent_node(STATEMENT, ST_VAR_ASS, NULL);
+
+    add_node_to_children(assigment, lvalue);
+    add_node_to_children(assigment, operator);
+    add_node_to_children(assigment, rvalue);
+
+    return assigment;
+}
+
 NodeRet parse_statement(void) {
     //[[todo]] could be a single statement or a block ('{')
     // this will help with having if (expr) statement
@@ -176,7 +188,7 @@ NodeRet parse_statement(void) {
 
     switch (t->type) {
         case OP_UN_PRE:
-            ret = parse_unary_statement();
+            ret = parse_expression_statement();
             break;
 
         case IDENTIFIER:
@@ -229,10 +241,13 @@ NodeRet parse_subroutine_call(void) {
 
     t_pos = sub_call.tok_end_pos;
 
-    return (NodeRet){sub_call.expressionNode, SUCCESS};
+    Node* stmt_expr = create_parent_node(STATEMENT, ST_EXPR, NULL);
+    add_node_to_children(stmt_expr, sub_call.expressionNode);
+
+    return (NodeRet){stmt_expr, SUCCESS};
 }
 
-NodeRet parse_var_assignment(void) {
+NodeRet parse_assignment(void) {
     /* This could be from
      *  a = 12
      *  a += 12
@@ -240,18 +255,32 @@ NodeRet parse_var_assignment(void) {
      */
     Token* identifier = current();
 
-    ShuntRet ret = shunt(ptokens, t_pos, false);
+    // first parse the lvalue
+    const ShuntRet lvalue = shunt(ptokens, t_pos, false);
 
-    if (ret.err_code != SUCCESS) {
+    if (lvalue.err_code != SUCCESS)
+        assert(false);
+    t_pos = lvalue.tok_end_pos;
+
+    if (!expect(OP_ASSIGN) && !expect(OP_ARITH_ASSIGN)) {
         assert(false);
     }
-    t_pos = ret.tok_end_pos;
 
-    Node* var_assign = create_parent_node(ST_VAR_ASS, identifier);
-    vector_add(&var_assign->children, ret.expressionNode);
+    Token* assign_op = consume();
+
+    const ShuntRet rvalue = shunt(ptokens, t_pos, false);
+
+    if (rvalue.err_code != SUCCESS) {
+        assert(false);
+    }
+    t_pos = rvalue.tok_end_pos;
+
+    Node* operator = create_leaf_node(EXPRESSION, TOKEN_WRAPPER, assign_op);
+    Node* var_assign = construct_assignment_node(lvalue.expressionNode, operator, rvalue.expressionNode);
 
     return (NodeRet){var_assign, SUCCESS};
 }
+
 
 NodeRet parse_var_declaration(void) {
     /* An identifier could be
@@ -267,35 +296,26 @@ NodeRet parse_var_declaration(void) {
 
     Token* type = consume();
 
-    Node* declNode = create_parent_node(ST_VAR_DECL, type_op);
+    Node* declNode = create_parent_node(STATEMENT, ST_VAR_DECL, type_op);
 
-    vector_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-    vector_add(&declNode->children, create_leaf_node(TOKEN_WRAPPER, type));
+    vector_add(&declNode->children, create_leaf_node(DECLARATION, TOKEN_WRAPPER, identifier));
+    vector_add(&declNode->children, create_leaf_node(DECLARATION, TOKEN_WRAPPER, type));
 
     if (!expect(OP_ASSIGN)) {
         return (NodeRet){declNode, SUCCESS};
     }
 
-    Token* assign = consume(); // eat the `=`
-    Node* ret = create_parent_node(NODE_MULTIPLE_STATEMENTS, NULL);
-    Node* assignNode = create_parent_node(ST_VAR_ASS, assign);
+    consume(); // eat the `=`
 
-    vector_add(&ret->children, declNode);
-    vector_add(&ret->children, assignNode);
-
-    ShuntRet exprInfo = shunt(ptokens, t_pos, false);
+    const ShuntRet exprInfo = shunt(ptokens, t_pos, false);
 
     if (exprInfo.err_code != SUCCESS)
         assert(false);
     t_pos = exprInfo.tok_end_pos;
 
-    Node* assignEqNode = create_parent_node(EXPR_BIN, assign);
-    vector_add(&assignEqNode->children, create_leaf_node(EX_LIT, identifier));
-    vector_add(&assignEqNode->children, exprInfo.expressionNode);
+    vector_add(&declNode->children, exprInfo.expressionNode);
 
-    vector_add(&assignNode->children, assignEqNode);
-
-    return (NodeRet){ret, SUCCESS};
+    return (NodeRet){declNode, SUCCESS};
 }
 
 NodeRet parse_identifier_statement(void) {
@@ -318,10 +338,9 @@ NodeRet parse_identifier_statement(void) {
             return parse_subroutine_call();
         case OP_ASSIGN:
         case OP_ARITH_ASSIGN:
-            return parse_var_assignment();
-        case OP_UN_POST:
-            return parse_un_op_statement();
         case BRACKET_OPEN:
+            return parse_assignment();
+        case OP_UN_POST:
             return parse_expression_statement();
         default:
             consume(); // eat the error identifier
@@ -334,7 +353,7 @@ NodeRet parse_identifier_statement(void) {
  *      *(ptr)
  *      *(ptr) = <>
  */
-NodeRet parse_unary_statement(void) {
+NodeRet RETIRED_parse_unary_statement(void) {
     return parse_expression_statement();
 }
 
@@ -345,7 +364,7 @@ uint extract_error_code(uint errCode) {
 NodeRet parse_statement_block(void) {
     Token* token = current();
 
-    Node* parent_node = create_parent_node(ST_BLOCK, token);
+    Node* parent_node = create_parent_node(STATEMENT, ST_BLOCK, token);
 
     if (!parent_node) return (NodeRet){NULL, FAIL}; //[[todo]] add error for creation (malloc)
 
@@ -486,10 +505,10 @@ NodeRet parse_param(void) {
 
     Token* type = consume();
 
-    Node* paramNode = create_parent_node(SUB_PARAM, identifier);
+    Node* paramNode = create_parent_node(DECLARATION, SUB_PARAM, identifier);
 
-    vector_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, identifier));
-    vector_add(&paramNode->children, create_leaf_node(TOKEN_WRAPPER, type));
+    vector_add(&paramNode->children, create_leaf_node(DECLARATION, TOKEN_WRAPPER, identifier));
+    vector_add(&paramNode->children, create_leaf_node(DECLARATION, TOKEN_WRAPPER, type));
 
     return (NodeRet){paramNode, SUCCESS};
 }
@@ -501,7 +520,7 @@ NodeRet parse_params(void) {
 
     consume(); // eat `(`
 
-    Node* params = create_parent_node(SUB_PARAMS, NULL);
+    Node* params = create_parent_node(DECLARATION, SUB_PARAMS,NULL);
 
     while (expect(IDENTIFIER)) {
         const NodeRet param = parse_param();
@@ -530,7 +549,7 @@ NodeRet parse_params(void) {
 NodeRet parse_subroutine_statement(bool is_func) {
     Token* keyword = consume();
 
-    Node* sub_node = create_parent_node(is_func ? ST_FUNC : ST_PROC, keyword);
+    Node* sub_node = create_parent_node(STATEMENT, is_func ? ST_FUNC : ST_PROC, keyword);
 
     //[[todo]] for now just assuming there are no keyword modifiers
 
@@ -571,9 +590,9 @@ NodeRet parse_subroutine_statement(bool is_func) {
         parserr(PARSERR_SUB_STATEMENT_ERROR_IN_BODY, keyword, current());
     }
 
-    vector_add(&sub_node->children, create_leaf_node(TOKEN_WRAPPER, sub_name));
+    vector_add(&sub_node->children, create_leaf_node(DECLARATION, TOKEN_WRAPPER, sub_name));
     vector_add(&sub_node->children, params.node);
-    if (is_func) vector_add(&sub_node->children, create_leaf_node(TOKEN_WRAPPER, type));
+    if (is_func) vector_add(&sub_node->children, create_leaf_node(DECLARATION, TOKEN_WRAPPER, type));
     vector_add(&sub_node->children, body.node);
 
     return (NodeRet){sub_node, SUCCESS};
@@ -609,7 +628,7 @@ NodeRet parse_continue_statement(void) {
     // for now the continue statement will just be a keyword
     // but I would imagine that having labels / a way to continue a different loop
 
-    Node* contNode = create_parent_node(ST_CONT, consume());
+    Node* contNode = create_parent_node(STATEMENT, ST_CONT, consume());
 
     return (NodeRet){contNode, SUCCESS};
 }
@@ -618,7 +637,7 @@ NodeRet parse_break_statement(void) {
     // for now the break statement will just be a keyword
     // but I would imagine that having labels / a way to continue a different loop
 
-    Node* brkNode = create_parent_node(ST_BRK, consume());
+    Node* brkNode = create_parent_node(STATEMENT, ST_BRK, consume());
 
     return (NodeRet){brkNode, SUCCESS};
 }
@@ -626,7 +645,7 @@ NodeRet parse_break_statement(void) {
 NodeRet parse_ret_statement(void) {
     Token* t = consume(); //eat the ret keyword
 
-    Node* retNode = create_parent_node(ST_RET, t);
+    Node* retNode = create_parent_node(STATEMENT, ST_RET, t);
 
     ShuntRet exprData = shunt(ptokens, t_pos, false);
 
@@ -653,7 +672,7 @@ NodeRet parse_for_setup(void) {
         assert(false);
     }
 
-    Node* stmt_chain = create_parent_node(ST_CHAIN, NULL);
+    Node* stmt_chain = create_parent_node(STATEMENT, ST_CHAIN,NULL);
 
     while (true) {
         if (expect_keyword(TO)) break;
@@ -669,7 +688,7 @@ NodeRet parse_for_setup(void) {
 
             add_statement_to_children(stmt_chain, setup.node);
         } else if (n->type == OP_ASSIGN || n->type == OP_ARITH_ASSIGN) {
-            const NodeRet assignment = parse_var_assignment();
+            const NodeRet assignment = parse_assignment();
 
             if (assignment.retCode != SUCCESS) assert(false);
 
@@ -762,7 +781,7 @@ NodeRet parse_for_statement(void) {
         assert(false);
     }
 
-    Node* forNode = create_parent_node(ST_FOR, keyword);
+    Node* forNode = create_parent_node(STATEMENT, ST_FOR, keyword);
 
     add_statement_to_children(forNode, setup.node);
     add_node_to_children(forNode, cond.node);
@@ -798,7 +817,7 @@ NodeRet parse_while_statement(void) {
         assert(false);
     }
 
-    Node* whileNode = create_parent_node(ST_WHILE, keyword);
+    Node* whileNode = create_parent_node(STATEMENT, ST_WHILE, keyword);
 
     vector_add(&whileNode->children, expr.expressionNode);
     vector_add(&whileNode->children, body.node);
@@ -832,10 +851,10 @@ NodeRet parse_foreach_statement(void) {
 
     Token* array = consume();
 
-    Node* foreachNode = create_parent_node(ST_FOREACH, keyword);
+    Node* foreachNode = create_parent_node(STATEMENT, ST_FOREACH, keyword);
 
-    vector_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, element));
-    vector_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, array));
+    vector_add(&foreachNode->children, create_leaf_node(EXPRESSION, TOKEN_WRAPPER, element));
+    vector_add(&foreachNode->children, create_leaf_node(EXPRESSION, TOKEN_WRAPPER, array));
 
     if (expect_keyword(WITH)) {
         consume(); // eat `with`
@@ -846,7 +865,7 @@ NodeRet parse_foreach_statement(void) {
 
         Token* index = consume();
 
-        vector_add(&foreachNode->children, create_leaf_node(TOKEN_WRAPPER, index));
+        vector_add(&foreachNode->children, create_leaf_node(EXPRESSION, TOKEN_WRAPPER, index));
     }
 
     if (!expect(CURLY_OPEN)) {
@@ -891,7 +910,7 @@ NodeRet parse_times_statement(void) {
         assert(false);
     }
 
-    Node* timesNode = create_parent_node(ST_TIMES, keyword);
+    Node* timesNode = create_parent_node(STATEMENT, ST_TIMES, keyword);
 
     vector_add(&timesNode->children, expr.expressionNode);
     vector_add(&timesNode->children, body.node);
@@ -903,7 +922,7 @@ NodeRet parse_ifelif_statement(bool isIf) {
     Token* keyword = current();
     consume(); // eat the `if` / `elif` //[[todo]] could be given to function?
 
-    Node* ifNode = create_parent_node(isIf ? ST_IF : ST_ELIF, keyword);
+    Node* ifNode = create_parent_node(STATEMENT, isIf ? ST_IF : ST_ELIF, keyword);
 
     Token* next = peek();
 
@@ -938,7 +957,7 @@ NodeRet parse_ifelif_statement(bool isIf) {
 NodeRet parse_else_statement(void) {
     Token* keyword = consume(); // eat the `else`
 
-    Node* elseNode = create_parent_node(ST_ELSE, keyword);
+    Node* elseNode = create_parent_node(STATEMENT, ST_ELSE, keyword);
 
     if (!expect(CURLY_OPEN))
         assert(false);
@@ -963,7 +982,7 @@ NodeRet parse_if_statement(void) {
      *  `- else statement
      */
 
-    Node* node = create_parent_node(ST_IF_TOP_LEVEL, NULL);
+    Node* node = create_parent_node(STATEMENT, ST_IF_TOP_LEVEL,NULL);
 
     NodeRet ifNode = parse_ifelif_statement(true);
 
@@ -995,22 +1014,48 @@ NodeRet parse_if_statement(void) {
     return (NodeRet){node, SUCCESS};
 }
 
+/*
+ *  This could be just an expression statement that has change e.g. a++
+ *  This could also be an assignment expression e.g. *a = 12
+ */
 NodeRet parse_expression_statement(void) {
-    const ShuntRet expr = shunt(ptokens, t_pos, false);
+    const ShuntRet lvalue = shunt(ptokens, t_pos, false);
 
-    if (expr.err_code != SUCCESS) {
+    if (lvalue.err_code != SUCCESS) {
         assert(false);
     }
-    t_pos = expr.tok_end_pos;
+    t_pos = lvalue.tok_end_pos;
 
-    Node* exprStatement = create_parent_node(ST_EXPR, NULL);
+    if (!expect(OP_ASSIGN) && !expect(OP_ARITH_ASSIGN)) {
+        Node* exprStatement = create_parent_node(STATEMENT, ST_EXPR,NULL);
 
-    vector_add(&exprStatement->children, expr.expressionNode);
+        vector_add(&exprStatement->children, lvalue.expressionNode);
 
-    return (NodeRet){exprStatement, SUCCESS};
+        return (NodeRet){exprStatement, SUCCESS};
+    }
+
+    Token* assign_op = consume();
+
+    const ShuntRet rvalue = shunt(ptokens, t_pos, false);
+
+    if (rvalue.err_code != SUCCESS) {
+        assert(false);
+    }
+    t_pos = rvalue.tok_end_pos;
+
+    Node* operator = create_leaf_node(EXPRESSION, TOKEN_WRAPPER, assign_op);
+    Node* assignment = construct_assignment_node(lvalue.expressionNode, operator, rvalue.expressionNode);
+
+    return (NodeRet){assignment, SUCCESS};
 }
 
-NodeRet parse_un_op_statement(void) {
+
+/*  This can be assignment or inc/dec
+ *  *(a+100) = 12           TODO:: NEED TO HANDLE THIS CASE
+ *  ++b
+ *  --c
+ */
+NodeRet RETIRED_parse_un_op_statement(void) {
     const ShuntRet expr = shunt(ptokens, t_pos, false);
 
     if (expr.err_code != SUCCESS) {
@@ -1024,7 +1069,9 @@ NodeRet parse_un_op_statement(void) {
         assert(false);
     }
 
-    return (NodeRet){expr.expressionNode, SUCCESS};
+    if (!expect(OP_ASSIGN) && !expect(OP_ARITH_ASSIGN)) {
+        return (NodeRet){expr.expressionNode, SUCCESS};
+    }
 }
 
 bool is_valid_index(int index) {
@@ -1067,6 +1114,7 @@ Token* justify(void) {
     return arr_get(ptokens, t_pos - 1);
 }
 
+// todo: need to allow `\` to mean continue statement to next line
 Token* consume(void) {
     if (!is_valid_index(t_pos)) {
         return NULL;

@@ -55,6 +55,7 @@ typedef enum NodeType {
     EXPR,
     EXPR_BIN,
     EXPR_UN,
+    EXPR_ASSIGN,
 
     EX_LIT,
 } NodeType;
@@ -64,11 +65,33 @@ typedef enum NodeGeneralType {
     EXPRESSION,
     DECLARATION,
 
-    NODEGT_INVALID
+    NODEGT_ROOT,
+
+    NODEGT_INVALID,
+
+    _NODEGT_COUNT
 } NodeGeneralType;
 
+typedef struct {
+    bool exported: 1;
+    bool imported: 1;
+
+    bool nested: 1;
+    bool inner: 1;
+} SubroutineModifiers;
+
+typedef struct {
+    bool exported: 1;
+    bool imported: 1;
+
+    bool mutable: 1;
+    // bool volatile: 1; ¬Not needed currently
+} VariableModifiers;
+
 typedef struct Node {
+    NodeGeneralType gtype;
     NodeType type;
+
     Token* token;
     Vector children;
 
@@ -80,7 +103,38 @@ typedef struct Node {
     union {
         struct Scope* scope; // this won't work if the union has other things as I use the validity of scope to check if it has one
     } data;
+
+    union {
+        SubroutineModifiers sub_info;
+        VariableModifiers var_info;
+    } flags;
 } Node;
+
+#define COMMON_NODE struct {        \
+    NodeGeneralType gtype;          \
+    NodeType type;                  \
+                                    \
+    Token* token;                   \
+                                    \
+    uint64_t statement_id;          \
+};
+
+enum IdentifierPosition {
+    IDENT_DECLARATION,
+    IDENT_USAGE,
+};
+
+enum IdentifierTag {
+    VARIABLE,
+    SUBROUTINE,
+    FIELD,
+};
+
+typedef struct NodeIdentifier {
+    COMMON_NODE
+    enum IdentifierPosition position;
+    enum IdentifierTag tag;
+} NodeIdentifier;
 
 typedef struct NodeRet {
     Node* node;
@@ -96,11 +150,11 @@ typedef enum NodeLevelPrintType {
 
 ARRAY_PROTO(NodeLevelPrintType, nodeLevelEnum)
 
-bool is_stmt(const NodeType type);
+bool is_stmt(const NodeGeneralType type);
 
-Node* create_node_basic(NodeType type, Token* token, bool has_children);
-Node* create_leaf_node(NodeType type, Token* token);
-Node* create_parent_node(NodeType type, Token* token);
+Node* create_node_basic(NodeGeneralType gtype, NodeType type, Token* token,bool has_children);
+Node* create_leaf_node(NodeGeneralType gtype, NodeType type, Token* token);
+Node* create_parent_node(NodeGeneralType gtype, NodeType type, Token* token);
 NodeRet construct_error_node(Token *token);
 
 void free_node_rec(Node* node);

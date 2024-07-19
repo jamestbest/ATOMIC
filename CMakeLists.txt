@@ -48,6 +48,7 @@ add_executable(ATOMICLI
 
         InternalSettings.c
         InternalSettings.h
+        Parser/StaticVerificationInternal.h
 )
 
 target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a)

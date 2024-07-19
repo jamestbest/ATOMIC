@@ -2,6 +2,8 @@
 // Created by jamescoward on 05/07/2024.
 //
 
+int t(int **a, int b);
+
 int sum(int a, int b) {
     return a + b;
 }

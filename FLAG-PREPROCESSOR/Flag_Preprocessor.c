@@ -57,8 +57,8 @@ int main(int argc, char** argv) {
 
     close_files(4, hptr, cptr, nhptr, ncptr);
 
-    int remh = remove(hpath);
-    int remc = remove(cpath);
+    const int remh = remove(hpath);
+    const int remc = remove(cpath);
 
     if (remh != 0 || remc != 0) {
         puts(Error("FileIO", ": Unable to remove file Flags.h/c\n"));
@@ -250,7 +250,7 @@ void collect_enums(FILE* file, FILE* nfile, const char* prefix, Buffer* buffer, 
 
         fputs(buffer->data, nfile);
 
-        uint tot_length = len_from_to(buffer->data, pos, ',') + 1;
+        const uint tot_length = len_from_to(buffer->data, pos, ',') + 1;
 
         char* s_enum = malloc(tot_length * sizeof(char));
         memcpy(s_enum, &buffer->data[pos], tot_length);

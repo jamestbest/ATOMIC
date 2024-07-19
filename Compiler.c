@@ -106,9 +106,9 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 
     verify_scope(parseRet.node, global_scope, parseRet.node);
 
-    verify_types(parseRet.node, global_scope, parseRet.node);
-
     print_ast_with_flag_check(parseRet.node);
+
+    // verify_types(parseRet.node, global_scope, parseRet.node);
 
     //...
     vector_disseminate_destruction(&lines);
