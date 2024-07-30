@@ -58,7 +58,8 @@ char* ATOM_CT__LEX_TYPES_GENERAL_RAW[] = {
         "STRING",
         "CHAR",
         "BOOLEAN",
-        "NOT A VALUE"
+        "NOT A VALUE",
+        "POINTER"
 };
 
 Arr ATOM_CT__LEX_TYPES_GENERAL = {

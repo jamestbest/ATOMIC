@@ -12,7 +12,9 @@
 #define ARRAY_PROTO(type, typename)                                             \
     void typename##_arr_add(Array* arr, const type element);                    \
     type typename##_arr_get(const Array* arr, const uint index);                \
-    type typename##_arr_pop(Array* arr);
+    type typename##_arr_pop(Array* arr);                                        \
+    type typename##_arr_peek(const Array* arr);                                 \
+    Array typename##_arr_create();
 
 #define ARRAY_ADD(type, typename)                                               \
     void typename##_arr_add(Array* arr, const type element) {                   \
@@ -25,6 +27,14 @@
                                                                                 \
     type typename##_arr_pop(Array* arr) {                                       \
         return *(type*)arr_pop(arr);                                            \
+    }                                                                           \
+                                                                                \
+    type typename##_arr_peek(const Array* arr) {                                \
+        return *(type*)arr_peek(arr);                                           \
+    }                                                                           \
+                                                                                \
+    Array typename##_arr_create() {                                             \
+        return arr_create(sizeof (type));                                       \
     }
 
 typedef struct {
@@ -41,6 +51,7 @@ void arr_resize(Array* vec);
 void arr_add(Array* vec, const void* element);
 bool arr_remove(Array* arr, const uint index);
 void* arr_pop(Array* arr);
+void* arr_peek(const Array* arr);
 void* arr_get(const Array* arr, const uint index);
 void arr_destroy(Array* vec);
 

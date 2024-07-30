@@ -18,7 +18,7 @@
 
 int main(int argc, char** argv) {
     char* flags_h_path = "./../FLAGS.h";
-    char* flags_c_path = "./../FLAGS.c";
+    char* flags_c_path = "./../FLAGS.c.c";
 
     if (argc > 2) {
         printf("Error: only one argument; file path to FLAGS.h\n");
@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
         memcpy(base_path_cpy, base_path, length);
 
         flags_h_path = strcat(base_path, "/FLAGS.h");
-        flags_c_path = strcat(base_path_cpy, "/FLAGS.c");
+        flags_c_path = strcat(base_path_cpy, "/FLAGS.c.c");
     }
 
     FILE* hptr = fopen(flags_h_path, "r");
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     printf("Current Dir: \"%s\"\n", hdir);
 
     char* flag_h_temp_loc = strcat(hdir, "/FLAGSTEMP.h");
-    char* flag_c_temp_loc = strcat(cdir, "/FLAGSTEMP.c");
+    char* flag_c_temp_loc = strcat(cdir, "/FLAGSTEMP.c.c");
 
     FILE* nhfile = fopen(flag_h_temp_loc, "w"); //this is very not good. just to escape the build folder
     FILE* ncfile = fopen(flag_c_temp_loc, "w");

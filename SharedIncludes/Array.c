@@ -19,6 +19,7 @@ Array arr_construct(const uint element_size, const uint min_element_count) {
     return vec;
 }
 
+// todo: refactor to make more clear that the input is the element_size and not the array size
 Array arr_create(const uint element_size) {
     return arr_construct(element_size, MIN_VEC_SIZE);
 }
@@ -68,6 +69,12 @@ void* arr_pop(Array* arr) {
     arr_remove(arr, index);
 
     return element;
+}
+
+void* arr_peek(const Array* arr) {
+    if (arr->pos == 0) return NULL;
+
+    return arr_get(arr, arr->pos - 1);
 }
 
 void* arr_get(const Array* arr, const uint index) {

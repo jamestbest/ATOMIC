@@ -279,7 +279,7 @@ Position get_node_wrapping_position(Node* node) {
 void print_node_summary(const Node* node) {
     printf(C_YLW"0x%llx"C_RST" %s::", (uintptr_t)node, nodeTypeToString(node->type));
     print_token(node->token);
-    printf("::<s="C_YLW"0x%llx"C_RST";stmt="C_RED"%llu"C_RST";uid="C_RED"%llu"C_RST";l="C_YLW"0x%llx"C_RST">::<c=%llu>",
+    printf("::<s="C_YLW"0x%llx"C_RST";stmt="C_RED"%llu"C_RST";uid="C_RED"%llu"C_RST";l="C_YLW"0x%llx"C_RST">::<c.c=%llu>",
         (uintptr_t)node->data.scope,
         node->statement_id,
         node->uid,

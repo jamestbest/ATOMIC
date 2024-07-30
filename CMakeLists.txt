@@ -24,31 +24,23 @@ add_executable(ATOMICLI
         Lexer/Tokens.c
         Lexer/Lexer.c
         Parser/Parser.c
-        Parser/Parser.h
         Parser/Node.c
-        Parser/Node.h
-        Parser/Parserr.h
         Errors.c
         Parser/Parserr.c
         Parser/ShuntingYard.c
-        Parser/ShuntingYard.h
         SharedIncludes/Queue.c
-        SharedIncludes/Queue.h
         SharedIncludes/Stack.c
-        SharedIncludes/Stack.h
         Lexer/OpFolder.c
-        Lexer/OpFolder.h
         Lexer/Lexerr.c
-        Commons.h
         SharedIncludes/Array.c
-        SharedIncludes/Array.h
 
         Parser/StaticVerification.c
-        Parser/StaticVerification.h
 
         InternalSettings.c
-        InternalSettings.h
+        Parser/TypeConstInfo.h
         Parser/StaticVerificationInternal.h
+
+        SharedIncludes/Messages.c
 )
 
 target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a)
@@ -67,4 +59,19 @@ add_executable(Flag_preprocessor
         Commons.h
 )
 
-# [[todo]] need to create a lib from these
+add_executable(Type_preprocessor
+        TypePreprocessor/TypePreprocessor.c
+
+        SharedIncludes/Buffer.c
+        SharedIncludes/Helper_String.c
+        SharedIncludes/Helper_File.c
+        SharedIncludes/Messages.c
+        SharedIncludes/Vector.c
+        SharedIncludes/Array.c
+        TypePreprocessor/TPPLexer.c
+        TypePreprocessor/TPPLexer.h
+        TypePreprocessor/TPPLexerInternal.h
+
+)
+
+# [[todo]] need to create a lib from theseadd_executable(Type_preprocessor TypePreprocessor/TypePreprocessor.c.c TypePreprocessor/TypePreprocessor.h)

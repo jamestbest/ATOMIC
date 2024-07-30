@@ -6,7 +6,7 @@
 
 FILE* validate_file(const char* filename, const char* mode) {
     //need some way to allow checks for a file's existence
-    uint mode_length = len(mode);
+    const uint mode_length = len(mode);
 
     if (access(filename, F_OK) != 0) {
         return fopen(filename, mode);
@@ -25,7 +25,7 @@ FILE* validate_file(const char* filename, const char* mode) {
                 assert(false);
         }
 
-        int res = access(filename, dec);
+        const int res = access(filename, dec);
 
         if (res != 0) return NULL;
     }
@@ -64,6 +64,27 @@ char* get_dir(char* file) {
     return dir;
 }
 
+char* get_file_name(const char* file_path) {
+    // /dir/dir2/dir3/file = file
+
+    const int loc = find_last(file_path, '/');
+
+    const char* start = NULL;
+
+    if (loc == -1) start = file_path;
+    else start = &file_path[loc + 1];
+
+    uint len = 0;
+
+    while (start[len] != '\0' && start[len] != '.') len++;
+
+    char* file_name = malloc(sizeof (char) * (len + 1));
+    memcpy(file_name, start, len);
+    file_name[len] = '\0';
+
+    return file_name;
+}
+
 char* get_path(const char* dir, const char* file) {
     uint l1 = len(dir);
     uint l2 = len(file);
@@ -89,7 +110,7 @@ bool get_line(FILE* file, Buffer* buffer) {
     do {
         if (feof(file) != 0) return buffer->pos != 0;
 
-        char* fres = fgets(temp_buff, BUFF_MIN, file);
+        const char* fres = fgets(temp_buff, BUFF_MIN, file);
 
         if (fres == NULL) {
             return pos != 0;

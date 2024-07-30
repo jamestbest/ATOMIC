@@ -234,7 +234,7 @@ TokenWrapper fold_pointer(Token* operator) {
      *      Binary operator e.g. myVar << myOtherVar
      */
 
-    Token* previous = justify();
+    const Token* previous = justify();
 
     if (previous->type == TYPE_SET) {
         //This is a pointer modifier, calculate the level of
@@ -250,13 +250,13 @@ TokenWrapper fold_pointer(Token* operator) {
             return (TokenWrapper){lexerr(LEXERR_PTR_OFFSET_OUT_OF_RANGE, operator->pos, ptr_level)};
         }
 
-        //[[todo]] need an assertion that the next token is a type token, and to error if not
         Token* type = consume();
 
         if (type->type != TYPE) {
             return (TokenWrapper){lexerr(LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET, type->pos, type)};
         }
 
+        type->data.type.general_type = POINTER;
         type->data.type.ptr_offset = ptr_level;
 
         return (TokenWrapper){SUCCESS, *type};

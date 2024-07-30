@@ -1053,7 +1053,7 @@ NodeRet parse_expression_statement(void) {
 /*  This can be assignment or inc/dec
  *  *(a+100) = 12           TODO:: NEED TO HANDLE THIS CASE
  *  ++b
- *  --c
+ *  --c.c
  */
 NodeRet RETIRED_parse_un_op_statement(void) {
     const ShuntRet expr = shunt(ptokens, t_pos, false);

@@ -18,3 +18,5 @@ How is the name resolution for -> supposed to work?
 `-could tag at the lexical opfolder stage as only identifiers are supposed to follow ->
 
 
+IDEA - Tag identifiers with different locations - can tag ->identifier in the shunting yard
+

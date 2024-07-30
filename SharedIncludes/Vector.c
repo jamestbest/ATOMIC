@@ -29,7 +29,7 @@ bool vector_at_capacity(const Vector* vec) {
 }
 
 bool vector_verify(const Vector* vec) {
-    return vec->arr != NULL && vec->capacity != -1 && vec->pos != -1;
+    return vec && vec->arr != NULL && vec->capacity != (size_t)-1 && vec->pos != (size_t)-1;
 }
 
 bool vector_resize(Vector* vec, const size_t new_element_count) {

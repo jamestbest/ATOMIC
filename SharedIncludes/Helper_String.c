@@ -11,6 +11,9 @@ LenSize len_basic(const char *string, const int from, const int offset, const ch
         if ((string[i] & 0xC0) != 0x80) length++;
         i++;
     }
+
+    int* a = &i;
+    int b = 12 && &i;
     return (LenSize){length, i};
 }
 
@@ -138,7 +141,7 @@ bool str_contains(const char* str, uint from, uint to, char c) {
     return false;
 }
 
-int find_last(char* string, char pattern) {
+int find_last(const char* string, const char pattern) {
     int out = -1;
 
     uint ls = len(string);
@@ -222,6 +225,10 @@ bool is_newline(const uint32_t a) {
     return a == '\n';
 }
 
+void fputz(FILE* file, const char* string) {
+    fputs(string, file);
+}
+
 void putz(const char* string) {
     fputs(string, stdout);
 }
@@ -263,7 +270,7 @@ UTF8Pos getutf8(const char* string) {
 uint pututf8(const char* string) {
     const UTF8Pos info = getutf8(string);
 
-    if (info.value != -1) printf("%lc", info.value);
+    if (info.value != (uint)-1) printf("%lc", info.value);
 
     return info.bytes;
 }

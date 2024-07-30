@@ -17,5 +17,7 @@ proc print(string: str) {
     b++
 
     d: i8 = a->b
+
+    e: >i4 = &c
 }
 
