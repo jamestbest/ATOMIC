@@ -296,7 +296,7 @@ void write_operator_information(FILE* file, const OperatorInfo* info) {
     for (uint i = 0; i < info->types.pos; ++i) {
         const Vector types = Vector_arr_get(&info->types, i);
 
-        fprintf(file, "(typeArray){%lu, ", types.pos);
+        fprintf(file, "(typeArray){%zu, ", types.pos);
 
         for (uint j = 0; j < types.pos; ++j) {
             const char* type = vector_get_unsafe(&types, j);
