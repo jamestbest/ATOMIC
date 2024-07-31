@@ -2,7 +2,7 @@
 // Created by jamescoward on 02/06/2024.
 //
 
-#include "parserr.h"
+#include "Parserr.h"
 
 NodeRet parsewarn(const ParseWarns warningCode, Token* parent_token, Token* issue_token, ...) {
     putz(C_MGN"PARSEWARNING"C_RST": ");

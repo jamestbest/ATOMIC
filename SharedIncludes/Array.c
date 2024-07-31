@@ -3,6 +3,7 @@
 //
 
 #include "Array.h"
+#include "../Errors.h"
 
 Array arr_construct(const uint element_size, const uint min_element_count) {
     void* memory = malloc(element_size * min_element_count);
