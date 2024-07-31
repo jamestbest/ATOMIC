@@ -148,12 +148,11 @@ int main(const int argc, char** argv) {
 }
 
 void fatal_file_error(const char* message) {
-    char* buff = malloc(_MAX_DIR);
-    char* cwd = getcwd(buff, _MAX_DIR);
+    char* cwd = getcwd(NULL, 0);
 
     error("%s, unable to continue.\n\tcwd: %s", message, cwd);
 
-    free(buff);
+    free(cwd);
 
     exit(EXIT_FAILURE);
 }
@@ -235,7 +234,12 @@ uint get_matching_enum(const Vector* enums, const char* operator) {
 }
 
 uint verify_enums_usage(const Vector* enums, const Array* information) {
-    bool enum_used[enums->pos] = {};
+    bool enum_used[enums->pos];
+
+    for (uint i = 0; i < enums->pos; ++i) {
+        enum_used[i] = 0;
+    }
+
     uint exitcode = EXIT_SUCCESS;
 
     for (uint i = 0; i < information->pos; ++i) {
@@ -292,7 +296,7 @@ void write_operator_information(FILE* file, const OperatorInfo* info) {
     for (uint i = 0; i < info->types.pos; ++i) {
         const Vector types = Vector_arr_get(&info->types, i);
 
-        fprintf(file, "(typeArray){%llu, ", types.pos);
+        fprintf(file, "(typeArray){%lu, ", types.pos);
 
         for (uint j = 0; j < types.pos; ++j) {
             const char* type = vector_get_unsafe(&types, j);
@@ -430,7 +434,7 @@ OperatorInfo parse_operator_type_line(const char* line, const Vector* types_enum
                 if (value == '=') {
                     char* op_name = malloc(sizeof (char) * (idx + 1));
 
-                    if (!op_name) exit(ENOMEM);
+                    if (!op_name) exit(EXIT_FAILURE);
 
                     assert(start_pos == 0); // should always be start_pos == 0
                     memcpy(op_name, line, idx);
@@ -531,7 +535,7 @@ parse_operator_type_line_end:
 char* add_type(const char* start, const uint length, Vector* types) {
     char* type_store = malloc(sizeof (char) * (length + 1));
 
-    if (!type_store) exit(ENOMEM);
+    if (!type_store) exit(EXIT_FAILURE);
 
     memcpy(type_store, start, length);
     type_store[length] = '\0';
@@ -619,7 +623,7 @@ Vector collect_enums(FILE* file, const char* enum_name) {
 void add_enum(const char* start, const uint length, Vector* enums) {
     char* enum_store = malloc(sizeof (char) * (length + 1));
 
-    if (!enum_store) exit(ENOMEM);
+    if (!enum_store) exit(EXIT_FAILURE);
 
     memcpy(enum_store, start, length);
     enum_store[length] = '\0';

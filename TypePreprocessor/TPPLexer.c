@@ -139,11 +139,13 @@ void tpplex_line(const Buffer* line_buffer) {
         }
 
         consume();
+        
     skip_consume:
+        continue;
     }
 
-    TPPToken temp;
-    if (temp = TPPToken_arr_peek(&tok_arr), temp && temp.type != EOS) add_keyword(EOS);
+    TPPToken* temp;
+    if (temp = arr_peek(&tok_arr), temp && temp->type != EOS) add_keyword(EOS);
 }
 
 Array tpplex_end() {
