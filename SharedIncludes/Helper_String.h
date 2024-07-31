@@ -28,7 +28,7 @@ typedef struct {
     uint bytes;
 } UTF8Pos;
 
-int find_last(char* string, char pattern);
+int find_last(const char* string, const char pattern);
 int starts_with_ips(const char* string, const char* pattern);
 int starts_with(const char* string, const char* pattern);
 int starts_with_ic(const char* string, const char* pattern);
@@ -56,6 +56,7 @@ bool is_alph_numeric(uint32_t a);
 bool is_whitespace(uint32_t a);
 bool is_newline(uint32_t a);
 
+void fputz(FILE* file, const char* string);
 void putz(const char* string);
 void putz_santitize(char* string);
 

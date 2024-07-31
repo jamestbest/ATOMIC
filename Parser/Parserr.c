@@ -42,6 +42,9 @@ NodeRet parserr(const ParsErrors errorCode, Token* parent_token, Token* issue_to
         case PARSERR_UNEXPECTED_TOKEN_STATEMENT_START:
             puts(ATOM_CT__PARSERR_UNEXPECTED_TOKEN_STATEMENT_START);
             break;
+        case PARSERR_SY_ASSIGNMENT_OPERATOR_CANNOT_BE_USED:
+            printf(ATOM_CT__PARSERR_SY_ASSIGNMENT_OPERATOR_CANNOT_BE_USED, ATOM_CT__LEX_OPERATORS.arr[issue_token->data.enum_pos]);
+            break;
         case PARSERR_SA_ALREADY_DEFINED:
             printf(ATOM_CT__PARSERR_SA_ALREADY_DEFINED, issue_token->data.ptr);
             break;

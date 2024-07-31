@@ -7,7 +7,6 @@
 
 #include "../Commons.h"
 
-
 #include "../SharedIncludes/Vector.h"
 #include "../SharedIncludes/Helper_String.h"
 #include "../SharedIncludes/Colours.h"
@@ -96,7 +95,8 @@ typedef enum ATOM_CT__LEX_TYPES_GENERAL_ENUM {
     STRING,
     CHAR,
     BOOLEAN,
-    NOT_A_VALUE
+    NOT_A_VALUE,
+    POINTER,
 } ATOM_CT__LEX_TYPES_GENERAL_ENUM;
 
 typedef enum ATOM_CT__LEX_OP_IDENTIFIERS_ENUM {
@@ -152,8 +152,6 @@ typedef enum ATOM_CT__LEX_OPERATORS_ENUM {
  *   Calculating the position of a single token would require looking at all previous base_tokens
  *   But calculating the position of each token one by one sequentially would be fairly cheap
  *   I would have to store the whitespace characters as well in order to calc the position instead of dropping '\t' and '\s'
- *
- *   [[maybe]] For now this will not store the positions
  */
 
 typedef struct Position {

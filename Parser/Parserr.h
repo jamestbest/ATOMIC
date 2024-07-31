@@ -17,6 +17,8 @@ typedef enum ParsErrors {
     PARSERR_SUB_STATEMENT_ERROR_IN_BODY,
     PARSERR_UNEXPECTED_TOKEN_STATEMENT_START,
 
+    PARSERR_SY_ASSIGNMENT_OPERATOR_CANNOT_BE_USED,
+
     PARSERR_SA_ALREADY_DEFINED,
     PARSERR_SA_NOT_IN_SCOPE,
 } ParsErrors;
@@ -45,6 +47,8 @@ NodeRet parsewarn(const ParseWarns warningCode, Token* parent_token, Token* issu
 #define ATOM_CT__PARSERR_SUB_STATEMENT_ERROR_IN_BODY "Error occurred when parsing subroutine body."
 
 #define ATOM_CT__PARSERR_UNEXPECTED_TOKEN_STATEMENT_START "Unexpected token found while parsing for a statement."
+
+#define ATOM_CT__PARSERR_SY_ASSIGNMENT_OPERATOR_CANNOT_BE_USED "Usage of assignment operator `%s` within an expression is not allowed.\n"
 
 #define ATOM_CT__PARSERR_SA_ALREADY_DEFINED "Declaration of '%s' already exists\n"
 

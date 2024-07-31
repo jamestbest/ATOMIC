@@ -23,38 +23,17 @@ typedef struct {
     bool from_parent;
 } InScopeRet;
 
-typedef struct {
-    const uint64_t uid;
-
-    const char* name;
-    const encodedType type;
-
-    const Node* node;
-} Variable;
-
-typedef struct {
-    const uint64_t uid;
-
-    const char* name;
-    const encodedType type;
-
-    const Node* node;
-} Parameter;
-
-typedef struct {
-    const uint64_t uid;
-
-    const char* name;
-    const Vector parameters;
-    const encodedType return_type;
-
-    const Node* node;
-} Subroutine;
+struct a {
+    uint32_t operator_enum;
+    uint32_t types[];
+};
 
 Scope* generate_global_scope(Node* ast);
 void print_scope(const Scope* scope);
 
 void in_scope_verification(const Node* ast, Scope* global_scope);
-void t(Node* node, Scope* c_scope, const Node* c_stmt);
+void verify_scope(Node* node, Scope* c_scope, const Node* c_stmt);
+
+void verify_types(Node* node, Scope* scope, Node* c_sub);
 
 #endif //STATICVERIFICATION_H

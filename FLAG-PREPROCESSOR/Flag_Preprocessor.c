@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
     puts("Welcome to the Flag preprocessor for ATOMIC\n");
 
     if (argc != 2) {
-        puts(Error("Usage", ": ./Flag_Preprocessor <Dir of Flags.h & Flags.c>"));
+        puts(Error("Usage", ": ./Flag_Preprocessor <Dir of Flags.h & Flags.c.c>"));
         exit(1);
     }
 
@@ -19,20 +19,20 @@ int main(int argc, char** argv) {
 
     uint dir_end = len(argv[1]);
 
-    char* dir_buff = malloc((dir_end + 1 + 20) * sizeof(char)); //+20 for the /Flags.c/h and FlagsTemp.c/h
+    char* dir_buff = malloc((dir_end + 1 + 20) * sizeof(char)); //+20 for the /Flags.c.c/h and FlagsTemp.c.c/h
     memcpy(dir_buff, argv[1], dir_end + 1);
 
     char* hpath = get_path(dir_buff, path_sep_s "Flags.h");
-    char* cpath = get_path(dir_buff, path_sep_s "Flags.c");
+    char* cpath = get_path(dir_buff, path_sep_s "Flags.c.c");
 
     char* nhpath = get_path(dir_buff, path_sep_s "FlagsTemp.h");
-    char* ncpath = get_path(dir_buff, path_sep_s "FlagsTemp.c");
+    char* ncpath = get_path(dir_buff, path_sep_s "FlagsTemp.c.c");
 
     FILE* hptr = validate_file(hpath, "r");
     FILE* cptr = validate_file(cpath, "r");
 
     if (hptr == NULL || cptr == NULL) {
-        printf(Error("FILE", ": Unable to open Flags.h or Flags.c. Current Dir: %s"), dir_buff);
+        printf(Error("FILE", ": Unable to open Flags.h or Flags.c.c. Current Dir: %s"), dir_buff);
         close_files(2, hptr, cptr);
         exit(2);
     }
@@ -57,11 +57,11 @@ int main(int argc, char** argv) {
 
     close_files(4, hptr, cptr, nhptr, ncptr);
 
-    int remh = remove(hpath);
-    int remc = remove(cpath);
+    const int remh = remove(hpath);
+    const int remc = remove(cpath);
 
     if (remh != 0 || remc != 0) {
-        puts(Error("FileIO", ": Unable to remove file Flags.h/c\n"));
+        puts(Error("FileIO", ": Unable to remove file Flags.h/c.c\n"));
         exit(4);
     }
 
@@ -238,7 +238,7 @@ void collect_enums(FILE* file, FILE* nfile, const char* prefix, Buffer* buffer, 
 
     get_line(file, buffer);
     if (starts_with_ips(buffer->data, "enum") == -1) {
-        puts(Error("FLAG.c", ": enum not found after //%%XXXX ENUM%%"));
+        puts(Error("FLAG.c.c", ": enum not found after //%%XXXX ENUM%%"));
     }
     fputs(buffer->data, nfile);
 
@@ -250,7 +250,7 @@ void collect_enums(FILE* file, FILE* nfile, const char* prefix, Buffer* buffer, 
 
         fputs(buffer->data, nfile);
 
-        uint tot_length = len_from_to(buffer->data, pos, ',') + 1;
+        const uint tot_length = len_from_to(buffer->data, pos, ',') + 1;
 
         char* s_enum = malloc(tot_length * sizeof(char));
         memcpy(s_enum, &buffer->data[pos], tot_length);

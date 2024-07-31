@@ -23,6 +23,7 @@ typedef unsigned int uint;
 char* get_dir(char* file);
 char* get_path(const char* dir, const char* file);
 bool get_line(FILE* file, Buffer* buffer);
+char* get_file_name(const char* file_path);
 
 FILE* open_file(const char* cwd, const char* filename, const char* mode);
 FILE* validate_file(const char* filename, const char* mode);

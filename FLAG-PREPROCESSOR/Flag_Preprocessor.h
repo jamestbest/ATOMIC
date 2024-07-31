@@ -51,7 +51,7 @@ void parse_string(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Bu
 
 #define ATOM_CT__FLAGS_PRE_END              "//%%END%%"
 
-/* FLAGS.c */
+/* FLAGS.c.c */
 #define ATOM_CT__FLAGS_PRE_OPT_ENUM         "//%%OPTION ENUM%%"
 #define ATOM_CT__FLAGS_PRE_FLG_ENUM         "//%%FLAG ENUM%%"
 
