@@ -12,7 +12,7 @@
 
 #define DBG_SPECIAL_SEQ 0x12345678
 
-const char* KEYWORD_ALIAS = "ALIAS";
+const char KEYWORD_ALIAS[] = "ALIAS";
 
 const char* TPPTypesStrings[] = {
     "ALIAS",
@@ -22,6 +22,7 @@ const char* TPPTypesStrings[] = {
     "TYPE",
 
     "EQUALITY (=)",
+    "ARROW (->)",
     "PIPE (|)",
     "AND (&&)",
     "OR (||)",

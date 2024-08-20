@@ -8,9 +8,9 @@
 #include <stdbool.h>
 #include "TPPLexer.h"
 #include "../SharedIncludes/Vector.h"
+#include "TPPParser.h"
 
 ARRAY_PROTO(Vector, Vector)
-ARRAY_ADD(Vector, Vector)
 
 typedef struct OperatorInfo {
     const char* operator;
@@ -18,12 +18,22 @@ typedef struct OperatorInfo {
     Array types; //Array of Vectors of types
 } OperatorInfo;
 
+typedef struct TypeMatrix {
+    uint64_t top_pad;
+    uint64_t bottom_pad;
+} TypeMatrix;
+
 typedef struct OpInfo {
-    const char* operator;
+    uint enum_position;
+    TypeMatrix type_matrix;
 } OpInfo;
 
+typedef struct TypeAlias {
+    const char* identifier;
+    uint32_t types; // just a bit map of all the types with their enum position being their bit position
+} TypeAlias;
+
 ARRAY_PROTO(struct OperatorInfo, OperatorInfo)
-ARRAY_ADD(struct OperatorInfo, OperatorInfo)
 
 typedef enum OperatorSeekState {
     SEEK_OPERATOR_NAME,

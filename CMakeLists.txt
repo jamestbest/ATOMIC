@@ -71,6 +71,9 @@ add_executable(Type_preprocessor
         TypePreprocessor/TPPLexer.c
         TypePreprocessor/TPPLexer.h
         TypePreprocessor/TPPLexerInternal.h
+        TypePreprocessor/TPPParser.c
+        TypePreprocessor/TPPParser.h
+        TypePreprocessor/TPPParserInternal.h
 
 )
 

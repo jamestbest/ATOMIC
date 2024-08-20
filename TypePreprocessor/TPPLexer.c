@@ -132,6 +132,14 @@ void tpplex_line(const Buffer* line_buffer) {
                 add_keyword(AND);
                 consume();
             }
+        } else if (c == '-') {
+            const bool join_next = peek() == '>';
+
+            if (!join_next) error("`-` is not a valid symbol, `->` is. Peek is `%c`\n", peek());
+            else {
+                add_keyword(ARROW);
+                consume();
+            }
         } else if (is_whitespace(c) || is_newline(c)) {
             // ignore whitespace & newlines
         } else {
@@ -139,7 +147,7 @@ void tpplex_line(const Buffer* line_buffer) {
         }
 
         consume();
-        
+
     skip_consume:
         continue;
     }
@@ -164,7 +172,7 @@ bool is_valid_index(const uint index) {
 
 // Only supports ascii
 char consume() {
-    if (!is_valid_index(c_pos + 1)) return '\0';
+    if (!is_valid_index(c_pos)) return '\0';
 
     return c_line->data[c_pos++];
 }
@@ -181,8 +189,16 @@ char current() {
     return c_line->data[c_pos];
 }
 
+const char* get_tpptoken_type_string(const TPPType type) {
+    return TPPTypesStrings[type];
+}
+
+void print_tpptoken_type(const TPPType type) {
+    printf("%s", get_tpptoken_type_string(type));
+}
+
 void print_tpptoken(const TPPToken* token) {
-    printf("%s", TPPTypesStrings[token->type]);
+    print_tpptoken_type(token->type);
 
     const TPPType type = token->type;
 

@@ -13,6 +13,9 @@
 
 #include <time.h>
 
+ARRAY_ADD(OperatorInfo, OperatorInfo)
+ARRAY_ADD(Vector, Vector)
+
 // FUNCTION SIGS
 static void parse_enum_line(const char* line, Vector* enums);
 static Vector collect_enums(FILE* file, const char* enum_name);
@@ -391,7 +394,24 @@ Array parse_type_file_two(FILE* file, const Vector* type_enums, const Vector* op
         tpplex_line(&line_buffer);
     }
 
-    return tpplex_end();
+    Array tokens = tpplex_end();
+
+    // need to parse the tokens into the 3 types of statements
+    /*
+     *  1. ALIAS statements - these are aliases for the types
+     *  2. Operator type statements - these give the types that can be used for the given type
+     *  3. Type coercing statements - which types a type can be implicitly converted to
+     */
+
+    tpp_parse(tokens, )
+
+    for (uint i = 0; i < tokens.pos; ++i) {
+        TPPToken* token = arr_get(&tokens, i);
+
+        if (token->type == ALIAS) {
+
+        }
+    }
 }
 
 Array parse_type_file(FILE* file, const Vector* type_enums) {
@@ -690,4 +710,22 @@ void print_enums(const Vector* enums) {
 
         fprint_enum(stdout, i, enum_name);
     }
+}
+
+void bit_set(uint64_t* field, uint bit) {
+    *field |= (1 << bit);
+}
+
+uint bit_get(uint64_t field, uint bit) {
+    return (field >> bit) & 0x1;
+}
+
+void set_type_matrix(TypeMatrix* matrix, uint x, uint y) {
+    if (y > 7) bit_set(&matrix->bottom_pad, y * 8 + x);
+    else bit_set(&matrix->top_pad, y * 8 + x);
+}
+
+uint get_type_matrix(TypeMatrix* matrix, uint x, uint y) {
+    if (y > 7) return bit_get(matrix->bottom_pad, y * 8 + x);
+    else return bit_get(matrix->top_pad, y * 8 + x);
 }

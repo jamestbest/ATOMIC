@@ -97,6 +97,7 @@ typedef enum ATOM_CT__LEX_TYPES_GENERAL_ENUM {
     BOOLEAN,
     NOT_A_VALUE,
     POINTER,
+    STRUCT, // todo: impl structs
 } ATOM_CT__LEX_TYPES_GENERAL_ENUM;
 
 typedef enum ATOM_CT__LEX_OP_IDENTIFIERS_ENUM {

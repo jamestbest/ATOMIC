@@ -16,6 +16,7 @@ typedef enum TPPType {
     TYPE,
 
     EQUALITY,
+    ARROW,
     PIPE,
     AND,
     OR,
@@ -39,5 +40,8 @@ void tpplex_line(const Buffer* line_buffer);
 Array tpplex_end();
 
 void print_tpptoken(const TPPToken* token);
+void print_tpptoken_type(const TPPType type);
+
+const char* get_tpptoken_type_string(const TPPType type);
 
 #endif //TPPLEXER_H
