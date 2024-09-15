@@ -6,7 +6,7 @@
 #define ATOMIC_HELPER_STRING_H
 
 #include "../Commons.h"
-
+#include <stdio.h>
 
 typedef unsigned int uint;
 

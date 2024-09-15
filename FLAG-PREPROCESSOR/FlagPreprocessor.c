@@ -2,13 +2,173 @@
 // Created by jamescoward on 09/11/2023.
 //
 
-#include "Flag_Preprocessor.h"
+#include "FlagPreprocessorInternal.h"
 
-int main(int argc, char** argv) {
+#include "../SharedIncludes/Messages.h"
+#include <unistd.h>
+#include <malloc.h>
+
+#define ARGS_COUNT 3
+
+bool verify_arguments(const int argc, char** argv);
+char* get_cwd();
+
+uint parse_flag_file(FILE* file);
+
+Vector flagInfos;
+Vector optionNames;
+
+int compare_flag_infos(const void* a, const void* b) {
+    const FlagInfo* flag_a = *(const FlagInfo**)a;
+    const FlagInfo* flag_b = *(const FlagInfo**)b;
+
+    return strcmp(flag_a->flag_name, flag_b->flag_name);
+}
+
+int main(const int argc, char** argv) {
+    puts("Welcome to the ATOMIC Flag preprocessor");
+
+    verify_arguments(argc, argv);
+
+    flagInfos = vector_create(15);
+    optionNames = vector_create(10);
+
+    const char* flag_file_name = argv[1];
+    FILE* flag_file = fopen(flag_file_name, "r");
+
+
+
+    uint ret = parse_flag_file(flag_file);
+
+    qsort(flagInfos.arr, flagInfos.pos, sizeof (FlagInfo*), compare_flag_infos);
+
+    vector_destroy(&flagInfos);
+}
+
+FlagInfo* create_flag_info(const char* name_start, const char* name_end, const char* default_start, const char* default_end) {
+    FlagInfo* info = malloc(sizeof (FlagInfo));
+
+    const size_t name_len = name_end - name_start;
+    char* name = malloc((name_len + 1) * sizeof (char));
+    memcpy(name, name_start, name_len);
+    *(name + name_len) = '\0';
+
+    const size_t default_len = default_end - default_start;
+    const bool default_value = default_len + 1 == sizeof ("true") ? memcmp(default_start, "true", sizeof ("true") - 1) == 0 : false;
+
+    info->flag_name = name;
+    info->default_value = default_value;
+
+    return info;
+}
+
+const char* get_word_end(const char* word_start) {
+    size_t i = 0;
+    while (is_alph(word_start[i])) {i++;};
+    return word_start + i;
+}
+
+const char* get_flag_or_option_end(const char* word_start) {
+    size_t i = 0;
+    while (is_alph(word_start[i]) || word_start[i] == '-') {i++;};
+    return word_start + i;
+}
+
+uint parse_keyword_flag(const char* type_end) {
+    const char* name_start = strchr(type_end, ' ') + 1;
+    const char* name_end = get_flag_or_option_end(name_start);
+
+    const char* default_start = strchr(name_end, ' ') + 1;
+    const char* default_end = get_word_end(default_start);
+
+    FlagInfo* info = create_flag_info(name_start, name_end, default_start, default_end);
+
+    vector_add(&flagInfos, info);
+
+    return EXIT_SUCCESS;
+}
+
+uint parse_keyword_option(const char* type_end) {
+    const char* name_start = strchr(type_end, ' ') + 1;
+    const char* name_end = get_flag_or_option_end(name_start);
+
+    const uint name_len = name_end - name_start;
+    char* name = malloc((name_len + 1) * sizeof (char));
+    memcpy(name, name_start, name_len);
+    *(name + name_len) = '\0';
+
+    vector_add(&optionNames, name);
+
+    return EXIT_SUCCESS;
+}
+
+uint parse_flag_file(FILE* file) {
+    Buffer line_buffer = buffer_create(50);
+    uint errcode = EXIT_SUCCESS;
+
+    while (get_line(file, &line_buffer)) {
+        if (starts_with_ips(line_buffer.data, "//") != -1) {
+            // this is a comment so skip
+            continue;
+        }
+
+        const char* type_start = line_buffer.data;
+        const char* type_end = get_word_end(type_start);
+
+        const uint max_len = type_end - type_start;
+        if (max_len == sizeof (ATOM_FP__KEYWORD_FLAG) - 1 && strncmp(type_start, ATOM_FP__KEYWORD_FLAG, max_len) == 0) {
+            parse_keyword_flag(type_end);
+        } else if (max_len == sizeof (ATOM_FP__KEYWORD_OPTION) - 1 && strncmp(type_start, ATOM_FP__KEYWORD_OPTION, max_len) == 0) {
+            parse_keyword_option(type_end);
+        } else {
+            error("UNKNOWN KEYWORD: %*.*s",
+                max_len, max_len, type_start
+            );
+            errcode = EXIT_FAILURE;
+        }
+    }
+
+    return errcode;
+}
+
+// getcwd with malloc
+char* get_cwd() {
+    size_t size = 50;
+    char* buff = malloc(size * sizeof (char));
+    char cap = 5;
+
+    while (!getcwd(buff, size)) {
+        if (!cap--) {
+            free(buff);
+            buff = NULL;
+            break;
+        }
+        size <<= 1;
+        buff = realloc(buff, size);
+    }
+
+    return buff;
+}
+
+bool verify_arguments(const int argc, char** argv) {
+    if (argc != ARGS_COUNT) {
+        usage("Format: ./Flag_Preprocessor <Flags file> <Output file>");
+    }
+
+    for (int i = 1; i < argc; ++i) {
+        if (!argv[i]) {
+            usage("NULL Argument, argument %d (1-indexed, ignoring ) is NULL", i);
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int main2(int argc, char** argv) {
     puts("Welcome to the Flag preprocessor for ATOMIC\n");
 
     if (argc != 2) {
-        puts(Error("Usage", ": ./Flag_Preprocessor <Dir of Flags.h & Flags.c.c>"));
+        puts(Error("Usage", ": ./Flag_Preprocessor <Dir of Flags.h & Flags.c>"));
         exit(1);
     }
 
@@ -17,19 +177,19 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    uint dir_end = len(argv[1]);
+    const uint dir_len = len(argv[1]);
 
-    char* dir_buff = malloc((dir_end + 1 + 20) * sizeof(char)); //+20 for the /Flags.c.c/h and FlagsTemp.c.c/h
-    memcpy(dir_buff, argv[1], dir_end + 1);
+    char* dir_buff = malloc((dir_len + 1 + 20) * sizeof(char)); //+20 for the /Flags.c.c/h and FlagsTemp.c.c/h
+    memcpy(dir_buff, argv[1], dir_len + 1);
 
     char* hpath = get_path(dir_buff, path_sep_s "Flags.h");
-    char* cpath = get_path(dir_buff, path_sep_s "Flags.c.c");
+    char* cpath = get_path(dir_buff, path_sep_s "Flags.c");
 
     char* nhpath = get_path(dir_buff, path_sep_s "FlagsTemp.h");
-    char* ncpath = get_path(dir_buff, path_sep_s "FlagsTemp.c.c");
+    char* ncpath = get_path(dir_buff, path_sep_s "FlagsTemp.c");
 
-    FILE* hptr = validate_file(hpath, "r");
-    FILE* cptr = validate_file(cpath, "r");
+    FILE* hptr = fopen(hpath, "r");
+    FILE* cptr = fopen(cpath, "r");
 
     if (hptr == NULL || cptr == NULL) {
         printf(Error("FILE", ": Unable to open Flags.h or Flags.c.c. Current Dir: %s"), dir_buff);
@@ -37,8 +197,8 @@ int main(int argc, char** argv) {
         exit(2);
     }
 
-    FILE* nhptr = validate_file(nhpath, "w");
-    FILE* ncptr = validate_file(ncpath, "w");
+    FILE* nhptr = fopen(nhpath, "w");
+    FILE* ncptr = fopen(ncpath, "w");
 
     if (nhptr == NULL || ncptr == NULL) {
         printf(Error("FILE", ": Unable to create temp files. Current Dir: %s"), dir_buff);

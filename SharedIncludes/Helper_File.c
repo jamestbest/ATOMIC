@@ -3,46 +3,16 @@
 //
 
 #include "Helper_File.h"
-
-FILE* validate_file(const char* filename, const char* mode) {
-    //need some way to allow checks for a file's existence
-    const uint mode_length = len(mode);
-
-    if (access(filename, F_OK) != 0) {
-        return fopen(filename, mode);
-    }
-
-    for (uint i = 0; i < mode_length; i++) {
-        int dec;
-        switch (mode[i]) {
-            case 'r':
-                dec = R_OK;
-                break;
-            case 'w':
-                dec = W_OK;
-                break;
-            default:
-                assert(false);
-        }
-
-        const int res = access(filename, dec);
-
-        if (res != 0) return NULL;
-    }
-
-    FILE* fp = fopen(filename, mode);
-
-    return fp;
-}
+#include <malloc.h>
 
 FILE* open_file(const char* cwd, const char* filename, const char* mode) {
-    FILE* fp = validate_file(filename, mode);
+    FILE* fp = fopen(filename, mode);
 
     if (fp != NULL) return fp;
 
     const char* path = get_path(cwd, filename);
 
-    fp = validate_file(path, mode);
+    fp = fopen(filename, mode);
 
     free((char*) path);
 
@@ -86,8 +56,8 @@ char* get_file_name(const char* file_path) {
 }
 
 char* get_path(const char* dir, const char* file) {
-    uint l1 = len(dir);
-    uint l2 = len(file);
+    const uint l1 = len(dir);
+    const uint l2 = len(file);
 
     char* ret = malloc((l1 + l2 + 1) * sizeof(char));
 

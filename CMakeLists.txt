@@ -43,11 +43,11 @@ add_executable(ATOMICLI
         SharedIncludes/Messages.c
 )
 
+target_compile_options(ATOMICLI BEFORE PUBLIC -include ${CMAKE_SOURCE_DIR}/libraries/hadron.h)
 target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a)
 
 add_executable(Flag_preprocessor
-        FLAG-PREPROCESSOR/Flag_Preprocessor.c
-        FLAG-PREPROCESSOR/Flag_Preprocessor.h
+        FLAG-PREPROCESSOR/FlagPreprocessor.c
 
         SharedIncludes/Vector.c
         SharedIncludes/Buffer.c
@@ -56,7 +56,10 @@ add_executable(Flag_preprocessor
         SharedIncludes/Helper_String.c
         SharedIncludes/Helper_Math.c
         SharedIncludes/Helper_File.c
+
+        SharedIncludes/Messages.c
         Commons.h
+        FLAG-PREPROCESSOR/FlagPreprocessorInternal.h
 )
 
 add_executable(Type_preprocessor

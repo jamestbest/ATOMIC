@@ -17,7 +17,7 @@ The flag preprocessor is used when adding new flags and produces the hashes and 
 #### Changes & thoughts
 Here stands the greatest unneeded and least impactful optimization attempt I have made (so far). Within the CLI there needs
 to be some way to process the given flags (--) and options (-) that are passed to the program, and so was created the Flags.c, 
-Flag_Preprocessor.c, and Flag_shared.c
+FlagPreprocessor.c, and Flag_shared.c
 
 My initial plan was simple, hash the flags in some way and then use a switch-case to get that marvelous jump table magic to
 turn a O(n) lookup into O(1), amazing. My data is not random, the flags are probably (first problem) unique to the first 8 characters, 

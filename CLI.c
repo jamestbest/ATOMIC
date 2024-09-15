@@ -44,12 +44,17 @@ int main(int argc, char** argv) {
 
     char* cwd = get_dir(argv[0]); //get the c_char working directory
 
-    CompileRet ret = compile(ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME, cwd, ATOM_VR__CLI_FILES);
+    const CompileRet ret = compile(ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME, cwd, ATOM_VR__CLI_FILES);
 
     free(cwd);
 
     putchar('\n');
     parse_compile_ret(ret);
+
+    vector_destroy(&ATOM_VR__CLI_FILES);
+
+    hadron_verify();
+    hadron_cleanup();
 
     return ret.code;
 }

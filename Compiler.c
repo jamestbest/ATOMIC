@@ -10,6 +10,7 @@
 #include "SharedIncludes/Array.h"
 
 #include "Parser/StaticVerification.h"
+#include "Commons.h"
 
 /*  TODO
  *      UPDATE ALL VECTORs TO VECs
@@ -30,7 +31,6 @@ static void free_tokens(Array* tokens);
 //[[TODO]] IF ANYTHING FROM AN ARRAY IS REMOVED ALL EXTERNAL POINTERS WILL BE OFFSET INCORRECTLY
 
 CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, Vector files) {
-
     assert(ATOM_CT__LEX_KEYWORD_ENUM_COUNT == ATOM_CT__LEX_KEYWORDS.elem_count);
     assert(strcmp(ATOM_CT__LEX_KEYWORDS_RAW[IF], "if") == 0);
 

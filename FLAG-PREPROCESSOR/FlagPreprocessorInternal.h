@@ -1,10 +1,9 @@
 //
-// Created by jamescoward on 09/11/2023.
+// Created by jamescoward on 14/09/2024.
 //
 
-#ifndef ATOMIC_FLAG_PREPROCESSOR_H
-#define ATOMIC_FLAG_PREPROCESSOR_H
-
+#ifndef FLAGPREPROCESSORINTERNAL_H
+#define FLAGPREPROCESSORINTERNAL_H
 
 #include "../SharedIncludes/Vector.h"
 #include "../SharedIncludes/Colours.h"
@@ -13,6 +12,11 @@
 #include "../SharedIncludes/Helper_File.h"
 
 #define Error(type, msg) C_RED type C_RST msg
+
+typedef struct FlagInfo {
+    const char* flag_name;
+    bool default_value;
+} FlagInfo;
 
 typedef enum State {
     SEARCHING,
@@ -49,6 +53,9 @@ void parse_switch(FILE* file, FILE* nfile, const char* prefix,
 void parse_def(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Buffer* buffer);
 void parse_string(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Buffer* buffer);
 
+#define ATOM_FP__KEYWORD_FLAG               "FLAG"
+#define ATOM_FP__KEYWORD_OPTION             "OPTION"
+
 #define ATOM_CT__FLAGS_PRE_END              "//%%END%%"
 
 /* FLAGS.c.c */
@@ -68,4 +75,4 @@ void parse_string(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Bu
 #define ATOM_CT__FLAGS_PRE_FLG_STR          "//%%FLAG STRINGS%%"
 #define ATOM_CT__FLAGS_PRE_OPT_STR          "//%%OPTION STRINGS%%"
 
-#endif //ATOMIC_FLAG_PREPROCESSOR_H
+#endif //FLAGPREPROCESSORINTERNAL_H

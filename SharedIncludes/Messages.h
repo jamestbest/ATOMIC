@@ -7,6 +7,7 @@
 
 void inform(const char* message, ...);
 void error(const char* message, ...);
+void usage(const char* message, ...);
 void panic(const char* message, ...);
 void warning(const char* message, ...);
 

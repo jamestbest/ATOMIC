@@ -4,6 +4,15 @@
 
 #include "Flags.h"
 
+typedef struct FlagInfo {
+    const char* input_string;
+    bool default_value;
+} FlagInfo;
+
+const FlagInfo flag_info[10] = {
+    [0] = (FlagInfo){.input_string = "EXPR-DBG", .default_value = false}
+};
+
 bool ATOM_VR__FLAGS[ATOM_CT__FLAG_COUNT];
 
 int flag_int_to_index(long long int fi) {
@@ -25,8 +34,8 @@ int flag_int_to_index(long long int fi) {
 			return ATOM_CT__FLAG_FLAGS_OUT;
 		case ATOM_CT__FLAG_SCOPE_OUT_HASH:
 			return ATOM_CT__FLAG_SCOPE_OUT;
-		case ATOM_CT__FLAG_HADRON_EXPAND_HASH:
-			return ATOM_CT__FLAG_HADRON_EXPAND;
+		case ATOM_CT__FLAG_HADRON_VERIFY_HASH:
+			return ATOM_CT__FLAG_HADRON_VERIFY;
 		default:
 			return -1;
         //%%END%%
@@ -52,8 +61,8 @@ char* flag_index_to_string(int index) {
 			return ATOM_CT__FLAG_FLAGS_OUT_STR;
 		case ATOM_CT__FLAG_SCOPE_OUT:
 			return ATOM_CT__FLAG_SCOPE_OUT_STR;
-		case ATOM_CT__FLAG_HADRON_EXPAND:
-			return ATOM_CT__FLAG_HADRON_EXPAND_STR;
+		case ATOM_CT__FLAG_HADRON_VERIFY:
+			return ATOM_CT__FLAG_HADRON_VERIFY_STR;
 		default:
 			return "ERROR NO ENUM NAME";
         //%%END%%
