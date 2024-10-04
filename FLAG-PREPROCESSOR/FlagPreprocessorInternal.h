@@ -11,6 +11,8 @@
 
 #include "../SharedIncludes/Helper_File.h"
 
+#include <time.h>
+
 #define Error(type, msg) C_RED type C_RST msg
 
 typedef struct FlagInfo {
@@ -53,8 +55,32 @@ void parse_switch(FILE* file, FILE* nfile, const char* prefix,
 void parse_def(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Buffer* buffer);
 void parse_string(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Buffer* buffer);
 
+uint write_out_flag_data(const char* output_filename);
+
+#define STATIC_STRING_LEN(str)              sizeof (str) - 1
+
+#define ATOM_FP__HEADER_GUARD               "ATOM_FLAGS_H"
+
+#define ATOM_FP__TEMP_FILENAME_STARTER      "ATOM_TEMP_FLAG_DATA"
+
+#define ATOM_FP__ENUM_FLAGS_NAME            "ATOM_CT__FLAGS"
+#define ATOM_FP__ENUM_OPTIONS_NAME          "ATOM_CT__OPTIONS"
+
+#define ATOM_FP__OPTION_START               "ATOM_CT__OPTION_"
+#define ATOM_FP__FLAG_START                 "ATOM_CT__FLAG_"
+
+#define ATOM_FP__FLAGS_COUNT_NAME           "COUNT"
+#define ATOM_FP__OPTIONS_COUNT_NAME         "COUNT"
+
+#define ATOM_FP__FLAG_INFO_STRUCT_NAME      "FlagInfo"
+#define ATOM_FP__FLAG_INFO_INSTANCE_NAME    "flag_info"
+#define ATOM_FP__FLAG_INFO_STRUCT_STR_NAME  "flag_name"
+#define ATOM_FP__FLAG_INFO_STRUCT_DEF_NAME  "default_value"
+
 #define ATOM_FP__KEYWORD_FLAG               "FLAG"
 #define ATOM_FP__KEYWORD_OPTION             "OPTION"
+
+#define ATOM_FP__FLAGS_ARRAY_NAME           "ATOM_VR__FLAGS"
 
 #define ATOM_CT__FLAGS_PRE_END              "//%%END%%"
 

@@ -10,10 +10,12 @@ typedef struct FlagInfo {
 } FlagInfo;
 
 const FlagInfo flag_info[10] = {
-    [0] = (FlagInfo){.input_string = "EXPR-DBG", .default_value = false}
+    [ATOM_CT__FLAG_EXPR_DBG] = (FlagInfo){.input_string = "EXPR-DBG", .default_value = false}
 };
 
-bool ATOM_VR__FLAGS[ATOM_CT__FLAG_COUNT];
+bool ATOM_VR__FLAGS[ATOM_CT__FLAG_COUNT] = {
+    [ATOM_CT__FLAG_EXPR_DBG] = flag_info[ATOM_CT__FLAG_EXPR_DBG].default_value
+};
 
 int flag_int_to_index(long long int fi) {
     switch (fi) {
