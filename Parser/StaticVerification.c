@@ -313,7 +313,7 @@ struct t verify_expr_with_expected(const Node* expr, encodedType required_type) 
 
 encodedType verify_expr_types(Node* expr, Scope* scope) {
     if (expr->type == TOKEN_WRAPPER || expr->type == EX_LIT) {
-        Token* token = expr->token;
+        TPToken* token = expr->token;
 
         switch (token->type) {
             case IDENTIFIER:

@@ -6,6 +6,7 @@
 #define VEC_H
 
 #include "../Commons.h"
+#include <malloc.h>
 
 #define MIN_VEC_SIZE 10
 

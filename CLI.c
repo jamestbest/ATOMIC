@@ -5,6 +5,7 @@
 #include "CLI.h"
 
 #include "SharedIncludes/Helper_File.h"
+#include "SharedIncludes/Flag_shared.h"
 
 char* ATOM_VR__CLI_ENTRY_POINT = NULL;
 char* ATOM_VR__CLI_OUTPUT_NAME = ATOM_CT__CLI_DEFAULT_OUT;
@@ -29,7 +30,7 @@ int main(int argc, char** argv) {
 
     parse_args(argc, argv);
 
-    if (flag_get(ATOM_CT__FLAG_FLAGS_OUT))
+    if (flag_get_value(ATOM_CT__FLAG_FLAGS_OUT))
         print_flags();
 
     printf("Entry point: %s\n"
@@ -130,13 +131,13 @@ void parse_file(char* file) {
 }
 
 void parse_option_entry(Vector* args) {
-    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, ATOM_CT__OPTION_E_STR);
+    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT,  flag_get_str(ATOM_CT__OPTION_E));
 
     ATOM_VR__CLI_ENTRY_POINT = vector_get_unsafe(args, 0);
 }
 
 void parse_option_output(Vector* args) {
-    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, ATOM_CT__OPTION_O_STR);
+    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, flag_get_str(ATOM_CT__OPTION_O));
 
     ATOM_VR__CLI_OUTPUT_NAME = vector_get_unsafe(args, 0);
 }

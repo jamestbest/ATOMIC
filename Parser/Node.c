@@ -123,7 +123,7 @@ static char* nodeLevelToString(NodeLevelPrintType level) {
 
 uint64_t stmt_uid = 0;
 
-Node* create_node_basic(NodeGeneralType gtype, NodeType type, Token* token,bool has_children) {
+Node* create_node_basic(NodeGeneralType gtype, NodeType type, TPToken* token,bool has_children) {
     Node* node = malloc(sizeof(Node));
 
     if (!node) return NULL;
@@ -148,15 +148,15 @@ Node* create_node_basic(NodeGeneralType gtype, NodeType type, Token* token,bool 
     return node;
 }
 
-Node* create_leaf_node(NodeGeneralType gtype, NodeType type, Token* token) {
+Node* create_leaf_node(NodeGeneralType gtype, NodeType type, TPToken* token) {
     return create_node_basic(gtype, type, token,false);
 }
 
-Node* create_parent_node(NodeGeneralType gtype, NodeType type, Token* token) {
+Node* create_parent_node(NodeGeneralType gtype, NodeType type, TPToken* token) {
     return create_node_basic(gtype, type, token,true);
 }
 
-NodeRet construct_error_node(Token *token) {
+NodeRet construct_error_node(TPToken *token) {
     Node* node = create_leaf_node(NODEGT_INVALID, NODE_INVALID, token);
     return (NodeRet){node, FAIL};
 }

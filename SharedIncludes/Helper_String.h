@@ -64,4 +64,6 @@ char* remove_ws_prefix(char* string);
 
 void newline();
 
+char* str_cat_dyn(const char* stra, const char* strb);
+
 #endif //ATOMIC_HELPER_STRING_H

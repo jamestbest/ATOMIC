@@ -185,11 +185,11 @@ char* str_cpy_replace(const char* string, char find, char replace) {
     return out;
 }
 
-bool is_digit(uint32_t a) {
+bool is_digit(const uint32_t a) {
     return ((uint32_t)(a - ASCII_DIGIT_MIN)) < NUM_DIGITS;
 }
 
-bool is_digit_base(uint32_t a, uint base) {
+bool is_digit_base(const uint32_t a, const uint base) {
     if (base == 0) return false;
     if (base <= 10) {
         return ((uint32_t)(a - ASCII_DIGIT_MIN)) < base;
@@ -210,11 +210,11 @@ bool is_alph_low(uint32_t a) {
     return ((uint32_t)(a - ASCII_ALPH_LOW_MIN)) < NUM_ALPH;
 }
 
-bool is_alph(uint32_t a) {
+bool is_alph(const uint32_t a) {
     return is_alph_low(a) || is_alph_cap(a);
 }
 
-bool is_alph_numeric(uint32_t a) {
+bool is_alph_numeric(const uint32_t a) {
     return is_alph(a) || is_digit(a);
 }
 
@@ -321,4 +321,21 @@ char* remove_ws_prefix(char* string) {
     uint pos = 0;
     while (is_whitespace(string[pos++])){}
     return &string[pos];
+}
+
+char* str_cat_dyn(const char* stra, const char* strb) {
+    const size_t l1 = strlen(stra);
+    const size_t l2 = strlen(strb);
+
+    char* res = malloc((l1 + l2 + 1) * sizeof (char));
+
+    if (!res) {
+        return NULL;
+    }
+
+    memcpy(res, stra, l1);
+    memcpy(res + l1, strb, l2);
+    res[l1 + l2] = '\0';
+
+    return res;
 }

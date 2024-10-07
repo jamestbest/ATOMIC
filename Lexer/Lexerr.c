@@ -75,7 +75,7 @@ uint lexerr(const Lexerrors errorCode, const Position pos, ...) {
             break;
         }
         case LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET: {
-            Token* t = va_arg(args, Token*);
+            TPToken* t = va_arg(args, TPToken*);
             printf(ATOM_CT__LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET,
                    get_token_type_string(t->type));
             break;

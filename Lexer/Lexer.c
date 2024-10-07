@@ -22,12 +22,12 @@ static uint lex_operator(PosCharp operator);
 static int lex_comment(void);
 static int lex_multiline_comment(void);
 
-static Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col);
-static Token create_multiline_token(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col, uint32_t start_line);
-static Token construct_multiline_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col, uint32_t start_line);
-static Token construct_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col);
-static Token create_simple_token(TokenType type, uint32_t start_col, uint32_t end_col);
-static void add_token(Token t);
+static TPToken create_token(TokenType type, const void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col);
+static TPToken create_multiline_token(TokenType type, void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col, uint32_t start_line);
+static TPToken construct_multiline_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col, uint32_t start_line);
+static TPToken construct_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col);
+static TPToken create_simple_token(TokenType type, uint32_t start_col, uint32_t end_col);
+static void add_token(TPToken t);
 
 static uint32_t current_char(void);
 static uint32_t peer(int amount);
@@ -91,7 +91,7 @@ uint lex_line(const Buffer* line) {
         const uint32_t c = current_char();
 
         if (current_char() == '\n') {
-            add_token((Token){NEWLINE, .data.ptr = NULL, (Position){line_num, col_num, line_num + 1, 0}});
+            add_token((TPToken){NEWLINE, .data.ptr = NULL, (Position){line_num, col_num, line_num + 1, 0}});
             consume();
             continue;
         }
@@ -186,7 +186,7 @@ uint lex_line(const Buffer* line) {
 
 void print_tokens(Array* tokens, bool include_ws, bool include_comments) {
     for (uint i = 0; i < tokens->pos; i++) {
-        Token t = token_arr_get(tokens, i);
+        TPToken t = token_arr_get(tokens, i);
         const TokenType type = t.type;
 
         if ((type == WS_S || type == WS_T) && !include_ws) continue;
@@ -217,7 +217,7 @@ void print_verbose_tokens(Array* tokens, Vector* lines, bool print_labels) {
     }
 
     uint current_tok_pos = 0;
-    const Token* current_tok = arr_get(tokens, current_tok_pos);
+    const TPToken* current_tok = arr_get(tokens, current_tok_pos);
 
     for (uint i = 0; i < lines->pos; i++) {
         bool printable_token_on_line = false;
@@ -568,7 +568,7 @@ void lex_word(void) {
     }
 
     if (info = word_in_arr(c_char, ATOM_CT__LEX_OP_IDENTIFIERS), info.arr_pos != -1) {
-        Token token;
+        TPToken token;
         token.type = OP_BIN;
         token.pos.start_line = line_num;
         token.pos.end_line = line_num;
@@ -716,8 +716,8 @@ lex_type_to_encoded_int_ptr:
     };
 }
 
-Token create_simple_token(const TokenType type, const uint32_t start_col, const uint32_t end_col) {
-    Token t;
+TPToken create_simple_token(const TokenType type, const uint32_t start_col, const uint32_t end_col) {
+    TPToken t;
 
     t.type = type;
     t.pos = (Position){line_num, start_col, line_num, end_col};
@@ -726,15 +726,15 @@ Token create_simple_token(const TokenType type, const uint32_t start_col, const 
     return t;
 }
 
-Token construct_multiline_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col, uint32_t start_line) {
-    Token ret = create_simple_token(type, start_col, end_col);
+TPToken construct_multiline_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col, uint32_t start_line) {
+    TPToken ret = create_simple_token(type, start_col, end_col);
     ret.data.ptr = made_data; //assume its a ptr value for multiline [[todo]] affirm
     ret.pos.start_line = start_line;
 
     return ret;
 }
 
-static Token construct_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col) {
+static TPToken construct_token(TokenType type, void* made_data, uint32_t start_col, uint32_t end_col) {
     return create_token(type, made_data, -1, start_col, end_col);
 }
 
@@ -744,8 +744,8 @@ static Token construct_token(TokenType type, void* made_data, uint32_t start_col
  * The data capacity is just for the malloc
  * start and end col e.g. 123, <1:3>
  */
-Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col) {
-    Token t;
+TPToken create_token(TokenType type, const void* data, uint64_t d_size, uint32_t start_col, uint32_t end_col) {
+    TPToken t;
 
     t.type = type;
     t.pos = (Position){line_num, start_col, line_num, end_col};
@@ -807,7 +807,7 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
     return t;
 }
 
-void add_token(Token t) {
+void add_token(TPToken t) {
     token_arr_add(ltokens, t);
 }
 

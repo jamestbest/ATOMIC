@@ -41,13 +41,13 @@ static Node* construct_assignment_node(Node* lvalue, Node* operator, Node* rvalu
 
 static bool is_valid_index(int index);
 
-static Token* confungry(int offset, bool consume, bool ignore_whitespace,
+static TPToken* confungry(int offset, bool consume, bool ignore_whitespace,
                         bool ignore_newline);
-static Token* consume(void);
+static TPToken* consume(void);
 
-static Token* current(void);
-static Token* peek(void);
-static Token* peer(int amount);
+static TPToken* current(void);
+static TPToken* peek(void);
+static TPToken* peer(int amount);
 
 static bool expect_op(TokenType type, ATOM_CT__LEX_OPERATORS_ENUM op);
 static bool expect_keyword(ATOM_CT__LEX_KEYWORD_ENUM keyword);
@@ -113,7 +113,7 @@ NodeRet parse(const Array* tokens, const Vector* lines) {
 
     uint ret_code = SUCCESS;
 
-    Token* c;
+    TPToken* c;
 
     file_global_node = create_parent_node(NODEGT_ROOT, NODE_ROOT,NULL);
 
@@ -145,7 +145,7 @@ void skip_all_skippables(void) {
 }
 
 bool has_valid_statement_starter(void) {
-    Token* c = current();
+    TPToken* c = current();
 
     if (!c) return false;
 
@@ -176,7 +176,7 @@ NodeRet parse_statement(void) {
     // this will help with having if (expr) statement
     // without braces
     NodeRet ret;
-    Token* t;
+    TPToken* t;
 
     skip_all_skippables();
 
@@ -217,7 +217,7 @@ NodeRet parse_statement(void) {
 }
 
 NodeRet parse_subroutine_call_modifier(void) {
-    Token* modifier = current();
+    TPToken* modifier = current();
 
     //todo
 }
@@ -227,7 +227,7 @@ NodeRet parse_variable_declaration_modifier(void) {
 }
 
 NodeRet parse_subroutine_call(void) {
-    Token* identifier = current();
+    TPToken* identifier = current();
 
     const ShuntRet sub_call = shunt(ptokens, t_pos, false);
 
@@ -253,7 +253,7 @@ NodeRet parse_assignment(void) {
      *  a += 12
      *  THIS WILL BE HANDLED SEPARATELY b::i4 = 12 + a  --implicit cast
      */
-    Token* identifier = current();
+    TPToken* identifier = current();
 
     // first parse the lvalue
     const ShuntRet lvalue = shunt(ptokens, t_pos, false);
@@ -266,7 +266,7 @@ NodeRet parse_assignment(void) {
         assert(false);
     }
 
-    Token* assign_op = consume();
+    TPToken* assign_op = consume();
 
     const ShuntRet rvalue = shunt(ptokens, t_pos, false);
 
@@ -288,13 +288,13 @@ NodeRet parse_var_declaration(void) {
      *  b :: i4 =           // var decl+assignment
      */
 
-    Token* identifier = consume();
-    Token* type_op = consume();
+    TPToken* identifier = consume();
+    TPToken* type_op = consume();
 
     if (!expect(TYPE))
         assert(false);
 
-    Token* type = consume();
+    TPToken* type = consume();
 
     Node* declNode = create_parent_node(STATEMENT, ST_VAR_DECL, type_op);
 
@@ -327,8 +327,8 @@ NodeRet parse_identifier_statement(void) {
      *  a += b              // arith assignment
      *  a++                 // un post op
      */
-    Token* identifier = current();
-    Token* next = peek();
+    TPToken* identifier = current();
+    TPToken* next = peek();
 
     switch (next->type) {
         case TYPE_SET:
@@ -362,7 +362,7 @@ uint extract_error_code(uint errCode) {
 }
 
 NodeRet parse_statement_block(void) {
-    Token* token = current();
+    TPToken* token = current();
 
     Node* parent_node = create_parent_node(STATEMENT, ST_BLOCK, token);
 
@@ -405,7 +405,7 @@ NodeRet parse_statement_block(void) {
 }
 
 NodeRet parse_keyword(void) {
-    const Token* t = current();
+    const TPToken* t = current();
 
     switch ((ATOM_CT__LEX_KEYWORD_ENUM) t->data.enum_pos) {
         case FOR:
@@ -475,7 +475,7 @@ NodeRet parse_variable_statement(void) {
      *      being cast to which is the whole point. Also looks like implicit type
      */
 
-    Token* look_ahead = peek();
+    TPToken* look_ahead = peek();
 
     switch (look_ahead->type) {
         case TYPE_SET:
@@ -491,7 +491,7 @@ NodeRet parse_param(void) {
         assert(false);
     }
 
-    Token* identifier = consume();
+    TPToken* identifier = consume();
 
     if (!expect(TYPE_SET)) {
         assert(false);
@@ -503,7 +503,7 @@ NodeRet parse_param(void) {
         assert(false);
     }
 
-    Token* type = consume();
+    TPToken* type = consume();
 
     Node* paramNode = create_parent_node(DECLARATION, SUB_PARAM, identifier);
 
@@ -547,7 +547,7 @@ NodeRet parse_params(void) {
 }
 
 NodeRet parse_subroutine_statement(bool is_func) {
-    Token* keyword = consume();
+    TPToken* keyword = consume();
 
     Node* sub_node = create_parent_node(STATEMENT, is_func ? ST_FUNC : ST_PROC, keyword);
 
@@ -557,7 +557,7 @@ NodeRet parse_subroutine_statement(bool is_func) {
         assert(false);
     }
 
-    Token* sub_name = consume();
+    TPToken* sub_name = consume();
 
     const NodeRet params = parse_params();
 
@@ -565,7 +565,7 @@ NodeRet parse_subroutine_statement(bool is_func) {
         assert(false);
     }
 
-    Token* type;
+    TPToken* type;
     if (is_func) {
         if (!expect(TYPE_SET)) {
             assert(false);
@@ -607,7 +607,7 @@ NodeRet parse_proc_statement(void) {
 }
 
 NodeRet parse_entry_statement(void) {
-    Token* keyword = consume(); // eat the `entry`
+    TPToken* keyword = consume(); // eat the `entry`
 
     NodeRet subroutine;
 
@@ -643,7 +643,7 @@ NodeRet parse_break_statement(void) {
 }
 
 NodeRet parse_ret_statement(void) {
-    Token* t = consume(); //eat the ret keyword
+    TPToken* t = consume(); //eat the ret keyword
 
     Node* retNode = create_parent_node(STATEMENT, ST_RET, t);
 
@@ -677,7 +677,7 @@ NodeRet parse_for_setup(void) {
     while (true) {
         if (expect_keyword(TO)) break;
 
-        const Token* n = peek();
+        const TPToken* n = peek();
 
         if (!n) assert(false);
 
@@ -747,7 +747,7 @@ NodeRet parse_for_statement(void) {
      *
      * All are optional
      */
-    Token* keyword = consume();
+    TPToken* keyword = consume();
 
     const bool usingParens = expect(PAREN_OPEN);
 
@@ -797,7 +797,7 @@ NodeRet parse_while_statement(void) {
      *      ...
      *  }
      */
-    Token* keyword = consume();
+    TPToken* keyword = consume();
 
     ShuntRet expr = shunt(ptokens, t_pos, false);
 
@@ -831,13 +831,13 @@ NodeRet parse_foreach_statement(void) {
      *  }
      */
     //[[todo]] add part for paren `(`
-    Token* keyword = consume();
+    TPToken* keyword = consume();
 
     if (!expect(IDENTIFIER)) {
         assert(false);
     }
 
-    Token* element = consume();
+    TPToken* element = consume();
 
     if (!expect_keyword(IN)) {
         assert(false);
@@ -849,7 +849,7 @@ NodeRet parse_foreach_statement(void) {
         assert(false);
     }
 
-    Token* array = consume();
+    TPToken* array = consume();
 
     Node* foreachNode = create_parent_node(STATEMENT, ST_FOREACH, keyword);
 
@@ -863,7 +863,7 @@ NodeRet parse_foreach_statement(void) {
             assert(false);
         }
 
-        Token* index = consume();
+        TPToken* index = consume();
 
         vector_add(&foreachNode->children, create_leaf_node(EXPRESSION, TOKEN_WRAPPER, index));
     }
@@ -889,7 +889,7 @@ NodeRet parse_times_statement(void) {
      *  }
      */
 
-    Token* keyword = consume();
+    TPToken* keyword = consume();
 
     ShuntRet expr = shunt(ptokens, t_pos, false);
 
@@ -919,12 +919,12 @@ NodeRet parse_times_statement(void) {
 }
 
 NodeRet parse_ifelif_statement(bool isIf) {
-    Token* keyword = current();
+    TPToken* keyword = current();
     consume(); // eat the `if` / `elif` //[[todo]] could be given to function?
 
     Node* ifNode = create_parent_node(STATEMENT, isIf ? ST_IF : ST_ELIF, keyword);
 
-    Token* next = peek();
+    TPToken* next = peek();
 
     if (!next)
         assert(false);
@@ -938,7 +938,7 @@ NodeRet parse_ifelif_statement(bool isIf) {
     Node* conditionNode = shuntData.expressionNode;
     vector_add(&ifNode->children, conditionNode);
 
-    Token* c = current();
+    TPToken* c = current();
 
     if (c->type != CURLY_OPEN)
         assert(false);
@@ -955,7 +955,7 @@ NodeRet parse_ifelif_statement(bool isIf) {
 }
 
 NodeRet parse_else_statement(void) {
-    Token* keyword = consume(); // eat the `else`
+    TPToken* keyword = consume(); // eat the `else`
 
     Node* elseNode = create_parent_node(STATEMENT, ST_ELSE, keyword);
 
@@ -991,7 +991,7 @@ NodeRet parse_if_statement(void) {
 
     vector_add(&node->children, ifNode.node);
 
-    Token* c;
+    TPToken* c;
     while (c = current(), c->type == KEYWORD && c->data.enum_pos == ELIF) {
         NodeRet elifNode = parse_ifelif_statement(false);
 
@@ -1034,7 +1034,7 @@ NodeRet parse_expression_statement(void) {
         return (NodeRet){exprStatement, SUCCESS};
     }
 
-    Token* assign_op = consume();
+    TPToken* assign_op = consume();
 
     const ShuntRet rvalue = shunt(ptokens, t_pos, false);
 
@@ -1078,7 +1078,7 @@ bool is_valid_index(int index) {
     return index >= 0 && index < ptokens->pos;
 }
 
-Token* confungry(int offset, bool consume, bool ignore_whitespace, bool ignore_newline) {
+TPToken* confungry(int offset, bool consume, bool ignore_whitespace, bool ignore_newline) {
     // :(
 }
 
@@ -1090,7 +1090,7 @@ Token* confungry(int offset, bool consume, bool ignore_whitespace, bool ignore_n
  *  current/peek/peer means Tkn0 -> Tkn0 etc
  *  consume           means Tkn1 -> Tkn0, Tkn2 -> Tkn1  (Tkn1 becomes Tkn0)
  */
-Token* peer(int amount) {
+TPToken* peer(int amount) {
     if (!is_valid_index(t_pos + amount)) {
         return NULL;
     }
@@ -1098,7 +1098,7 @@ Token* peer(int amount) {
     return arr_get(ptokens, t_pos + amount);
 }
 
-Token* peek(void) {
+TPToken* peek(void) {
     if (!is_valid_index(t_pos + 1)) {
         return NULL;
     }
@@ -1106,7 +1106,7 @@ Token* peek(void) {
     return arr_get(ptokens, t_pos + 1);
 }
 
-Token* justify(void) {
+TPToken* justify(void) {
     if (!is_valid_index(t_pos - 1)) {
         return NULL;
     }
@@ -1115,7 +1115,7 @@ Token* justify(void) {
 }
 
 // todo: need to allow `\` to mean continue statement to next line
-Token* consume(void) {
+TPToken* consume(void) {
     if (!is_valid_index(t_pos)) {
         return NULL;
     }
@@ -1123,7 +1123,7 @@ Token* consume(void) {
     return arr_get(ptokens, t_pos++);
 }
 
-Token* current(void) {
+TPToken* current(void) {
     if (!is_valid_index(t_pos)) {
         return NULL;
     }
@@ -1140,7 +1140,7 @@ bool expect_keyword(ATOM_CT__LEX_KEYWORD_ENUM keyword) {
 }
 
 bool expect(TokenType type) {
-    Token* c = current();
+    TPToken* c = current();
 
     return c && c->type == type;
 }

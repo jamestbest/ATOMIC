@@ -93,12 +93,12 @@ void highlight_line_info(Position pos, char* line, const uint min_pos_printout) 
     highlight_line(pos, line, C_BLU, min_pos_printout);
 }
 
-void highlight_line_start_and_error(Token* parent, Token* issue, const Vector* lines) {
+void highlight_line_start_and_error(TPToken* parent, TPToken* issue, const Vector* lines) {
     if (!parent && !issue)
         assert(false);
 
     if (!parent || !issue) {
-        const Token* token = parent ? parent : issue;
+        const TPToken* token = parent ? parent : issue;
         const Position pos = token->pos;
         char* line = lines->arr[pos.start_line - 1];
 

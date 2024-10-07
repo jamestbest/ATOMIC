@@ -212,7 +212,7 @@ void error(const char* message, ...) {
     va_end(args);
 }
 
-void panic(const char* message, ...) {
+[[noreturn]] void panic(const char* message, ...) {
     putz(C_RED"PANIC: "C_RST);
 
     va_list args;

@@ -12,13 +12,15 @@
 #include "Parser/StaticVerification.h"
 #include "Commons.h"
 
+#include "SharedIncludes/Flag_shared.h"
+
 /*  TODO
  *      UPDATE ALL VECTORs TO VECs
  *      CHECK WHAT THE ISSUE WITH hadron is
  *      HF
  */
 
-ARRAY_ADD(Token, token)
+ARRAY_ADD(TPToken, token)
 ARRAY_ADD(Node, node)
 
 static void free_tokens(Array* tokens);
@@ -53,7 +55,7 @@ CompileRet compile(const char* entry_point, const char* out_format, const char* 
 }
 
 CompileRet compile_file(const char* entry_point, const char* out_format, FILE* fp) {
-    Array base_tokens = arr_create(sizeof (Token));
+    Array base_tokens = arr_create(sizeof (TPToken));
     Array folded_tokens;
     // [[maybe]] this is an array of structs, could become a struct of arrays:
     //  Is it more likely that the data of consecutive structs is accessed
@@ -72,7 +74,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
         return (CompileRet) {LEXERR, NULL};
     }
 
-    folded_tokens = arr_construct(sizeof (Token), base_tokens.pos);
+    folded_tokens = arr_construct(sizeof (TPToken), base_tokens.pos);
     uint foldRet = fold(&base_tokens, &folded_tokens);
     // this is here for debug purposes, it should be after error checking in later versions
     print_tokens_with_flag_check(&folded_tokens, &lines, "\n\nFOLDED TOKENS");
@@ -101,7 +103,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 
     Scope* global_scope = generate_global_scope(parseRet.node);
 
-    if (flag_get(ATOM_CT__FLAG_SCOPE_OUT))
+    if (flag_get_value(ATOM_CT__FLAG_SCOPE_OUT))
         print_scope(global_scope);
 
     verify_scope(parseRet.node, global_scope, parseRet.node);
@@ -121,7 +123,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 
 void free_tokens(Array* tokens) {
     for (uint i = 0; i < tokens->pos; i++) {
-        const Token t = token_arr_get(tokens, i);
+        const TPToken t = token_arr_get(tokens, i);
         if (type_needs_free(t.type)) {
             free(t.data.ptr);
         }
@@ -130,15 +132,15 @@ void free_tokens(Array* tokens) {
 }
 
 void print_ast_with_flag_check(Node* tl_node) {
-    if (flag_get(ATOM_CT__FLAG_AST_OUT)) {
+    if (flag_get_value(ATOM_CT__FLAG_AST_OUT)) {
         print_top_level_node(tl_node);
     }
 }
 
 void print_tokens_with_flag_check(Array* tokens, Vector* lines, const char* print_header) {
-    const bool vltok = flag_get(ATOM_CT__FLAG_VLTOK_OUT);
-    const bool vtok = flag_get(ATOM_CT__FLAG_VTOK_OUT);
-    const bool tok = flag_get(ATOM_CT__FLAG_TOK_OUT);
+    const bool vltok = flag_get_value(ATOM_CT__FLAG_VLTOK_OUT);
+    const bool vtok = flag_get_value(ATOM_CT__FLAG_VTOK_OUT);
+    const bool tok = flag_get_value(ATOM_CT__FLAG_TOK_OUT);
 
     if (vltok || vtok || tok) {
         puts(print_header);

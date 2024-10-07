@@ -51,7 +51,7 @@ add_executable(Flag_preprocessor
 
         SharedIncludes/Vector.c
         SharedIncludes/Buffer.c
-        SharedIncludes/Flag_shared.c
+        SharedIncludes/Array.c
 
         SharedIncludes/Helper_String.c
         SharedIncludes/Helper_Math.c

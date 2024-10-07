@@ -7,13 +7,80 @@
 
 #include "../SharedIncludes/Vector.h"
 #include "../SharedIncludes/Colours.h"
-#include "../SharedIncludes/Flag_shared.h"
 
 #include "../SharedIncludes/Helper_File.h"
 
 #include <time.h>
 
 #define Error(type, msg) C_RED type C_RST msg
+
+typedef enum Keywords {
+    FP_KEYWORD_ARG,
+    FP_KEYWORD_FLAG,
+    FP_KEYWORD_FOR,
+    FP_KEYWORD_FROM,
+    FP_KEYWORD_OPTION,
+    FP_KEYWORD_TYPE,
+    FP_KEYWORD_COUNT,
+} Keywords;
+
+const char* const keyword_str[FP_KEYWORD_COUNT] = {
+    [FP_KEYWORD_ARG] = "ARG",
+    [FP_KEYWORD_FLAG] = "FLAG",
+    [FP_KEYWORD_FOR] = "FOR",
+    [FP_KEYWORD_FROM] = "FROM",
+    [FP_KEYWORD_OPTION] = "OPTION",
+    [FP_KEYWORD_TYPE] = "TYPE",
+};
+_Static_assert(sizeof(keyword_str) / sizeof(keyword_str[0]) == FP_KEYWORD_COUNT);
+
+typedef enum Types {
+    FP_TYPE_BOOL,
+    FP_TYPE_CHARACTER,
+    FP_TYPE_INTEGER,
+    FP_TYPE_STR,
+    FP_TYPES_COUNT,
+} Types;
+
+const char* const types_str[FP_TYPES_COUNT] = {
+    [FP_TYPE_BOOL] = "BOOL",
+    [FP_TYPE_CHARACTER] = "CHAR",
+    [FP_TYPE_INTEGER] = "INT",
+    [FP_TYPE_STR] = "STR",
+};
+_Static_assert(sizeof(types_str) / sizeof(types_str[0]) == FP_TYPES_COUNT);
+
+typedef struct KeywordInfo {
+    const char* name;
+    Keywords enum_pos;
+} KeywordInfo;
+
+typedef enum TokenType {
+    FP_KEYWORD,
+    FP_IDENTIFIER,
+    FP_LIT_BOOL,
+    FP_LIT_INT,
+    FP_INVALID,
+    FP_COUNT,
+} TokenType;
+
+const char* const token_types_str[FP_COUNT] = {
+    [FP_KEYWORD] = C_RED"KEYWORD"C_RST,
+    [FP_IDENTIFIER] = C_BLU"IDENTIFIER"C_RST,
+    [FP_LIT_BOOL] = C_GRN"BOOL"C_RST,
+    [FP_LIT_INT] = C_GRN"INT"C_RST,
+    [FP_INVALID] = C_RED"INVALID"C_RST,
+};
+
+typedef struct FPToken {
+    TokenType type;
+    union {
+        const char* str;
+        Keywords keyword;
+        bool boolean;
+        long long integer;
+    };
+} FPToken;
 
 typedef struct FlagInfo {
     const char* flag_name;
@@ -57,6 +124,8 @@ void parse_string(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Bu
 
 uint write_out_flag_data(const char* output_filename);
 
+#define ATOM_FP__COMMENT_START             "//"
+
 #define STATIC_STRING_LEN(str)              sizeof (str) - 1
 
 #define ATOM_FP__HEADER_GUARD               "ATOM_FLAGS_H"
@@ -69,6 +138,8 @@ uint write_out_flag_data(const char* output_filename);
 #define ATOM_FP__OPTION_START               "ATOM_CT__OPTION_"
 #define ATOM_FP__FLAG_START                 "ATOM_CT__FLAG_"
 
+#define ATOM_FP__FLAGS_ARRAY_NAME           "ATOM_VR__FLAGS"
+
 #define ATOM_FP__FLAGS_COUNT_NAME           "COUNT"
 #define ATOM_FP__OPTIONS_COUNT_NAME         "COUNT"
 
@@ -77,28 +148,6 @@ uint write_out_flag_data(const char* output_filename);
 #define ATOM_FP__FLAG_INFO_STRUCT_STR_NAME  "flag_name"
 #define ATOM_FP__FLAG_INFO_STRUCT_DEF_NAME  "default_value"
 
-#define ATOM_FP__KEYWORD_FLAG               "FLAG"
-#define ATOM_FP__KEYWORD_OPTION             "OPTION"
-
-#define ATOM_FP__FLAGS_ARRAY_NAME           "ATOM_VR__FLAGS"
-
-#define ATOM_CT__FLAGS_PRE_END              "//%%END%%"
-
-/* FLAGS.c.c */
-#define ATOM_CT__FLAGS_PRE_OPT_ENUM         "//%%OPTION ENUM%%"
-#define ATOM_CT__FLAGS_PRE_FLG_ENUM         "//%%FLAG ENUM%%"
-
-#define ATOM_CT__FLAGS_PRE_FLG_IDX_SWT      "//%%FLAG INDEX SWITCH%%"
-#define ATOM_CT__FLAGS_PRE_FLG_STR_SWT      "//%%FLAG STR SWITCH%%"
-
-#define ATOM_CT__FLAGS_PRE_OPT_START        "ATOM_CT__OPTION_"
-#define ATOM_CT__FLAGS_PRE_FLG_START        "ATOM_CT__FLAG_"
-
-/* FLAGS.h */
-#define ATOM_CT__FLAGS_PRE_OPT_DEF          "//%%OPTION DEFINE%%"
-#define ATOM_CT__FLAGS_PRE_FLG_DEF          "//%%FLAG DEFINE%%"
-
-#define ATOM_CT__FLAGS_PRE_FLG_STR          "//%%FLAG STRINGS%%"
-#define ATOM_CT__FLAGS_PRE_OPT_STR          "//%%OPTION STRINGS%%"
+#define ATOM_FP__MAX_STR_PRINT_PREVIEW      15
 
 #endif //FLAGPREPROCESSORINTERNAL_H

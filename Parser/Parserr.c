@@ -4,7 +4,7 @@
 
 #include "Parserr.h"
 
-NodeRet parsewarn(const ParseWarns warningCode, Token* parent_token, Token* issue_token, ...) {
+NodeRet parsewarn(const ParseWarns warningCode, TPToken* parent_token, TPToken* issue_token, ...) {
     putz(C_MGN"PARSEWARNING"C_RST": ");
 
     switch (warningCode) {
@@ -20,7 +20,7 @@ NodeRet parsewarn(const ParseWarns warningCode, Token* parent_token, Token* issu
     return (NodeRet){NULL, FAIL};
 }
 
-NodeRet parserr(const ParsErrors errorCode, Token* parent_token, Token* issue_token, ...) {
+NodeRet parserr(const ParsErrors errorCode, TPToken* parent_token, TPToken* issue_token, ...) {
     putz(C_RED"PARSERROR"C_RST": ");
 
     switch (errorCode) {

@@ -23,6 +23,8 @@ void print_all_options(const Vector* vec);
 Vector flagInfos;
 Vector optionNames;
 
+size_t l_pos = 0;
+
 int compare_flag_infos(const void* a, const void* b) {
     const FlagInfo* flag_a = *(const FlagInfo**)a;
     const FlagInfo* flag_b = *(const FlagInfo**)b;
@@ -66,19 +68,10 @@ int main(const int argc, char** argv) {
 
     const char* output_file_name = argv[2];
 
-    write_out_flag_data(output_file_name);
+    const uint write_res = write_out_flag_data(output_file_name);
 
-    print_all_flaginfos(&flagInfos);
-    print_all_options(&optionNames);
-
-    const char* test = "SCOPE-OUT";
-
-    const size_t index = find_flag_loc(test);
-
-    if (index != -1 && strcmp(*(char**)flagInfos.arr[index], test) == 0) {
-        printf(C_GRN"SUCCESS"C_RST" got pos: %llu\n", index);
-    } else {
-        printf(C_RED"FAILED"C_RST" got pos: %llu\n", index);
+    if (write_res != EXIT_SUCCESS) {
+        error("Error during writing process\n");
     }
 
     vector_destroy(&flagInfos);
@@ -98,7 +91,10 @@ const char* translate_name_for_enum(const char* flag) {
 }
 
 // [[todo]] change this to just be 2 functions, this is ridiculously obfuscated abstraction
-uint append_enum(FILE* file, const char* enum_name, const char* enum_element_prefix, const char* count_element_name, Vector* vector, const char* (*get)(const size_t index)) {
+void append_enum(FILE* file, const char* enum_name,
+                 const char* enum_element_prefix,
+                 const char* count_element_name, Vector* vector,
+                 const char* (*get)(const size_t index)) {
     fprintf(file, "enum %s {\n", enum_name);
     for (uint i = 0; i < vector->pos; ++i) {
         const char* name = get(i);
@@ -107,16 +103,14 @@ uint append_enum(FILE* file, const char* enum_name, const char* enum_element_pre
         free((void*)translated_name);
     }
     fprintf(file, "    %s%s\n};\n\n", enum_element_prefix, count_element_name);
-
-    return EXIT_SUCCESS;
 }
 
 const char* get_flag_name(const size_t index) {
     return ((FlagInfo*)flagInfos.arr[index])->flag_name;
 }
 
-uint append_flag_enum(FILE* header_file) {
-    return append_enum(header_file,
+void append_flag_enum(FILE* header_file) {
+    append_enum(header_file,
         ATOM_FP__ENUM_FLAGS_NAME,
         ATOM_FP__FLAG_START,
         ATOM_FP__FLAGS_COUNT_NAME,
@@ -129,8 +123,8 @@ const char* get_option_name(const size_t index) {
     return optionNames.arr[index];
 }
 
-uint append_option_enum(FILE* header_file) {
-    return append_enum(header_file,
+void append_option_enum(FILE* header_file) {
+    append_enum(header_file,
         ATOM_FP__ENUM_OPTIONS_NAME,
         ATOM_FP__OPTION_START,
         ATOM_FP__OPTIONS_COUNT_NAME,
@@ -139,7 +133,7 @@ uint append_option_enum(FILE* header_file) {
     );
 }
 
-uint write_header_out_preamble(FILE* header) {
+void write_header_out_preamble(FILE* header) {
     const time_t t = time(NULL);
     const struct tm *local_time = localtime(&t);
     char buff[32];
@@ -160,52 +154,39 @@ uint write_header_out_preamble(FILE* header) {
            "\n",
            buff
     );
+
+    fputs("typedef struct "ATOM_FP__FLAG_INFO_STRUCT_NAME" {\n"
+      "    const char* "ATOM_FP__FLAG_INFO_STRUCT_STR_NAME";\n"
+      "    bool "ATOM_FP__FLAG_INFO_STRUCT_DEF_NAME";\n"
+      "} "ATOM_FP__FLAG_INFO_STRUCT_NAME";\n\n",
+      header
+    );
 }
 
-uint write_header_out_amble(FILE* header) {
-    fputs("extern bool ATOM_VR__FLAGS["ATOM_FP__FLAG_START ATOM_FP__FLAGS_COUNT_NAME"];\n", header);
+void write_header_out_amble(FILE* header) {
+    fputs("extern bool ATOM_VR__FLAGS["ATOM_FP__FLAG_START ATOM_FP__FLAGS_COUNT_NAME"];\n"
+             "extern FlagInfo ATOM_CT__FLAGINFO["ATOM_FP__FLAG_START ATOM_FP__FLAGS_COUNT_NAME"];\n\n", header);
 }
 
-uint write_header_out_examble(FILE* header) {
+void write_header_out_examble(FILE* header) {
     fputs("#endif //"ATOM_FP__HEADER_GUARD, header);
 }
 
-uint write_header_out(FILE* header) {
-    uint res = EXIT_SUCCESS;
+void write_header_out(FILE* header) {
     write_header_out_preamble(header);
 
-    const uint flag_enum_res = append_flag_enum(header);
+    append_flag_enum(header);
+    append_option_enum(header);
 
-    if (flag_enum_res != EXIT_SUCCESS) {
-        error("Error while writing flag enums to temp flag file");
-        res = EXIT_FAILURE;
-        goto write_out_flag_data_end;
-    }
-
-    const uint option_enum_res = append_option_enum(header);
-
-    if (option_enum_res != EXIT_SUCCESS) {
-        error("Error while writing option enums to temp flag file");
-        res = EXIT_FAILURE;
-        goto write_out_flag_data_end;
-    }
-
-write_out_flag_data_end:
     write_header_out_amble(header);
     write_header_out_examble(header);
-
-    return res;
 }
 
-uint write_c_out_preamble(FILE* c_file) {
-    fputs("#include \""ATOM_FP__TEMP_FILENAME_STARTER".h\"\n\n"
-          "typedef struct "ATOM_FP__FLAG_INFO_STRUCT_NAME" {\n"
-          "    const char* "ATOM_FP__FLAG_INFO_STRUCT_STR_NAME";\n"
-          "    bool "ATOM_FP__FLAG_INFO_STRUCT_DEF_NAME";\n"
-          "} "ATOM_FP__FLAG_INFO_STRUCT_NAME";\n\n", c_file);
+void write_c_out_preamble(FILE* c_file, const char* header_output_filename) {
+    fprintf(c_file, "#include \"%s.h\"\n\n", get_file_name(header_output_filename));
 }
 
-uint write_c_out_flag_info_data(FILE* c_file) {
+void write_c_out_flag_info_data(FILE* c_file) {
     fprintf(c_file, "const "ATOM_FP__FLAG_INFO_STRUCT_NAME" "ATOM_FP__FLAG_INFO_INSTANCE_NAME"[%s] = {\n", ATOM_FP__FLAG_START ATOM_FP__FLAGS_COUNT_NAME);
     for (uint i = 0; i < flagInfos.pos; ++i) {
         const FlagInfo* info = flagInfos.arr[i];
@@ -222,7 +203,7 @@ uint write_c_out_flag_info_data(FILE* c_file) {
     fputs("};\n\n", c_file);
 }
 
-uint write_c_out_flag_array_data(FILE* c_file) {
+void write_c_out_flag_array_data(FILE* c_file) {
     fprintf(c_file, "bool "ATOM_FP__FLAGS_ARRAY_NAME"["ATOM_FP__FLAG_START ATOM_FP__FLAGS_COUNT_NAME"] = {\n");
     for (uint i = 0; i < flagInfos.pos; ++i) {
         const FlagInfo* info = flagInfos.arr[i];
@@ -233,15 +214,13 @@ uint write_c_out_flag_array_data(FILE* c_file) {
     fputs("};\n\n", c_file);
 }
 
-uint write_c_out(FILE* c_file) {
-    write_c_out_preamble(c_file);
+void write_c_out(FILE* c_file, const char* header_output_filename) {
+    write_c_out_preamble(c_file, header_output_filename);
     write_c_out_flag_info_data(c_file);
     write_c_out_flag_array_data(c_file);
 }
 
 uint write_out_flag_data(const char* output_filename) {
-    uint res = EXIT_SUCCESS;
-
     const char* temp_output_c_file_name = ATOM_FP__TEMP_FILENAME_STARTER".c";
     const char* temp_output_h_file_name = ATOM_FP__TEMP_FILENAME_STARTER".h";
 
@@ -253,19 +232,57 @@ uint write_out_flag_data(const char* output_filename) {
         return EXIT_FAILURE;
     }
 
-    const uint header_res = write_header_out(temp_header);
-    if (header_res != EXIT_SUCCESS) {
-        goto write_out_data_end;
-    }
+    write_header_out(temp_header);
+    write_c_out(temp_c, output_filename);
 
-    const uint c_res = write_c_out(temp_c);
-    if (c_res != EXIT_SUCCESS) {
-        goto write_out_data_end;
-    }
-
-write_out_data_end:
     fclose(temp_c);
     fclose(temp_header);
+
+    const char* c_out_filename = str_cat_dyn(output_filename, ".c");
+    const char* h_out_filename = str_cat_dyn(output_filename, ".h");
+
+    inform("Temp files written. (Over)Writing output files: `%s`, `%s`\n", c_out_filename, h_out_filename);
+
+    // if the file exists then check it has been removed, else 0 (success)
+    const int c_remove_res = access(c_out_filename, F_OK) == 0 ? remove(c_out_filename) : 0;
+    const int c_remove_errno = errno;
+    const int h_remove_res = access(h_out_filename, F_OK) == 0 ? remove(h_out_filename) : 0;
+    const int h_remove_errno = errno;
+
+    if (c_remove_res != 0 || h_remove_res != 0) {
+        error("Unable to remove old files: `%s`: %s, `%s`: %s\n",
+            c_out_filename,
+            c_remove_res == 0 ? "REMOVED" : strerror(c_remove_errno),
+            h_out_filename,
+            h_remove_res == 0 ? "REMOVED" : strerror(h_remove_errno)
+        );
+
+        goto write_out_flag_data_out_file_cleanup;
+    }
+
+    const int c_rename_res = rename(temp_output_c_file_name, c_out_filename);
+    const int c_rename_errno = errno;
+    const int h_rename_res = rename(temp_output_h_file_name, h_out_filename);
+    const int h_rename_errno = errno;
+
+    if (c_rename_res != 0 || h_rename_res != 0) {
+        error("Unable to rename file(s) for (Over)Writing: `%s`: %s, `%s`: %s\n",
+            c_out_filename,
+            c_rename_res == 0 ? "RENAMED" : strerror(c_rename_errno),
+            h_out_filename,
+            h_rename_res == 0 ? "RENAMED" : strerror(h_rename_errno)
+        );
+
+        goto write_out_flag_data_out_file_cleanup;
+    }
+
+    inform("All files written to. Exiting\n");
+
+write_out_flag_data_out_file_cleanup:
+    free((void*)c_out_filename);
+    free((void*)h_out_filename);
+
+    return EXIT_SUCCESS;
 }
 
 FlagInfo* create_flag_info(const char* name_start, const char* name_end, const char* default_start, const char* default_end) {
@@ -293,23 +310,23 @@ FlagInfo* create_flag_info(const char* name_start, const char* name_end, const c
     return info;
 }
 
-const char* get_word_end(const char* word_start) {
+char* get_word_end(char* word_start) {
     size_t i = 0;
     while (is_alph(word_start[i])) {i++;};
     return word_start + i;
 }
 
-const char* get_flag_or_option_end(const char* word_start) {
+char* get_flag_or_option_end(char* word_start) {
     size_t i = 0;
     while (is_alph(word_start[i]) || word_start[i] == '-') {i++;};
     return word_start + i;
 }
 
-uint parse_keyword_flag(const char* type_end) {
-    const char* name_start = strchr(type_end, ' ') + 1;
+uint parse_keyword_flag(char* type_end) {
+    char* name_start = strchr(type_end, ' ') + 1;
     const char* name_end = get_flag_or_option_end(name_start);
 
-    const char* default_start = strchr(name_end, ' ') + 1;
+    char* default_start = strchr(name_end, ' ') + 1;
     const char* default_end = get_word_end(default_start);
 
     FlagInfo* info = create_flag_info(name_start, name_end, default_start, default_end);
@@ -322,7 +339,7 @@ uint parse_keyword_flag(const char* type_end) {
 }
 
 uint parse_keyword_option(const char* type_end) {
-    const char* name_start = strchr(type_end, ' ') + 1;
+    char* name_start = strchr(type_end, ' ') + 1;
     const char* name_end = get_flag_or_option_end(name_start);
 
     const uint name_len = name_end - name_start;
@@ -335,13 +352,135 @@ uint parse_keyword_option(const char* type_end) {
     return EXIT_SUCCESS;
 }
 
-uint parse_flag_file(FILE* file) {
-    Buffer line_buffer = buffer_create(50);
+int compare_keywords(const void* stra, const void* strb) {
+    return strcmp(stra, *(char**)strb);
+}
+
+const char* get_tptoken_type_str(const FPToken* token) {
+    return token_types_str[token->type];
+}
+
+void print_token_data(const FPToken* token) {
+    switch (token->type) {
+        case FP_IDENTIFIER:
+            printf("%s", token->str);
+            break;
+        case FP_KEYWORD:
+            printf("%s", keyword_str[token->keyword]);
+            break;
+        case FP_LIT_BOOL:
+            printf("%s", token->boolean ? "true" : "false");
+            break;
+        case FP_LIT_INT:
+            printf("%lld", token->integer);
+            break;
+        case FP_INVALID:
+        default:
+            putz("Invalid Data");
+            break;
+    }
+}
+
+void print_tptoken(const FPToken* token) {
+    printf("TOK: %s (", get_tptoken_type_str(token));
+    print_token_data(token);
+    putchar(')');
+}
+
+FPToken lex_token(char* start, size_t max) {
+    FPToken t = {.type = FP_INVALID};
+
+    if (is_whitespace(*start) || is_newline(*start) || *start == '\0') {
+        l_pos++;
+
+        return t;
+    }
+
+    if (is_alph(*start)) {
+        char* end = get_flag_or_option_end(start);
+        const size_t bytes = end - start;
+
+        if (!end) {
+            assert(false);
+        }
+
+        if (bytes == STATIC_STRING_LEN("false") && strncmp(start, "false", bytes) == 0) {
+            t.boolean = false;
+            l_pos += STATIC_STRING_LEN("false");
+        } else if (bytes == STATIC_STRING_LEN("true") && strncmp(start, "true", bytes) == 0) {
+            t.boolean = true;
+            l_pos += STATIC_STRING_LEN("true");
+        } else {
+            goto alph_cont;
+        }
+
+        t.type = FP_LIT_BOOL;
+        return t;
+
+    alph_cont:
+        const char end_save = *end;
+        *end = '\0';
+        const char* const* res = bsearch(start, keyword_str, FP_KEYWORD_COUNT, sizeof (keyword_str[0]), compare_keywords);
+        *end = end_save;
+
+        if (!res) {
+            // if it is not a keyword then it is an identifier
+            char* ident = malloc(bytes);
+
+            if (!ident) {
+                panic("Malloc failed when allocating identifier");
+            }
+
+            memcpy(ident, start, bytes);
+            *(ident + bytes) = '\0';
+
+            t.type = FP_IDENTIFIER;
+            t.str = ident;
+
+            l_pos += bytes;
+        } else {
+            t.type = FP_KEYWORD;
+            t.keyword = res - keyword_str;
+
+            l_pos += strlen(*res);
+        }
+    } else if (is_digit(*start)) {
+        char* end;
+        const long long int value = strtoll(start, &end, 10);
+
+        l_pos += end - start;
+
+        t.type = FP_LIT_INT;
+        t.integer = value;
+    } else {
+        warning("Found unidentifiable character `%c` (%d)\n", *start, *start);
+        l_pos++;
+    }
+
+    return t;
+}
+
+struct LexRet {
+    uint errcode;
+    Array tokens;
+} lex_flag_file(FILE* file) {
+    Buffer line_buffer = buffer_create(BUFF_MIN);
+    Array tokens = arr_create(sizeof(FPToken));
     uint errcode = EXIT_SUCCESS;
 
     while (get_line(file, &line_buffer)) {
-        if (starts_with_ips(line_buffer.data, "//") != -1) {
-            // this is a comment so skip
+        if (starts_with_ips(line_buffer.data, ATOM_FP__COMMENT_START) != -1) {
+            // ignore whitespace, no tokens for it
+            continue;
+        }
+
+        if (line_buffer.pos < 1) {
+            continue;
+        }
+
+        if (line_buffer.pos == 1) {
+            error("Found a single character when lexing file; `%c`, no single character lines mean anything.", line_buffer.data[0]);
+            errcode = EXIT_FAILURE;
             continue;
         }
 
@@ -352,29 +491,29 @@ uint parse_flag_file(FILE* file) {
             continue;
         }
 
-        const char* type_start = line_buffer.data;
-        const char* type_end = get_word_end(type_start);
+        l_pos = 0;
+        while (l_pos < line_buffer.pos) {
+            FPToken t = lex_token(&line_buffer.data[l_pos], line_buffer.pos);
 
-        const uint max_len = type_end - type_start;
-        uint ret;
-        if (max_len == STATIC_STRING_LEN(ATOM_FP__KEYWORD_FLAG) && strncmp(type_start, ATOM_FP__KEYWORD_FLAG, max_len) == 0) {
-            ret = parse_keyword_flag(type_end);
-        } else if (max_len == STATIC_STRING_LEN(ATOM_FP__KEYWORD_OPTION) && strncmp(type_start, ATOM_FP__KEYWORD_OPTION, max_len) == 0) {
-            ret = parse_keyword_option(type_end);
-        } else {
-            error("UNKNOWN KEYWORD: `%*.*s`\n",
-                max_len, max_len, type_start
-            );
-            errcode = EXIT_FAILURE;
-            continue;
-        }
+            if (t.type == FP_INVALID) continue;
 
-        if (ret != EXIT_SUCCESS) {
-            errcode = ret;
+            arr_add(&tokens, &t);
         }
     }
 
-    return errcode;
+    for (uint i = 0; i < tokens.pos; ++i) {
+        const FPToken* tok = arr_get(&tokens, i);
+        print_tptoken(tok);
+        newline();
+    }
+
+    return (struct LexRet){.errcode = errcode, .tokens = tokens};
+}
+
+uint parse_flag_file(FILE* file) {
+    const struct LexRet ret = lex_flag_file(file);
+
+    return ret.errcode;
 }
 
 void print_flaginfo(const FlagInfo* info) {
@@ -386,7 +525,7 @@ void print_flaginfo(const FlagInfo* info) {
 
 void print_all_flaginfos(const Vector* vec) {
     puts("FLAG INFOS:");
-    for (int i = 0; i < vec->pos; ++i) {
+    for (uint i = 0; i < vec->pos; ++i) {
         const FlagInfo* info = vec->arr[i];
 
         print_flaginfo(info);
@@ -396,7 +535,7 @@ void print_all_flaginfos(const Vector* vec) {
 
 void print_all_options(const Vector* vec) {
     puts("OPTIONS:");
-    for (int i = 0; i < vec->pos; ++i) {
+    for (uint i = 0; i < vec->pos; ++i) {
         const char* const option = vec->arr[i];
 
         printf("%s",
@@ -404,29 +543,6 @@ void print_all_options(const Vector* vec) {
         );
         if (i != vec->pos) newline();
     }
-}
-
-// getcwd with malloc
-char* get_cwd() {
-    int size = 50;
-    char* buff = malloc(size * sizeof (char));
-    char cap = 5;
-
-    while (!getcwd(buff, size)) {
-        if (!cap--) {
-            free(buff);
-            buff = NULL;
-            break;
-        }
-        size <<= 1;
-        char* new_buff = realloc(buff, size);
-
-        if (!new_buff) return NULL;
-
-        buff = new_buff;
-    }
-
-    return buff;
 }
 
 bool verify_arguments(const int argc, char** argv) {
@@ -441,261 +557,4 @@ bool verify_arguments(const int argc, char** argv) {
     }
 
     return EXIT_SUCCESS;
-}
-
-int main2(int argc, char** argv) {
-    puts("Welcome to the Flag preprocessor for ATOMIC\n");
-
-    if (argc != 2) {
-        puts(Error("Usage", ": ./Flag_Preprocessor <Dir of Flags.h & Flags.c>"));
-        exit(1);
-    }
-
-    if (argv[1] == NULL) {
-        puts(Error("Args", ": First cmd line arg is NULL"));
-        exit(1);
-    }
-
-    const uint dir_len = len(argv[1]);
-
-    char* dir_buff = malloc((dir_len + 1 + 20) * sizeof(char)); //+20 for the /Flags.c.c/h and FlagsTemp.c.c/h
-    memcpy(dir_buff, argv[1], dir_len + 1);
-
-    char* hpath = get_path(dir_buff, path_sep_s "Flags.h");
-    char* cpath = get_path(dir_buff, path_sep_s "Flags.c");
-
-    char* nhpath = get_path(dir_buff, path_sep_s "FlagsTemp.h");
-    char* ncpath = get_path(dir_buff, path_sep_s "FlagsTemp.c");
-
-    FILE* hptr = fopen(hpath, "r");
-    FILE* cptr = fopen(cpath, "r");
-
-    if (hptr == NULL || cptr == NULL) {
-        printf(Error("FILE", ": Unable to open Flags.h or Flags.c.c. Current Dir: %s"), dir_buff);
-        close_files(2, hptr, cptr);
-        exit(2);
-    }
-
-    FILE* nhptr = fopen(nhpath, "w");
-    FILE* ncptr = fopen(ncpath, "w");
-
-    if (nhptr == NULL || ncptr == NULL) {
-        printf(Error("FILE", ": Unable to create temp files. Current Dir: %s"), dir_buff);
-        close_files(4, hptr, cptr, nhptr, ncptr);
-        exit(2);
-    }
-
-    Vector flag_enums = vector_create(16);
-    Vector option_enums = vector_create(16);
-
-    parse_h(hptr, nhptr, &flag_enums, &option_enums);
-    parse_c(cptr, ncptr, &flag_enums);
-
-    free_enums(&flag_enums);
-    free_enums(&option_enums);
-
-    close_files(4, hptr, cptr, nhptr, ncptr);
-
-    const int remh = remove(hpath);
-    const int remc = remove(cpath);
-
-    if (remh != 0 || remc != 0) {
-        puts(Error("FileIO", ": Unable to remove file Flags.h/c.c\n"));
-        exit(4);
-    }
-
-    const int renh = rename(nhpath, hpath);
-    const int renc = rename(ncpath, cpath);
-
-    if (renh != 0 || renc != 0) {
-        puts(Error("FileIO", ": Unable to rename temp files to permanent\n"));
-        exit(4);
-    }
-
-    free(dir_buff);
-    free(cpath);
-    free(hpath);
-    free(nhpath);
-    free(ncpath);
-
-    vector_destroy(&flag_enums);
-    vector_destroy(&option_enums);
-
-    printf("SUCCESS! Files parsed and renamed");
-
-    return 0;
-}
-
-void free_enums(Vector* enums) {
-    for (uint i = 0; i < enums->pos; i++) {
-        free(vector_get_unsafe(enums, i));
-    }
-
-    free(enums->arr);
-
-    *enums = (Vector){NULL, -1, -1};
-}
-
-void close_files(uint file_count, ...) {
-    va_list vl;
-
-    va_start(vl, file_count);
-
-    for (uint i = 0; i < file_count; i++) {
-        FILE* file = va_arg(vl, FILE*);
-
-        if (!file) continue;
-
-        fclose(file);
-    }
-}
-
-void parse_h(FILE* hptr, FILE* nhptr, Vector* flag_enums, Vector* option_enums) {
-    Buffer buffer = buffer_create(32);
-
-    while (get_line(hptr, &buffer)) {
-        if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_OPT_ENUM) != -1) {
-            collect_enums(hptr, nhptr, ATOM_CT__FLAGS_PRE_OPT_START, &buffer, option_enums);
-        }
-        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_ENUM) != -1) {
-            collect_enums(hptr, nhptr, ATOM_CT__FLAGS_PRE_FLG_START, &buffer, flag_enums);
-
-            char* countEnum = vector_pop_unsafe(flag_enums); //remove the count
-            free(countEnum);
-        }
-        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_OPT_DEF) != -1) {
-            parse_def(hptr, nhptr, option_enums, ATOM_CT__FLAGS_PRE_OPT_START, &buffer);
-        }
-        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_DEF) != -1) {
-            parse_def(hptr, nhptr, flag_enums, ATOM_CT__FLAGS_PRE_FLG_START, &buffer);
-        }
-        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_STR) != -1) {
-            parse_string(hptr, nhptr, flag_enums, ATOM_CT__FLAGS_PRE_FLG_START, &buffer);
-        }
-        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_OPT_STR) != -1) {
-            parse_string(hptr, nhptr, option_enums, ATOM_CT__FLAGS_PRE_OPT_START, &buffer);
-        }
-        else {
-            fputs(buffer.data, nhptr);
-        }
-    }
-
-    buffer_destroy(&buffer);
-}
-
-void parse_string(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Buffer* buffer) {
-    fputs(buffer->data, nfile); //write the //%%XXXX STRINGS%%
-
-    for (uint i = 0; i < enums->pos; i++) {
-        const char* current_enum = enums->arr[i];
-
-        fprintf(nfile, "#define %s%s_STR \"%s\"\n", prefix, current_enum, current_enum);
-    }
-
-    cleanup_skip(file, nfile, buffer);
-}
-
-void parse_def(FILE* file, FILE* nfile, Vector* enums, const char* prefix, Buffer* buffer) {
-    fputs(buffer->data, nfile); //write the //%%XXXX DEFINE%%
-
-    for (uint i = 0; i < enums->pos; i++) {
-        const char* current_enum = enums->arr[i];
-        char* current_enum_dashed = str_cpy_replace(current_enum, '_', '-');
-
-        fprintf(nfile, "#define %s%s_HASH 0x%llx\n", prefix, current_enum, flag_to_int(current_enum_dashed));
-
-        free(current_enum_dashed);
-    }
-
-    cleanup_skip(file, nfile, buffer);
-}
-
-void parse_c(FILE* cptr, FILE* ncptr, Vector* flag_enums) {
-    Buffer buffer = buffer_create(32);
-    while (get_line(cptr,&buffer)) {
-        if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_IDX_SWT) != -1) {
-            parse_switch(cptr, ncptr, ATOM_CT__FLAGS_PRE_FLG_START, "", "_HASH", "-1", &buffer, flag_enums);
-        }
-        else if (starts_with_ips(buffer.data, ATOM_CT__FLAGS_PRE_FLG_STR_SWT) != -1) {
-            parse_switch(cptr, ncptr, ATOM_CT__FLAGS_PRE_FLG_START, "_STR", "", "\"ERROR NO ENUM NAME\"", &buffer, flag_enums);
-        }
-        else {
-            fputs(buffer.data, ncptr);
-        }
-    }
-
-    buffer_destroy(&buffer);
-}
-
-void parse_switch(FILE* file, FILE* nfile, const char* prefix,
-                  const char* to, const char* from, const char* default_value,
-                  Buffer* buffer, Vector* flag_enums) {
-
-    fputs(buffer->data, nfile); //write the %%XX%%
-
-    for (uint i = 0; i < flag_enums->pos; i++) {
-        const char* flag_name = flag_enums->arr[i];
-
-        fprintf(nfile, "\t\tcase %s%s%s:\n"
-                       "\t\t\treturn %s%s%s;\n", prefix, flag_name, from, prefix, flag_name, to);
-    }
-    fprintf(nfile, "\t\tdefault:\n"
-                   "\t\t\treturn %s;\n", default_value);
-
-    cleanup_skip(file, nfile, buffer);
-}
-
-/*
-* Find the next %%END%% while writing to the newfile
-*/
-void cleanup_write(FILE* file, FILE* nfile, Buffer* buffer) {
-    fputs(buffer->data, nfile);
-
-    while (get_line(file, buffer)) {
-        fputs(buffer->data, nfile);
-        if (starts_with_ips(buffer->data, ATOM_CT__FLAGS_PRE_END)) {
-            break;
-        }
-    }
-}
-
-/*
- * Find the next %%END%% skip writing to the nfile bar the end phrase
- */
-void cleanup_skip(FILE* file, FILE* nfile, Buffer* buffer) {
-    while (get_line(file, buffer)) {
-        if (starts_with_ips(buffer->data, ATOM_CT__FLAGS_PRE_END) != -1) {
-            break;
-        }
-    }
-    fputs(buffer->data, nfile); //write the `//%%END%%`
-}
-
-void collect_enums(FILE* file, FILE* nfile, const char* prefix, Buffer* buffer, Vector* enum_vec) {
-    //We're at the //%%XXXX ENUM%% label so write this to the file
-    fputs(buffer->data, nfile);
-
-    get_line(file, buffer);
-    if (starts_with_ips(buffer->data, "enum") == -1) {
-        puts(Error("FLAG.c.c", ": enum not found after //%%XXXX ENUM%%"));
-    }
-    fputs(buffer->data, nfile);
-
-    while (get_line(file, buffer)) {
-        int pos = starts_with_ips(buffer->data, prefix);
-        if (pos == -1) {
-            break;
-        }
-
-        fputs(buffer->data, nfile);
-
-        const uint tot_length = len_from_to(buffer->data, pos, ',') + 1;
-
-        char* s_enum = malloc(tot_length * sizeof(char));
-        memcpy(s_enum, &buffer->data[pos], tot_length);
-        s_enum[tot_length - 1] = '\0';
-
-        vector_add(enum_vec, s_enum);
-    }
-    cleanup_write(file, nfile, buffer);
 }
