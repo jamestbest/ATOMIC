@@ -377,6 +377,12 @@ void print_token_data(const FPToken* token) {
         case FP_LIT_INT:
             printf("%lld", token->integer);
             break;
+        case FP_COMMA:
+            putchar(',');
+            break;
+        case FP_COUNT:
+            putz("How did we get here?");
+            break;
         case FP_INVALID:
         default:
             putz("Invalid Data");
@@ -390,12 +396,19 @@ void print_tptoken(const FPToken* token) {
     putchar(')');
 }
 
-FPToken lex_token(char* start, size_t max) {
+FPToken lex_token(char* start) {
     FPToken t = {.type = FP_INVALID};
 
     if (is_whitespace(*start) || is_newline(*start) || *start == '\0') {
         l_pos++;
 
+        return t;
+    }
+
+    if (*start == ',') {
+        t.type = FP_COMMA;
+
+        l_pos++;
         return t;
     }
 
@@ -497,7 +510,7 @@ struct LexRet {
 
         l_pos = 0;
         while (l_pos < line_buffer.pos) {
-            FPToken t = lex_token(&line_buffer.data[l_pos], line_buffer.pos);
+            FPToken t = lex_token(&line_buffer.data[l_pos]);
 
             if (t.type == FP_INVALID) continue;
 
@@ -516,6 +529,29 @@ struct LexRet {
 
 uint parse_flag_file(FILE* file) {
     const struct LexRet ret = lex_flag_file(file);
+
+    if (ret.errcode != EXIT_SUCCESS) {
+        error("Errors generated from lexing, errcode %u", ret.errcode);
+        return ret.errcode;
+    }
+
+    Array tokens = ret.tokens;
+
+    if (tokens.pos == 0) {
+        warning("No tokens were generated from the lexing stage");
+        return EXIT_SUCCESS;
+    }
+
+    uint c_pos = 0;
+    FPToken* c;
+
+    while (c_pos < tokens.pos) {
+        c = arr_get(&tokens, c_pos);
+
+
+
+        c_pos++;
+    }
 
     return ret.errcode;
 }

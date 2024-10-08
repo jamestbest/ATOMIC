@@ -60,6 +60,7 @@ typedef enum TokenType {
     FP_IDENTIFIER,
     FP_LIT_BOOL,
     FP_LIT_INT,
+    FP_COMMA,
     FP_INVALID,
     FP_COUNT,
 } TokenType;
@@ -69,6 +70,7 @@ const char* const token_types_str[FP_COUNT] = {
     [FP_IDENTIFIER] = C_BLU"IDENTIFIER"C_RST,
     [FP_LIT_BOOL] = C_GRN"BOOL"C_RST,
     [FP_LIT_INT] = C_GRN"INT"C_RST,
+    [FP_COMMA] = C_MGN"COMMA"C_RST,
     [FP_INVALID] = C_RED"INVALID"C_RST,
 };
 
