@@ -24,9 +24,11 @@ void print_all_flaginfos(const Vector* vec);
 void print_all_options(const Vector* vec);
 
 Vector flagInfos;
-Vector optionNames;
+Vector optionInfos;
 
-size_t l_pos = 0;
+size_t l_pos;
+size_t p_pos;
+Array tokens;
 
 int compare_flag_infos(const void* a, const void* b) {
     const FlagInfo* flag_a = *(const FlagInfo**)a;
@@ -55,7 +57,7 @@ int main(const int argc, char** argv) {
     verify_arguments(argc, argv);
 
     flagInfos = vector_create(15);
-    optionNames = vector_create(10);
+    optionInfos = vector_create(10);
 
     const char* flag_file_name = argv[1];
     FILE* flag_file = fopen(flag_file_name, "r");
@@ -63,7 +65,7 @@ int main(const int argc, char** argv) {
     const uint ret = parse_flag_file(flag_file);
 
     if (ret != EXIT_SUCCESS) {
-        error("Errors found during parsing of flag file, please fix and re-run. Errcode: %u", ret);
+        error("Errors found during parsing of flag file, please fix and re-run. Errcode: %u\n", ret);
         return ret;
     }
 
@@ -96,7 +98,8 @@ const char* translate_name_for_enum(const char* flag) {
 // [[todo]] change this to just be 2 functions, this is ridiculously obfuscated abstraction
 void append_enum(FILE* file, const char* enum_name,
                  const char* enum_element_prefix,
-                 const char* count_element_name, Vector* vector,
+                 const char* count_element_name,
+                 const Vector* vector,
                  const char* (*get)(const size_t index)) {
     fprintf(file, "enum %s {\n", enum_name);
     for (uint i = 0; i < vector->pos; ++i) {
@@ -123,7 +126,7 @@ void append_flag_enum(FILE* header_file) {
 }
 
 const char* get_option_name(const size_t index) {
-    return optionNames.arr[index];
+    return ((OptionInfo*)vector_get_unsafe(&optionInfos, index))->option_name;
 }
 
 void append_option_enum(FILE* header_file) {
@@ -131,7 +134,7 @@ void append_option_enum(FILE* header_file) {
         ATOM_FP__ENUM_OPTIONS_NAME,
         ATOM_FP__OPTION_START,
         ATOM_FP__OPTIONS_COUNT_NAME,
-        &optionNames,
+        &optionInfos,
         get_option_name
     );
 }
@@ -231,7 +234,7 @@ uint write_out_flag_data(const char* output_filename) {
     FILE* temp_header = fopen(temp_output_h_file_name, "w");
 
     if (!temp_c || !temp_header) {
-        error("Unable to open temporary file(s) for writing output. C: %s, H: %s", temp_c ? "OPENED" : "ERROR", temp_header ? "OPENED" : "ERROR");
+        error("Unable to open temporary file(s) for writing output. C: %s, H: %s\n", temp_c ? "OPENED" : "ERROR", temp_header ? "OPENED" : "ERROR");
         return EXIT_FAILURE;
     }
 
@@ -288,27 +291,40 @@ write_out_flag_data_out_file_cleanup:
     return EXIT_SUCCESS;
 }
 
-FlagInfo* create_flag_info(const char* name_start, const char* name_end, const char* default_start, const char* default_end) {
-    FlagInfo* info = malloc(sizeof (FlagInfo));
-
-    const size_t name_len = name_end - name_start;
-    char* name = malloc((name_len + 1) * sizeof (char));
-    memcpy(name, name_start, name_len);
-    *(name + name_len) = '\0';
-
-    const size_t default_len = default_end - default_start;
-    const bool match_true = default_len + 1 == sizeof ("true") ? memcmp(default_start, "true", sizeof ("true") - 1) == 0 : false;
-    const bool match_false = default_len + 1 == sizeof ("false") ? memcmp(default_start, "false", sizeof ("false") - 1) == 0 : false;
-
-    if (!match_true && !match_false) {
-        error("Given non true-false default value, read: `%s`", default_start);
-        return NULL;
+FlagInfo* create_flag_info(FPToken* identifier, FPToken* default_value) {
+    if (!identifier || !default_value) {
+        assert(false);
     }
 
-    const bool default_value = match_true;
+    FlagInfo* info = malloc(sizeof(FlagInfo));
 
-    info->flag_name = name;
-    info->default_value = default_value;
+    *info = (FlagInfo) {
+        .flag_name = identifier->str,
+        .default_value = default_value->boolean
+    };
+
+    return info;
+}
+
+OptionArgInfo* create_arg_info(FPToken const* identifier, FPToken const* type, const Array arg_options) {
+    OptionArgInfo* info = malloc(sizeof(OptionArgInfo));
+
+    *info = (OptionArgInfo) {
+        .arg_name = identifier->str,
+        .type = type->type_enum,
+        .arg_options = arg_options
+    };
+
+    return info;
+}
+
+OptionInfo* create_option_info(const FPToken* identifier) {
+    OptionInfo* info = malloc(sizeof(OptionInfo));
+
+    *info = (OptionInfo){
+        .arg_infos = vector_create(3),
+        .option_name = identifier->str
+    };
 
     return info;
 }
@@ -325,37 +341,7 @@ char* get_flag_or_option_end(char* word_start) {
     return word_start + i;
 }
 
-uint parse_keyword_flag(char* type_end) {
-    char* name_start = strchr(type_end, ' ') + 1;
-    const char* name_end = get_flag_or_option_end(name_start);
-
-    char* default_start = strchr(name_end, ' ') + 1;
-    const char* default_end = get_word_end(default_start);
-
-    FlagInfo* info = create_flag_info(name_start, name_end, default_start, default_end);
-
-    if (!info) return EXIT_FAILURE;
-
-    vector_add(&flagInfos, info);
-
-    return EXIT_SUCCESS;
-}
-
-uint parse_keyword_option(const char* type_end) {
-    char* name_start = strchr(type_end, ' ') + 1;
-    const char* name_end = get_flag_or_option_end(name_start);
-
-    const uint name_len = name_end - name_start;
-    char* name = malloc((name_len + 1) * sizeof (char));
-    memcpy(name, name_start, name_len);
-    *(name + name_len) = '\0';
-
-    vector_add(&optionNames, name);
-
-    return EXIT_SUCCESS;
-}
-
-int compare_keywords(const void* stra, const void* strb) {
+int compare_strings(const void* stra, const void* strb) {
     return strcmp(stra, *(char**)strb);
 }
 
@@ -368,8 +354,11 @@ void print_token_data(const FPToken* token) {
         case FP_IDENTIFIER:
             printf("%s", token->str);
             break;
+        case FP_TYPE:
+            printf("%s", types_str[token->type_enum]);
+            break;
         case FP_KEYWORD:
-            printf("%s", keyword_str[token->keyword]);
+            printf("%s", keyword_str[token->keyword_enum]);
             break;
         case FP_LIT_BOOL:
             printf("%s", token->boolean ? "true" : "false");
@@ -433,14 +422,28 @@ FPToken lex_token(char* start) {
         t.type = FP_LIT_BOOL;
         return t;
 
-    alph_cont:
-        ;
+    alph_cont:;
         const char end_save = *end;
         *end = '\0';
-        const char* const* res = bsearch(start, keyword_str, FP_KEYWORD_COUNT, sizeof (keyword_str[0]), compare_keywords);
+        const char* const* type_res = bsearch(start, types_str, FP_TYPES_COUNT, sizeof (types_str[0]), compare_strings);
+        const char* const* keyword_res = bsearch(start, keyword_str, FP_KEYWORD_COUNT, sizeof (keyword_str[0]), compare_strings);
         *end = end_save;
 
-        if (!res) {
+        if (keyword_res && type_res) {
+            assert(false);
+        }
+
+        if (keyword_res) {
+            t.type = FP_KEYWORD;
+            t.keyword_enum = keyword_res - keyword_str;
+
+            l_pos += strlen(*keyword_res);
+        } else if (type_res) {
+            t.type = FP_TYPE;
+            t.type_enum = type_res - types_str;
+
+            l_pos += strlen(*type_res);
+        } else {
             // if it is not a keyword then it is an identifier
             char* ident = malloc(bytes);
 
@@ -455,11 +458,6 @@ FPToken lex_token(char* start) {
             t.str = ident;
 
             l_pos += bytes;
-        } else {
-            t.type = FP_KEYWORD;
-            t.keyword = res - keyword_str;
-
-            l_pos += strlen(*res);
         }
     } else if (is_digit(*start)) {
         char* end;
@@ -477,12 +475,9 @@ FPToken lex_token(char* start) {
     return t;
 }
 
-struct LexRet {
-    uint errcode;
-    Array tokens;
-} lex_flag_file(FILE* file) {
+uint lex_flag_file(FILE* file) {
     Buffer line_buffer = buffer_create(BUFF_MIN);
-    Array tokens = arr_create(sizeof(FPToken));
+    tokens = arr_create(sizeof(FPToken));
     uint errcode = EXIT_SUCCESS;
 
     while (get_line(file, &line_buffer)) {
@@ -496,7 +491,7 @@ struct LexRet {
         }
 
         if (line_buffer.pos == 1) {
-            error("Found a single character when lexing file; `%c`, no single character lines mean anything.", line_buffer.data[0]);
+            error("Found a single character when lexing file; `%c`, no single character lines mean anything.\n", line_buffer.data[0]);
             errcode = EXIT_FAILURE;
             continue;
         }
@@ -524,36 +519,216 @@ struct LexRet {
         newline();
     }
 
-    return (struct LexRet){.errcode = errcode, .tokens = tokens};
+    return errcode;
+}
+
+FPToken* consume() {
+    if (p_pos >= tokens.pos) {
+        return NULL;
+    }
+
+    return arr_get(&tokens, p_pos++);
+}
+
+FPToken* peek() {
+    if (p_pos + 1 >= tokens.pos) {
+        return NULL;
+    }
+
+    return arr_get(&tokens, p_pos + 1);
+}
+
+FPToken* expect(const TokenType type) {
+    if (p_pos >= tokens.pos) return NULL;
+
+    if (((FPToken*)arr_get(&tokens, p_pos))->type != type) {
+        return NULL;
+    }
+
+    return consume(); // eat the keyword (๑ᵔ⤙ᵔ๑)
+}
+
+FPToken* expect_keyword(Keywords keyword) {
+    const FPToken* tok = (FPToken*)arr_get(&tokens, p_pos);
+
+    if (tok->type != FP_KEYWORD) {
+        return NULL;
+    }
+
+    if (tok->keyword_enum != keyword) {
+        return NULL;
+    }
+
+    return consume();
+}
+
+uint parse_keyword_flag() {
+    FPToken* identifier = expect(FP_IDENTIFIER);
+
+    if (!identifier) {
+        error("Expected an identifier after FLAG keyword\n");
+        return EXIT_FAILURE;
+    }
+
+    FPToken* default_value = expect(FP_LIT_BOOL);
+
+    if (!default_value) {
+        error("Expected a lit boolean after Identifier in FLAG keyword\n");
+        return EXIT_FAILURE;
+    }
+
+    FlagInfo* finfo = create_flag_info(identifier, default_value);
+
+    if (!finfo) {
+        assert(false);
+    }
+
+    vector_add(&flagInfos, finfo);
+
+    return EXIT_SUCCESS;
+}
+
+uint parse_keyword_option() {
+    FPToken* identifier = expect(FP_IDENTIFIER);
+
+    if (!identifier) {
+        error("Expected an identifier after OPTION keyword\n");
+        return EXIT_FAILURE;
+    }
+
+    OptionInfo* info = create_option_info(identifier);
+    vector_add(&optionInfos, info);
+
+    return EXIT_SUCCESS;
+}
+
+
+uint parse_keyword_arg() {
+    FPToken* identifier = expect(FP_IDENTIFIER);
+
+    if (!identifier) {
+        error("Expected identifier after keyword ARG for argument name\n");
+        return EXIT_FAILURE;
+    }
+
+    FPToken* type_keyword = expect_keyword(FP_KEYWORD_TYPE);
+
+    if (!type_keyword) {
+        error("Expected type keyword after identifier in ARG statement\n");
+        return EXIT_FAILURE;
+    }
+
+    FPToken* type = expect(FP_TYPE);
+
+    if (!type) {
+        error("Expected type after type keyword in ARG statement\n");
+        return EXIT_FAILURE;
+    }
+
+    Array arg_options;
+
+    switch (type->type_enum) {
+        case FP_TYPE_STR:
+            arg_options = arr_create(sizeof (char*));
+            break;
+        case FP_TYPE_INTEGER:
+        case FP_TYPE_NATURAL:
+            arg_options = arr_create(sizeof (long long int));
+            break;
+        case FP_TYPE_CHARACTER:
+            arg_options = arr_create(sizeof (char));
+            break;
+        default:
+            assert(false);
+    }
+
+    if (expect_keyword(FP_KEYWORD_FROM)) {
+        bool first_time = true;
+
+        while (first_time || expect(FP_COMMA)) {
+            first_time = false;
+            FPToken* value;
+
+            switch (type->type_enum) {
+                case FP_TYPE_STR:
+                    value = expect(FP_IDENTIFIER);
+                    if (!value) goto identifier_error;
+                    arr_add(&arg_options, value->str);
+                    break;
+                case FP_TYPE_INTEGER:
+                case FP_TYPE_NATURAL:
+                    value = expect(FP_LIT_INT);
+                    if (!value) goto identifier_error;
+                    arr_add(&arg_options, &value->integer);
+                    break;
+                case FP_TYPE_CHARACTER:
+                    value = expect(FP_IDENTIFIER);
+                    if (!value) goto identifier_error;
+                    arr_add(&arg_options, value->str);
+                    break;
+                default:
+                    assert(false);
+
+            }
+            goto identifier_cont;
+
+        identifier_error:
+            error("Expected identifier in FROM list");
+            return EXIT_FAILURE;
+        identifier_cont:
+        }
+    }
+
+    OptionArgInfo* info = create_arg_info(identifier, type, arg_options);
+    vector_add(&optionInfos, info);
+
+    return EXIT_SUCCESS;
+}
+
+uint parse_token(const FPToken* token) {
+    const Keywords enum_pos = token->keyword_enum;
+
+    switch (enum_pos) {
+        case FP_KEYWORD_FLAG:
+            parse_keyword_flag();
+            break;
+        case FP_KEYWORD_OPTION:
+            parse_keyword_option();
+            break;
+        case FP_KEYWORD_ARG:
+            parse_keyword_arg();
+            break;
+        default:
+            error("Invalid keyword used as a statement starter. Found %s\n", keyword_str[enum_pos]);
+            break;
+    }
 }
 
 uint parse_flag_file(FILE* file) {
-    const struct LexRet ret = lex_flag_file(file);
+    const uint ret = lex_flag_file(file);
 
-    if (ret.errcode != EXIT_SUCCESS) {
-        error("Errors generated from lexing, errcode %u", ret.errcode);
-        return ret.errcode;
+    if (ret != EXIT_SUCCESS) {
+        error("Errors generated from lexing, errcode %u\n", ret);
+        return ret;
     }
 
-    Array tokens = ret.tokens;
-
     if (tokens.pos == 0) {
-        warning("No tokens were generated from the lexing stage");
+        warning("No tokens were generated from the lexing stage\n");
         return EXIT_SUCCESS;
     }
 
-    uint c_pos = 0;
-    FPToken* c;
+    while (peek()) {
+        const FPToken* c = consume();
 
-    while (c_pos < tokens.pos) {
-        c = arr_get(&tokens, c_pos);
+        if (c->type != FP_KEYWORD) {
+            error("Found non keyword at start of statement parsing. Found: %s\n", token_types_str[c->type]);
+            return EXIT_FAILURE;
+        }
 
-
-
-        c_pos++;
+        parse_token(c);
     }
 
-    return ret.errcode;
+    return ret;
 }
 
 void print_flaginfo(const FlagInfo* info) {

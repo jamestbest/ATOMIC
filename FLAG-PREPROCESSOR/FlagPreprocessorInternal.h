@@ -17,7 +17,6 @@
 typedef enum Keywords {
     FP_KEYWORD_ARG,
     FP_KEYWORD_FLAG,
-    FP_KEYWORD_FOR,
     FP_KEYWORD_FROM,
     FP_KEYWORD_OPTION,
     FP_KEYWORD_TYPE,
@@ -27,7 +26,6 @@ typedef enum Keywords {
 const char* const keyword_str[FP_KEYWORD_COUNT] = {
     [FP_KEYWORD_ARG] = "ARG",
     [FP_KEYWORD_FLAG] = "FLAG",
-    [FP_KEYWORD_FOR] = "FOR",
     [FP_KEYWORD_FROM] = "FROM",
     [FP_KEYWORD_OPTION] = "OPTION",
     [FP_KEYWORD_TYPE] = "TYPE",
@@ -35,18 +33,18 @@ const char* const keyword_str[FP_KEYWORD_COUNT] = {
 _Static_assert(sizeof(keyword_str) / sizeof(keyword_str[0]) == FP_KEYWORD_COUNT);
 
 typedef enum Types {
-    FP_TYPE_BOOL,
     FP_TYPE_CHARACTER,
     FP_TYPE_INTEGER,
     FP_TYPE_STR,
+    FP_TYPE_NATURAL,
     FP_TYPES_COUNT,
 } Types;
 
 const char* const types_str[FP_TYPES_COUNT] = {
-    [FP_TYPE_BOOL] = "BOOL",
     [FP_TYPE_CHARACTER] = "CHAR",
     [FP_TYPE_INTEGER] = "INT",
     [FP_TYPE_STR] = "STR",
+    [FP_TYPE_NATURAL] = "UINT",
 };
 _Static_assert(sizeof(types_str) / sizeof(types_str[0]) == FP_TYPES_COUNT);
 
@@ -57,6 +55,7 @@ typedef struct KeywordInfo {
 
 typedef enum TokenType {
     FP_KEYWORD,
+    FP_TYPE,
     FP_IDENTIFIER,
     FP_LIT_BOOL,
     FP_LIT_INT,
@@ -67,6 +66,7 @@ typedef enum TokenType {
 
 const char* const token_types_str[FP_COUNT] = {
     [FP_KEYWORD] = C_RED"KEYWORD"C_RST,
+    [FP_TYPE] = C_CYN"TYPE"C_RST,
     [FP_IDENTIFIER] = C_BLU"IDENTIFIER"C_RST,
     [FP_LIT_BOOL] = C_GRN"BOOL"C_RST,
     [FP_LIT_INT] = C_GRN"INT"C_RST,
@@ -78,7 +78,8 @@ typedef struct FPToken {
     TokenType type;
     union {
         const char* str;
-        Keywords keyword;
+        Keywords keyword_enum;
+        Types type_enum;
         bool boolean;
         long long integer;
     };
@@ -88,6 +89,18 @@ typedef struct FlagInfo {
     const char* flag_name;
     bool default_value;
 } FlagInfo;
+
+typedef struct OptionArgInfo {
+    const char* arg_name;
+    Types type;
+    Array arg_options;
+} OptionArgInfo;
+
+typedef struct OptionInfo {
+    const char* option_name;
+
+    Vector arg_infos;
+} OptionInfo;
 
 typedef enum State {
     SEARCHING,
