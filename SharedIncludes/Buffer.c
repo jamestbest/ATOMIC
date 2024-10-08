@@ -4,6 +4,8 @@
 
 #include "Buffer.h"
 #include <malloc.h>
+#include <stdlib.h>
+#include <string.h>
 
 Buffer buffer_create(uint size) {
     char* data = malloc(size * sizeof(char));

@@ -7,8 +7,11 @@
 #include "../SharedIncludes/Messages.h"
 #include "../TypePreprocessor/TypePreprocessorInternal.h"
 
-#include <unistd.h>
+#include <errno.h>
 #include <malloc.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #define ARGS_COUNT 3
 
@@ -418,6 +421,7 @@ FPToken lex_token(char* start, size_t max) {
         return t;
 
     alph_cont:
+        ;
         const char end_save = *end;
         *end = '\0';
         const char* const* res = bsearch(start, keyword_str, FP_KEYWORD_COUNT, sizeof (keyword_str[0]), compare_keywords);

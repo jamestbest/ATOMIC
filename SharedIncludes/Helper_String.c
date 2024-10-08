@@ -4,6 +4,7 @@
 
 #include "Helper_String.h"
 #include <malloc.h>
+#include <string.h>
 
 LenSize len_basic(const char *string, const int from, const int offset, const char delimiter) {
     int i = from;

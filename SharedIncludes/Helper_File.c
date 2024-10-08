@@ -4,6 +4,7 @@
 
 #include "Helper_File.h"
 #include <malloc.h>
+#include <string.h>
 
 FILE* open_file(const char* cwd, const char* filename, const char* mode) {
     FILE* fp = fopen(filename, mode);

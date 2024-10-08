@@ -6,6 +6,7 @@
 
 #include "../Errors.h"
 #include <malloc.h>
+#include <string.h>
 
 const Vector VEC_ERR = (Vector){
     .arr = NULL,
