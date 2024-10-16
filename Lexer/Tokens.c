@@ -346,7 +346,7 @@ void print_token_type_coloured(TokenType type) {
     putz(C_RST);
 }
 
-void print_token_value(const TPToken* token) {
+void print_token_value(const Token* token) {
     if (token == NULL) return;
     switch (token->type) {
         case BRACKET_OPEN:
@@ -451,7 +451,7 @@ void print_token_value(const TPToken* token) {
     }
 }
 
-void print_token(const TPToken* token) {
+void print_token(const Token* token) {
     if (!token) return;
 
     //{<POSITION> TYPE: VALUE}
@@ -470,7 +470,7 @@ void print_token(const TPToken* token) {
     printf("'}");
 }
 
-void print_token_ln(TPToken* token) {
+void print_token_ln(Token* token) {
     print_token(token);
     putchar('\n');
 }
@@ -558,27 +558,27 @@ bool is_whitespace_tkn(TokenType type) {
     return type == WS_S || type == WS_T;
 }
 
-bool is_l_paren(TPToken* tok) {
+bool is_l_paren(Token* tok) {
     return tok->type == PAREN_OPEN;
 }
 
-bool is_r_paren(TPToken* tok) {
+bool is_r_paren(Token* tok) {
     return tok->type == PAREN_CLOSE;
 }
 
-bool is_l_square_bracket(TPToken* tok) {
+bool is_l_square_bracket(Token* tok) {
     return tok->type == BRACKET_OPEN;
 }
 
-bool is_r_square_bracket(TPToken* tok) {
+bool is_r_square_bracket(Token* tok) {
     return tok->type == BRACKET_CLOSE;
 }
 
-bool is_square_bracket(TPToken* tok) {
+bool is_square_bracket(Token* tok) {
     return is_l_square_bracket(tok) || is_r_square_bracket(tok);
 }
 
-bool is_terminal(TPToken* tok) {
+bool is_terminal(Token* tok) {
     switch (tok->type) {
         case IDENTIFIER:
         case LIT_BOOL:
@@ -595,7 +595,7 @@ bool is_terminal(TPToken* tok) {
     }
 }
 
-bool is_arith_operator(TPToken* tok) {
+bool is_arith_operator(Token* tok) {
     switch (tok->type) {
         case OP_BIN:
         case OP_BIN_OR_UN:
@@ -610,7 +610,7 @@ bool is_arith_operator(TPToken* tok) {
     }
 }
 
-bool is_assigning_operator(TPToken* tok) {
+bool is_assigning_operator(Token* tok) {
     switch (tok->type) {
         case OP_ASSIGN:
         case OP_ARITH_ASSIGN:
@@ -620,11 +620,11 @@ bool is_assigning_operator(TPToken* tok) {
     }
 }
 
-bool is_any_operator(TPToken* tok) {
+bool is_any_operator(Token* tok) {
     return is_arith_operator(tok) || is_assigning_operator(tok);
 }
 
-void consolidate(TPToken* base_token, TPToken* token_to_eat) {
+void consolidate(Token* base_token, Token* token_to_eat) {
     const bool base_before = base_token->pos.start_line < token_to_eat->pos.start_line ||
             base_token->pos.start_col < token_to_eat->pos.start_col;
 

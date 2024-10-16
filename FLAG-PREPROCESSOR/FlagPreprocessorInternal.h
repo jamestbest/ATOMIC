@@ -10,6 +10,8 @@
 
 #include "../SharedIncludes/Helper_File.h"
 
+#include "FlagPreprocessorInject.h"
+
 #include <time.h>
 
 #define Error(type, msg) C_RED type C_RST msg
@@ -23,30 +25,22 @@ typedef enum Keywords {
     FP_KEYWORD_COUNT,
 } Keywords;
 
-const char* const keyword_str[FP_KEYWORD_COUNT] = {
+const char* const FP_KEYWORD_STR[FP_KEYWORD_COUNT] = {
     [FP_KEYWORD_ARG] = "ARG",
     [FP_KEYWORD_FLAG] = "FLAG",
     [FP_KEYWORD_FROM] = "FROM",
     [FP_KEYWORD_OPTION] = "OPTION",
     [FP_KEYWORD_TYPE] = "TYPE",
 };
-_Static_assert(sizeof(keyword_str) / sizeof(keyword_str[0]) == FP_KEYWORD_COUNT);
+_Static_assert(sizeof(FP_KEYWORD_STR) / sizeof(FP_KEYWORD_STR[0]) == FP_KEYWORD_COUNT);
 
-typedef enum Types {
-    FP_TYPE_CHARACTER,
-    FP_TYPE_INTEGER,
-    FP_TYPE_STR,
-    FP_TYPE_NATURAL,
-    FP_TYPES_COUNT,
-} Types;
-
-const char* const types_str[FP_TYPES_COUNT] = {
-    [FP_TYPE_CHARACTER] = "CHAR",
-    [FP_TYPE_INTEGER] = "INT",
+const char* const FP_TYPES_ENUM_STR[FP_TYPES_COUNT] = {
+    [FP_TYPE_CHARACTER] = "CHARACTER",
+    [FP_TYPE_INTEGER] = "INTEGER",
     [FP_TYPE_STR] = "STR",
-    [FP_TYPE_NATURAL] = "UINT",
+    [FP_TYPE_NATURAL] = "NATURAL",
 };
-_Static_assert(sizeof(types_str) / sizeof(types_str[0]) == FP_TYPES_COUNT);
+_Static_assert(sizeof(FP_TYPES_ENUM_STR) / sizeof(FP_TYPES_ENUM_STR[0]) == FP_TYPES_COUNT);
 
 typedef struct KeywordInfo {
     const char* name;
@@ -60,6 +54,7 @@ typedef enum TokenType {
     FP_LIT_BOOL,
     FP_LIT_INT,
     FP_COMMA,
+    FP_STAR,
     FP_INVALID,
     FP_COUNT,
 } TokenType;
@@ -71,8 +66,10 @@ const char* const token_types_str[FP_COUNT] = {
     [FP_LIT_BOOL] = C_GRN"BOOL"C_RST,
     [FP_LIT_INT] = C_GRN"INT"C_RST,
     [FP_COMMA] = C_MGN"COMMA"C_RST,
+    [FP_STAR] = C_MGN"STAR"C_RST,
     [FP_INVALID] = C_RED"INVALID"C_RST,
 };
+_Static_assert(sizeof (token_types_str) / sizeof (token_types_str[0]) == FP_COUNT);
 
 typedef struct FPToken {
     TokenType type;
@@ -84,23 +81,6 @@ typedef struct FPToken {
         long long integer;
     };
 } FPToken;
-
-typedef struct FlagInfo {
-    const char* flag_name;
-    bool default_value;
-} FlagInfo;
-
-typedef struct OptionArgInfo {
-    const char* arg_name;
-    Types type;
-    Array arg_options;
-} OptionArgInfo;
-
-typedef struct OptionInfo {
-    const char* option_name;
-
-    Vector arg_infos;
-} OptionInfo;
 
 typedef enum State {
     SEARCHING,
@@ -159,9 +139,20 @@ uint write_out_flag_data(const char* output_filename);
 #define ATOM_FP__OPTIONS_COUNT_NAME         "COUNT"
 
 #define ATOM_FP__FLAG_INFO_STRUCT_NAME      "FlagInfo"
-#define ATOM_FP__FLAG_INFO_INSTANCE_NAME    "flag_info"
-#define ATOM_FP__FLAG_INFO_STRUCT_STR_NAME  "flag_name"
-#define ATOM_FP__FLAG_INFO_STRUCT_DEF_NAME  "default_value"
+#define ATOM_FP__FLAG_INFO_INSTANCE_NAME    "ATOM_CT__FLAGINFO"
+#define ATOM_FP__FLAG_INFO_STRING_NAME      "flag_name"
+#define ATOM_FP__FLAG_INFO_DEFAULT_VAL_NAME "default_value"
+
+#define ATOM_FP__OPTION_INFO_STRUCT_NAME    "OptionInfo"
+#define ATOM_FP__OPTION_INFO_INSTANCE_NAME  "ATOM_CT__OPTIONINFO"
+#define ATOM_FP__OPTION_INFO_NAME_NAME      "option_name"
+#define ATOM_FP__OPTION_INFO_VECTOR_NAME    "arg_infos"
+#define ATOM_FP__STATIC_NAME_PREFIX         "Static"
+
+#define ATOM_FP__ARG_INFO_STRUCT_NAME       "OptionArgInfo"
+#define ATOM_FP__ARG_INFO_NAME_NAME         "arg_name"
+#define ATOM_FP__ARG_INFO_TYPE_NAME         "type"
+#define ATOM_FP__ARG_INFO_OPTIONS_NAME      "arg_options"
 
 #define ATOM_FP__MAX_STR_PRINT_PREVIEW      15
 

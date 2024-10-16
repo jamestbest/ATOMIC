@@ -7,19 +7,21 @@
 #include "parserr.h"
 #include "../Lexer/Lexer.h"
 
+#include <Flag_shared.h>
+
 static bool is_valid_index(ShuntData data, uint index);
 
-static TPToken* current(ShuntData data);
-static TPToken* peek(ShuntData data);
-static TPToken* consume(ShuntData data);
+static Token* current(ShuntData data);
+static Token* peek(ShuntData data);
+static Token* consume(ShuntData data);
 
 static bool expect(ShuntData data, TokenType type);
 
-static STATE get_next_state(STATE current_state, TPToken *current_t);
+static STATE get_next_state(STATE current_state, Token *current_t);
 
-static bool c_is_valid_expr_cont(TPToken *current_t, STATE current_state);
+static bool c_is_valid_expr_cont(Token *current_t, STATE current_state);
 
-static Node* form_operator_node(TPToken* op_token, Stack *output_s);
+static Node* form_operator_node(Token* op_token, Stack *output_s);
 
 static void update_data(ShuntData data, ShuntRet ret);
 
@@ -31,7 +33,7 @@ static void print_node_stack(Stack *output_s);
 
 // function to determine if the current token is a valid continuation of the
 //  expression given the current state
-bool c_is_valid_expr_cont(TPToken *current_t, STATE current_state) {
+bool c_is_valid_expr_cont(Token *current_t, STATE current_state) {
     switch (current_state) {
         case EXPECTING_START:
         case EXPECTING_LEFT:
@@ -43,7 +45,7 @@ bool c_is_valid_expr_cont(TPToken *current_t, STATE current_state) {
     }
 }
 
-STATE get_next_state(STATE current_state, TPToken *current_t) {
+STATE get_next_state(STATE current_state, Token *current_t) {
     // assuming the current state was given a valid value
     switch (current_state) {
         case EXPECTING_START:
@@ -221,11 +223,11 @@ int get_pres(ATOM_CT__LEX_OPERATORS_ENUM operator, TokenType token_type) {
     assert(false);
 }
 
-int get_token_pres(TPToken* token) {
+int get_token_pres(Token* token) {
     return get_pres(token->data.enum_pos, token->type);
 }
 
-ASS get_token_ass(TPToken* token) {
+ASS get_token_ass(Token* token) {
     return get_ass(token->data.enum_pos, token->type);
 }
 
@@ -239,7 +241,7 @@ ShuntRet parse_subroutine_call_arg(ShuntData data) {
 Node* parse_subroutine_call_arguments(ShuntData data) {
     Node* argsNode = create_parent_node(EXPRESSION, SUB_CALL_ARGS,NULL);
 
-    TPToken* c;
+    Token* c;
     if (c = current(data), !c || c->type == PAREN_CLOSE) {
         return argsNode;
     }
@@ -262,7 +264,7 @@ Node* parse_subroutine_call_arguments(ShuntData data) {
 Node* parse_subroutine_call(ShuntData data) {
     Node* funcNode = create_parent_node(EXPRESSION, SUB_CALL,NULL);
 
-    TPToken* func_name = consume(data);
+    Token* func_name = consume(data);
     consume(data); //eat the (
 
     Node* args = parse_subroutine_call_arguments(data);
@@ -279,7 +281,7 @@ Node* parse_subroutine_call(ShuntData data) {
     return funcNode;
 }
 
-void parse_identifier(ShuntData data, TPToken* next, Stack* output_s) {
+void parse_identifier(ShuntData data, Token* next, Stack* output_s) {
     /*  Could be an identifier or a function call
      *      - Identifier: push to the output q
      *      - Function call: need to shunt the arguments
@@ -300,10 +302,10 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
 
     STATE c_state = EXPECTING_START;
 
-    const bool expr_dbg = flag_get(ATOM_CT__FLAG_EXPR_DBG);
-    const bool verbose_expr_dbg = flag_get(ATOM_CT__FLAG_VEXPR_DBG);
+    const bool expr_dbg = flag_get_value(ATOM_CT__FLAG_EXPR_DBG);
+    const bool verbose_expr_dbg = flag_get_value(ATOM_CT__FLAG_VEXPR_DBG);
 
-    TPToken* c;
+    Token* c;
     while (c = current(data), c_is_valid_expr_cont(c, c_state)) {
         if (verbose_expr_dbg) {
             print_token_stack(&operator_s);
@@ -331,7 +333,7 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
             case OP_ASSIGN:
             case OP_ARITH_ASSIGN:
             case OP_UN_POST: {
-                TPToken* o2;
+                Token* o2;
                 consume(data);
                 while (o2 = stack_peek(&operator_s), o2 && !(o2->type == PAREN_OPEN || o2->type == BRACKET_OPEN) &&
                         (get_token_pres(o2) < get_token_pres(c) ||
@@ -347,7 +349,7 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
                 stack_push(&operator_s, consume(data));
                 break;
             case PAREN_CLOSE: {
-                TPToken* o1;
+                Token* o1;
 
                 while (o1 = stack_peek(&operator_s), o1 && o1->type != PAREN_OPEN) {
                     Node* op_node = form_operator_node(stack_pop(&operator_s), &output_s);
@@ -375,7 +377,7 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
                  *          3. if there isn't then throw an error for empty bracket expression
                  *          4. else add it to the Node and pop the BRACKET_OPEN, add result to output
                  */
-                TPToken* o1;
+                Token* o1;
                 while (o1 = stack_peek(&operator_s), o1 && o1->type != BRACKET_OPEN) {
                     Node* op_node = form_operator_node(stack_pop(&operator_s), &output_s);
                     stack_push(&output_s, op_node);
@@ -386,7 +388,7 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
                         assert(false);
                 }
 
-                TPToken* l_bracket = stack_peek(&operator_s);
+                Token* l_bracket = stack_peek(&operator_s);
 
                 if (!l_bracket || l_bracket->type != BRACKET_OPEN) {
                     assert(false);
@@ -430,7 +432,7 @@ shunt_end_of_while:
     }
 
     while (!stack_empty(&operator_s)) {
-        TPToken* o1 = stack_peek(&operator_s);
+        Token* o1 = stack_peek(&operator_s);
         if (o1->type == PAREN_OPEN) {
             assert(false); //[[todo]] error
         }
@@ -453,7 +455,7 @@ shunt_end_of_while:
     return (ShuntRet){ret, t_pos, SUCCESS};
 }
 
-Node* form_un_op_node(TPToken* op_token, Stack* output_s) {
+Node* form_un_op_node(Token* op_token, Stack* output_s) {
     Node* child = stack_pop(output_s);
 
     if (!child) {
@@ -467,7 +469,7 @@ Node* form_un_op_node(TPToken* op_token, Stack* output_s) {
     return op_node;
 }
 
-Node* form_bin_op_node(TPToken* op_token, Stack* output_s) {
+Node* form_bin_op_node(Token* op_token, Stack* output_s) {
     Node* r_expr = stack_pop(output_s);
     Node* l_expr = stack_pop(output_s);
 
@@ -485,11 +487,11 @@ Node* form_bin_op_node(TPToken* op_token, Stack* output_s) {
     return op_node;
 }
 
-Node* form_tri_op_node(TPToken* op_token, Stack* output_s) {
+Node* form_tri_op_node(Token* op_token, Stack* output_s) {
     assert(false);
 }
 
-Node* form_operator_node(TPToken* op_token, Stack *output_s) {
+Node* form_operator_node(Token* op_token, Stack *output_s) {
     switch (op_token->type) {
         case OP_UN: //[[maybe]] is this still needed, has the lexer removed this type yet?
         case OP_UN_PRE:
@@ -513,7 +515,7 @@ bool is_valid_index(ShuntData data, uint index) {
     return index < data.tokens->pos;
 }
 
-TPToken* current(ShuntData data) {
+Token* current(ShuntData data) {
     if (!is_valid_index(data, *data.t_pos)) {
         return NULL;
     }
@@ -521,7 +523,7 @@ TPToken* current(ShuntData data) {
     return arr_get(data.tokens, *data.t_pos);
 }
 
-TPToken* peek(ShuntData data) {
+Token* peek(ShuntData data) {
     if (!is_valid_index(data, (*data.t_pos) + 1)) {
         return NULL;
     }
@@ -529,7 +531,7 @@ TPToken* peek(ShuntData data) {
     return arr_get(data.tokens, *data.t_pos + 1);
 }
 
-TPToken* consume(ShuntData data) {
+Token* consume(ShuntData data) {
     if (!is_valid_index(data, *data.t_pos)) {
         return NULL;
     }
@@ -538,7 +540,7 @@ TPToken* consume(ShuntData data) {
 }
 
 bool expect(ShuntData data, TokenType type) {
-    TPToken* c = current(data);
+    Token* c = current(data);
 
     if (!c) return false;
 
@@ -558,8 +560,8 @@ void print_token_stack(Stack* operator_stack) {
         return;
     }
 
-    for (int i = 0; i < operator_stack->ptr; ++i) {
-        TPToken* tok = operator_stack->arr[i];
+    for (uint i = 0; i < operator_stack->ptr; ++i) {
+        Token* tok = operator_stack->arr[i];
         printf("[%d]: ", i);
         print_token_ln(tok);
         printf("\n");

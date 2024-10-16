@@ -12,7 +12,7 @@
 
 typedef struct TokenWrapper {
     uint errCode;
-    TPToken token;
+    Token token;
 } TokenWrapper;
 
 static Array* btokens;
@@ -21,21 +21,21 @@ static int t_pos;
 
 static bool is_valid_index(int index);
 
-static TPToken* justify(void);
-static TPToken* peek(void);
-static TPToken* consume(void);
-static TPToken* current(void);
+static Token* justify(void);
+static Token* peek(void);
+static Token* consume(void);
+static Token* current(void);
 
 static bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator);
 static bool is_skippable(TokenType type);
 
-static void fold_operator(TPToken* operator);
+static void fold_operator(Token* operator);
 
-static TokenWrapper fold_mult(TPToken *operator);
-static TokenWrapper fold_incdec(TPToken* operator);
-static TokenWrapper fold_plusminus(TPToken* operator);
-static TokenWrapper fold_pointer(TPToken* operator);
-static TokenWrapper fold_ampersand(TPToken* token);
+static TokenWrapper fold_mult(Token *operator);
+static TokenWrapper fold_incdec(Token* operator);
+static TokenWrapper fold_plusminus(Token* operator);
+static TokenWrapper fold_pointer(Token* operator);
+static TokenWrapper fold_ampersand(Token* token);
 
 uint fold(Array* base_tokens, Array* folded_tokens) {
     t_pos = 0;
@@ -43,7 +43,7 @@ uint fold(Array* base_tokens, Array* folded_tokens) {
     ftokens = folded_tokens;
 
     while (t_pos < base_tokens->pos) {
-        TPToken* c = current();
+        Token* c = current();
 
         if (is_arith_operator(c) && is_foldable(c->data.enum_pos)) {
             // [[maybe]] just pass the current token and then edit it within the function
@@ -85,7 +85,7 @@ bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator) {
     }
 }
 
-void fold_operator(TPToken* operator) {
+void fold_operator(Token* operator) {
     TokenWrapper toAdd;
 
     switch (operator->data.enum_pos) {
@@ -136,7 +136,7 @@ bool is_lit(TokenType type) {
 // todo need to unify the is_un / is_bin checks & find a better way that these
 //  specific checks for ']' and ')' etc
 
-TokenWrapper fold_mult(TPToken* operator) {
+TokenWrapper fold_mult(Token* operator) {
     /*
      *      Could be a dereference e.g.   *p
      *      Could be a binary multiplication  e.g.  p * q
@@ -148,7 +148,7 @@ TokenWrapper fold_mult(TPToken* operator) {
      *      binary mult only found AFTER_LIT or AFTER_PARENT_CLOSE   --don't need to verify that it is between LITs
      */
 
-    const TPToken* prev = justify();
+    const Token* prev = justify();
 
     const bool is_bin = prev && (is_lit(prev->type) || prev->type == PAREN_CLOSE || prev->type == BRACKET_CLOSE || prev->type == OP_UN_POST);
 
@@ -164,14 +164,14 @@ TokenWrapper fold_mult(TPToken* operator) {
     return (TokenWrapper){0, *operator};
 }
 
-TokenWrapper fold_incdec(TPToken* operator) {
+TokenWrapper fold_incdec(Token* operator) {
     /*
      * This is the `++` and `--` operators could be
      *      post e.g. myVar++
      *      pre e.g. ++myVar
      */
 
-    TPToken* next = peek();
+    Token* next = peek();
 
     // [[maybe]] currently this means that the prefix is of higher pres?
 
@@ -185,14 +185,14 @@ TokenWrapper fold_incdec(TPToken* operator) {
     return (TokenWrapper){SUCCESS, *operator};
 }
 
-TokenWrapper fold_plusminus(TPToken* operator) {
+TokenWrapper fold_plusminus(Token* operator) {
     /*
      * This is the `-` and `+` operators could be
      *      unary operator e.g. +myVar, -myVar, myVar + /-/myOtherVar
      *      binary operator e.g. myVar /+/ -myOtherVar
      */
 
-    TPToken* next = peek();
+    Token* next = peek();
 
     if (operator->data.enum_pos == MINUS && next) {
         TokenType ntype = peek()->type;
@@ -215,7 +215,7 @@ TokenWrapper fold_plusminus(TPToken* operator) {
         }
     }
 
-    TPToken* prev = justify();
+    Token* prev = justify();
 
     // bool is_bin = prev && (is_terminal(prev) || prev->type == CURLY_CLOSE) && next && (is_terminal(next) || next->type == CURLY_OPEN);
     // bool is_un = !prev || (is_arith_operator(prev) && prev->type != OP_UN_POST);
@@ -226,7 +226,7 @@ TokenWrapper fold_plusminus(TPToken* operator) {
     return (TokenWrapper){SUCCESS, *operator};
 }
 
-TokenWrapper fold_pointer(TPToken* operator) {
+TokenWrapper fold_pointer(Token* operator) {
     /*
      * This is the `>` value it could be
      *      pointer modifier e.g.  myVar: >>>i4;  //this would be 3 levels of pointer but two operators >> and >
@@ -234,13 +234,13 @@ TokenWrapper fold_pointer(TPToken* operator) {
      *      Binary operator e.g. myVar << myOtherVar
      */
 
-    const TPToken* previous = justify();
+    const Token* previous = justify();
 
     if (previous->type == TYPE_SET) {
         //This is a pointer modifier, calculate the level of
         uint ptr_level = (operator->data.enum_pos == SHR) + 1;
 
-        TPToken* next;
+        Token* next;
         while (next = peek(), next->data.enum_pos == SHR || next->data.enum_pos == MORE) {
             ptr_level += (next->data.enum_pos == SHR) + 1;
             consume();
@@ -250,7 +250,7 @@ TokenWrapper fold_pointer(TPToken* operator) {
             return (TokenWrapper){lexerr(LEXERR_PTR_OFFSET_OUT_OF_RANGE, operator->pos, ptr_level)};
         }
 
-        TPToken* type = consume();
+        Token* type = consume();
 
         if (type->type != TYPE) {
             return (TokenWrapper){lexerr(LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET, type->pos, type)};
@@ -266,13 +266,13 @@ TokenWrapper fold_pointer(TPToken* operator) {
     return (TokenWrapper){SUCCESS, *current()};
 }
 
-TokenWrapper fold_ampersand(TPToken* operator) {
+TokenWrapper fold_ampersand(Token* operator) {
     /* This could be the bitwise and binary operator e.g. a & b
      *  or this could be the address unary operator e.g. &a
      */
 
-    TPToken* prev = justify();
-    TPToken* next = peek();
+    Token* prev = justify();
+    Token* next = peek();
 
     bool is_bin = prev && (is_terminal(prev) || prev->type == CURLY_CLOSE) && next && (is_terminal(next) || next->type == CURLY_OPEN);
 
@@ -294,7 +294,7 @@ bool is_valid_index(int index) {
 }
 
 // todo: remove confungry like in parser
-TPToken* confungry(int offset, bool consume, bool ignore_whitespace,
+Token* confungry(int offset, bool consume, bool ignore_whitespace,
                  bool ignore_newline) {
     if (offset == 0) {
         return arr_get(btokens, t_pos);
@@ -329,7 +329,7 @@ TPToken* confungry(int offset, bool consume, bool ignore_whitespace,
             return NULL;
         }
 
-        const TPToken t = token_arr_get(btokens, t_pos + current_offset);
+        const Token t = token_arr_get(btokens, t_pos + current_offset);
         if (is_whitespace_tkn(t.type)) {
             continue;
         }
@@ -345,22 +345,22 @@ TPToken* confungry(int offset, bool consume, bool ignore_whitespace,
     return arr_get(btokens, t_pos + current_offset);
 }
 
-TPToken* peer(int amount) {
+Token* peer(int amount) {
     return confungry(amount, false, true, false);
 }
 
-TPToken* peek(void) {
+Token* peek(void) {
     return peer(1);
 }
 
-TPToken* justify(void) {
+Token* justify(void) {
     return peer(-1);
 }
 
-TPToken* consume(void) {
+Token* consume(void) {
     return confungry(1, true, true, false);
 }
 
-TPToken* current(void) {
+Token* current(void) {
     return arr_get(btokens, t_pos);
 }

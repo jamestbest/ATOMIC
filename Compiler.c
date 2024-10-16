@@ -20,7 +20,7 @@
  *      HF
  */
 
-ARRAY_ADD(TPToken, token)
+ARRAY_ADD(Token, token)
 ARRAY_ADD(Node, node)
 
 static void free_tokens(Array* tokens);
@@ -55,7 +55,7 @@ CompileRet compile(const char* entry_point, const char* out_format, const char* 
 }
 
 CompileRet compile_file(const char* entry_point, const char* out_format, FILE* fp) {
-    Array base_tokens = arr_create(sizeof (TPToken));
+    Array base_tokens = arr_create(sizeof (Token));
     Array folded_tokens;
     // [[maybe]] this is an array of structs, could become a struct of arrays:
     //  Is it more likely that the data of consecutive structs is accessed
@@ -74,7 +74,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
         return (CompileRet) {LEXERR, NULL};
     }
 
-    folded_tokens = arr_construct(sizeof (TPToken), base_tokens.pos);
+    folded_tokens = arr_construct(sizeof (Token), base_tokens.pos);
     uint foldRet = fold(&base_tokens, &folded_tokens);
     // this is here for debug purposes, it should be after error checking in later versions
     print_tokens_with_flag_check(&folded_tokens, &lines, "\n\nFOLDED TOKENS");
@@ -123,7 +123,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 
 void free_tokens(Array* tokens) {
     for (uint i = 0; i < tokens->pos; i++) {
-        const TPToken t = token_arr_get(tokens, i);
+        const Token t = token_arr_get(tokens, i);
         if (type_needs_free(t.type)) {
             free(t.data.ptr);
         }

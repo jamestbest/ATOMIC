@@ -15,6 +15,8 @@ typedef struct {
     size_t capacity;
 } Vector;
 
+static const Vector VEC_ERR;
+
 typedef struct VecRet {
     void* data;
     uint retCode;

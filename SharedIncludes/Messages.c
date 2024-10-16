@@ -49,7 +49,7 @@ __attribute__((noreturn)) void usage(const char* message, ...) {
     exit(EXIT_FAILURE);
 }
 
-__attribute__((noreturn)) void panic(const char* message, ...) {
+ __attribute__((noreturn)) void panic(const char* message, ...) {
     putz(C_RED"PANIC: "C_RST);
 
     va_list args;

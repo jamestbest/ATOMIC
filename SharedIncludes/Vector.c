@@ -8,7 +8,7 @@
 #include <malloc.h>
 #include <string.h>
 
-const Vector VEC_ERR = (Vector){
+const static Vector VEC_ERR = (Vector){
     .arr = NULL,
     .capacity = -1,
     .pos = -1
@@ -100,7 +100,11 @@ VecRet vector_get(const Vector* vec, const uint index) {
 }
 
 void* vector_get_unsafe(const Vector* vec, const uint index) {
-    return vector_get(vec, index).data;
+    if (!vector_verify(vec)) {
+        return NULL;
+    }
+
+    return vec->arr[index];
 }
 
 void vector_destroy(Vector* vec) {

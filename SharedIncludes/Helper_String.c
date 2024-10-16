@@ -14,8 +14,6 @@ LenSize len_basic(const char *string, const int from, const int offset, const ch
         i++;
     }
 
-    int* a = &i;
-    int b = 12 && &i;
     return (LenSize){length, i};
 }
 
