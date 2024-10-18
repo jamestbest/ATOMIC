@@ -149,7 +149,8 @@ int main(const int argc, char** argv) {
         error("Error during writing process\n");
     }
 
-    vector_destroy(&flagInfos);
+    vector_disseminate_destruction(&flagInfos);
+//    vector_disseminate_destruction(&optionInfos);
 }
 
 const char* translate_name_for_enum(const char* flag) {
@@ -258,7 +259,9 @@ void write_header_out(FILE* header) {
 }
 
 void write_c_out_preamble(FILE* c_file, const char* header_output_filename) {
-    fprintf(c_file, "#include \"%s.h\"\n\n", get_file_name(header_output_filename));
+    const char* file_name = get_file_name(header_output_filename);
+    fprintf(c_file, "#include \"%s.h\"\n\n", file_name);
+    free((void*)file_name);
 }
 
 void write_c_out_flag_info_data(FILE* c_file) {
@@ -601,7 +604,7 @@ FPToken lex_token(char* start) {
             l_pos += strlen(*type_res);
         } else {
             // if it is not a keyword then it is an identifier
-            char* ident = malloc(bytes);
+            char* ident = malloc(bytes + 1);
 
             if (!ident) {
                 panic("Malloc failed when allocating identifier");
@@ -669,6 +672,8 @@ uint lex_flag_file(FILE* file) {
         }
     }
 
+    buffer_destroy(&line_buffer);
+
     for (uint i = 0; i < tokens.pos; ++i) {
         const FPToken* tok = arr_get(&tokens, i);
         print_tptoken(tok);
@@ -679,25 +684,23 @@ uint lex_flag_file(FILE* file) {
 }
 
 FPToken* consume() {
-    if (p_pos >= tokens.pos) {
-        return NULL;
-    }
-
     return arr_get(&tokens, p_pos++);
 }
 
 FPToken* peek() {
-    if (p_pos + 1 >= tokens.pos) {
-        return NULL;
-    }
-
     return arr_get(&tokens, p_pos + 1);
 }
 
-FPToken* expect(const TokenType type) {
-    if (p_pos >= tokens.pos) return NULL;
+FPToken* current() {
+    return arr_get(&tokens, p_pos);
+}
 
-    if (((FPToken*)arr_get(&tokens, p_pos))->type != type) {
+FPToken* expect(const TokenType type) {
+    FPToken* tok = current();
+
+    if (!tok) return NULL;
+
+    if (tok->type != type) {
         return NULL;
     }
 
@@ -843,7 +846,7 @@ uint parse_keyword_arg() {
             return EXIT_FAILURE;
         }
 
-        const FPToken* n = peek();
+        const FPToken* n = current();
         if (n) {
             switch (n->type) {
                 case FP_LIT_INT:
@@ -853,6 +856,7 @@ uint parse_keyword_arg() {
                         token_types_str[n->type],
                         last_option->option_name
                     );
+                default:;
             }
         }
     }
@@ -926,7 +930,7 @@ void print_all_flaginfos(const Vector* vec) {
 }
 
 void print_arg_info(const OptionArgInfo* info) {
-    printf("`%s`: `%s`", info->arg_name, ATOM_FP__TYPES_STR[info->type]);
+    printf("%s`%s`: `%s`", info->repeated ? C_BLU"REPEATED "C_RST : "", info->arg_name, ATOM_FP__TYPES_STR[info->type]);
 
     if (info->arg_options.pos == 0) {
         return;

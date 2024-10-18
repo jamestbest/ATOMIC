@@ -3,10 +3,12 @@ project(ATOMIC C)
 
 set(CMAKE_C_STANDARD 99)
 
-#add_link_options(-fsanitize=undefined)
-
+#add_link_options(-fsanitize=undefined,address)
+#
 add_compile_options(-Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self
-        -Wno-unused-parameter -ggdb3 -pedantic -pedantic-errors -Wswitch-enum -Wno-unused-function -Wno-pedantic)
+        -Wno-unused-parameter -ggdb3 -pedantic -pedantic-errors -Wswitch-enum -Wno-unused-function -Wno-pedantic
+#        -fsanitize=undefined,address
+)
 
 add_executable(ATOMICLI
         Compiler.c
@@ -44,7 +46,7 @@ add_executable(ATOMICLI
 )
 
 target_compile_options(ATOMICLI BEFORE PUBLIC -include ${CMAKE_SOURCE_DIR}/libraries/hadron.h)
-target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a)
+target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a m) # link with hadron and the math lib
 target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/FLAG-PREPROCESSOR)
 target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/SharedIncludes)
 

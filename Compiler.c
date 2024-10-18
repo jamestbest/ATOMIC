@@ -14,6 +14,8 @@
 
 #include "SharedIncludes/Flag_shared.h"
 
+#include <string.h>
+
 /*  TODO
  *      UPDATE ALL VECTORs TO VECs
  *      CHECK WHAT THE ISSUE WITH hadron is

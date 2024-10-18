@@ -11,6 +11,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <malloc.h>
+#include <stdlib.h>
+
+#include <math.h>
 
 void* HADRON__MALLOC(size_t bytes, const char* file_name, const char* func_sig, const uint32_t line_number);
 void* HADRON__REALLOC(void* ptr, size_t bytes, const char* file_name, const char* func_sig, const uint32_t line_number);

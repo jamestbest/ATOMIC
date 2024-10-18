@@ -7,7 +7,10 @@
 #include "SharedIncludes/Helper_File.h"
 #include "SharedIncludes/Flag_shared.h"
 
+#include <errno.h>
 #include <Messages.h>
+#include <stdlib.h>
+#include <string.h>
 
 char* ATOM_VR__CLI_ENTRY_POINT = NULL;
 char* ATOM_VR__CLI_OUTPUT_NAME = ATOM_CT__CLI_DEFAULT_OUT;

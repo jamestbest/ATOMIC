@@ -7,6 +7,9 @@
 #include "../Flags.h"
 #include "Colours.h"
 
+#include <string.h>
+#include <stdlib.h>
+
 void flag_get_check_index(const size_t index) {
     if (index >= ATOM_CT__FLAG_COUNT) {
         printf("Accessing flag info out of range: `%zu` OOR for size `%int`", index, ATOM_CT__FLAG_COUNT);

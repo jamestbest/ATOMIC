@@ -6,6 +6,8 @@
 
 #include "Lexer.h"
 
+#include <stdlib.h>
+
 /* This is a lexing stage that will use the base_tokens around the operators to try and
  * find the correct version of an operator e.g. * could be multiply or dereference
  */

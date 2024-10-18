@@ -4,6 +4,9 @@
 
 #include "Lexer.h"
 
+#include <string.h>
+#include <stdlib.h>
+
 // [[todo]] nav is not a type it is a value like `true` or `false` it is a null ptr
 
 static uint lex_line(const Buffer *line);
