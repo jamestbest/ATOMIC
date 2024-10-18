@@ -2,7 +2,7 @@
 // Created by jamescoward on 02/06/2024.
 //
 
-#include "lexerr.h"
+#include "Lexerr.h"
 
 char* lexerr_process_char(char a, char buff[2]) {
     if (a == '\n') return "\\n";
@@ -13,7 +13,7 @@ char* lexerr_process_char(char a, char buff[2]) {
 }
 
 void highlight_current_line_err(Position pos) {
-    highlight_line_err(pos, llines->arr[pos.start_line - 1]);
+    highlight_line_err(pos, llines->arr[pos.start_line - 1], -1);
 }
 
 uint lexerr(const Lexerrors errorCode, const Position pos, ...) {
@@ -69,14 +69,17 @@ uint lexerr(const Lexerrors errorCode, const Position pos, ...) {
             print_current_line = false;
             break;
         }
-        case LEXERR_PTR_OFFSET_OUT_OF_RANGE:
+        case LEXERR_PTR_OFFSET_OUT_OF_RANGE: {
             int offset = va_arg(args, int);
             printf(ATOM_CT__LEXERR_PTR_OFFSET_OUT_OF_RANGE, offset);
             break;
-        case LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET:
+        }
+        case LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET: {
             Token* t = va_arg(args, Token*);
-            printf(ATOM_CT__LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET, get_token_type_string(t->type));
+            printf(ATOM_CT__LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET,
+                   get_token_type_string(t->type));
             break;
+        }
     }
 
     if (print_current_line) highlight_current_line_err(pos);

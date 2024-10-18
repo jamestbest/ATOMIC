@@ -11,9 +11,8 @@
 #include "Lexer/Tokens.h"
 
 
-void highlight_line_err(Position pos, const char* line);
-void highlight_line_start_and_error(Token* parent, Token* issue,
-                                    const Vector* lines);
+void highlight_line_err(Position pos, char* line, const uint min_pos_printout);
+void highlight_line_start_and_error(Token* parent, Token* issue, const Vector* lines);
 
 #define FAIL    -1
 #define SUCCESS 0
@@ -46,7 +45,8 @@ void highlight_line_start_and_error(Token* parent, Token* issue,
 //Warnings
 #define PWarn(WarningMsg, ...) printf(WARN_BASE WarningMsg , ##__VA_ARGS__)
 
-#define ATOM_CT__CLI_WRN_OPT_FLG_INVLD  "Invalid flag given \"%s\"\n"
+#define ATOM_CT__CLI_WRN_FLAG_INVALID   "Invalid flag given \"%s\"\n"
+#define ATOM_CT__CLI_WRN_OPT_INVALID    "Invalid option given \"%s\"\n"
 
 #define ATOM_CT__CLI_WRN_OPT_ARG_COUNT  "Option \"-%s\" only acts on 1 argument, ignoring others\n"
 #define ATOM_CT__CLI_WRN_OPT_ARG_INVLD  "Option \"-%s\" given invalid argument \"%s\". Ignoring\n"

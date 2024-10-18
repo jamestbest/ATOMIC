@@ -7,8 +7,14 @@
 #include "Lexer/OpFolder.h"
 #include "SharedIncludes/Helper_File.h"
 
-#include "../hadron/hadron.h"
 #include "SharedIncludes/Array.h"
+
+#include "Parser/StaticVerification.h"
+#include "Commons.h"
+
+#include "SharedIncludes/Flag_shared.h"
+
+#include <string.h>
 
 /*  TODO
  *      UPDATE ALL VECTORs TO VECs
@@ -29,13 +35,12 @@ static void free_tokens(Array* tokens);
 //[[TODO]] IF ANYTHING FROM AN ARRAY IS REMOVED ALL EXTERNAL POINTERS WILL BE OFFSET INCORRECTLY
 
 CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, Vector files) {
-
     assert(ATOM_CT__LEX_KEYWORD_ENUM_COUNT == ATOM_CT__LEX_KEYWORDS.elem_count);
     assert(strcmp(ATOM_CT__LEX_KEYWORDS_RAW[IF], "if") == 0);
 
     //for each file
     for (uint i = 0; i < files.pos; i++) {
-        const char* filename = vec_get(&files, i);
+        const char* filename = vector_get_unsafe(&files, i);
 
         FILE* fp = open_file(cwd, filename, "r");
 
@@ -59,7 +64,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     //  Or that the (data/type) of a structure is access more? - Printing will do this
     //  For now it will stay as AOS
 
-    Vector lines = vec_create(BUFF_MIN);
+    Vector lines = vector_create(BUFF_MIN);
 
     uint lexRet = lex(fp, &base_tokens, &lines);
     print_tokens_with_flag_check(&base_tokens, &lines, "\n\nBASE TOKENS");
@@ -98,15 +103,22 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 
     print_ast_with_flag_check(parseRet.node);
 
+    Scope* global_scope = generate_global_scope(parseRet.node);
+
+    if (flag_get_value(ATOM_CT__FLAG_SCOPE_OUT))
+        print_scope(global_scope);
+
+    verify_scope(parseRet.node, global_scope, parseRet.node);
+
+    print_ast_with_flag_check(parseRet.node);
+
+    // verify_types(parseRet.node, global_scope, parseRet.node);
+
     //...
-    vec_disseminate_destruction(&lines);
+    vector_disseminate_destruction(&lines);
     free_tokens(&folded_tokens);
 
     free_node_rec(parseRet.node);
-
-    HADRON_EXPAND = flag_get(ATOM_CT__FLAG_HADRON_EXPAND);
-
-    hadron_verify_two();
 
     return (CompileRet) {SUCCESS, NULL};
 }
@@ -122,15 +134,15 @@ void free_tokens(Array* tokens) {
 }
 
 void print_ast_with_flag_check(Node* tl_node) {
-    if (flag_get(ATOM_CT__FLAG_AST_OUT)) {
+    if (flag_get_value(ATOM_CT__FLAG_AST_OUT)) {
         print_top_level_node(tl_node);
     }
 }
 
 void print_tokens_with_flag_check(Array* tokens, Vector* lines, const char* print_header) {
-    const bool vltok = flag_get(ATOM_CT__FLAG_VLTOK_OUT);
-    const bool vtok = flag_get(ATOM_CT__FLAG_VTOK_OUT);
-    const bool tok = flag_get(ATOM_CT__FLAG_TOK_OUT);
+    const bool vltok = flag_get_value(ATOM_CT__FLAG_VLTOK_OUT);
+    const bool vtok = flag_get_value(ATOM_CT__FLAG_VTOK_OUT);
+    const bool tok = flag_get_value(ATOM_CT__FLAG_TOK_OUT);
 
     if (vltok || vtok || tok) {
         puts(print_header);

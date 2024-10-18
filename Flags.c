@@ -1,93 +1,152 @@
-//
-// Created by jamescoward on 08/11/2023.
-//
-
 #include "Flags.h"
 
-bool ATOM_VR__FLAGS[ATOM_CT__FLAG_COUNT];
+const FlagInfo ATOM_CT__FLAGINFO[ATOM_CT__FLAG_COUNT] = {
+    [ATOM_CT__FLAG_AST_OUT] = (FlagInfo){.flag_name= "AST-OUT", .default_value= false},
+    [ATOM_CT__FLAG_EXPR_DBG] = (FlagInfo){.flag_name= "EXPR-DBG", .default_value= false},
+    [ATOM_CT__FLAG_FLAGS_OUT] = (FlagInfo){.flag_name= "FLAGS-OUT", .default_value= false},
+    [ATOM_CT__FLAG_HADRON_VERIFY] = (FlagInfo){.flag_name= "HADRON-VERIFY", .default_value= false},
+    [ATOM_CT__FLAG_SCOPE_OUT] = (FlagInfo){.flag_name= "SCOPE-OUT", .default_value= false},
+    [ATOM_CT__FLAG_TOK_OUT] = (FlagInfo){.flag_name= "TOK-OUT", .default_value= false},
+    [ATOM_CT__FLAG_VEXPR_DBG] = (FlagInfo){.flag_name= "VEXPR-DBG", .default_value= false},
+    [ATOM_CT__FLAG_VLTOK_OUT] = (FlagInfo){.flag_name= "VLTOK-OUT", .default_value= false},
+    [ATOM_CT__FLAG_VTOK_OUT] = (FlagInfo){.flag_name= "VTOK-OUT", .default_value= false},
+};
 
-int flag_int_to_index(long long int fi) {
-    switch (fi) {
-        //%%FLAG INDEX SWITCH%% FLAG PREPROCESSOR GENERATED SWITCH CASE SHOULD APPEAR HERE
-		case ATOM_CT__FLAG_EXPR_DBG_HASH:
-			return ATOM_CT__FLAG_EXPR_DBG;
-		case ATOM_CT__FLAG_VEXPR_DBG_HASH:
-			return ATOM_CT__FLAG_VEXPR_DBG;
-		case ATOM_CT__FLAG_TOK_OUT_HASH:
-			return ATOM_CT__FLAG_TOK_OUT;
-		case ATOM_CT__FLAG_VTOK_OUT_HASH:
-			return ATOM_CT__FLAG_VTOK_OUT;
-		case ATOM_CT__FLAG_VLTOK_OUT_HASH:
-			return ATOM_CT__FLAG_VLTOK_OUT;
-		case ATOM_CT__FLAG_AST_OUT_HASH:
-			return ATOM_CT__FLAG_AST_OUT;
-		case ATOM_CT__FLAG_FLAGS_OUT_HASH:
-			return ATOM_CT__FLAG_FLAGS_OUT;
-		case ATOM_CT__FLAG_HADRON_EXPAND_HASH:
-			return ATOM_CT__FLAG_HADRON_EXPAND;
-		default:
-			return -1;
-        //%%END%%
-    }
-}
+bool ATOM_VR__FLAGS[ATOM_CT__FLAG_COUNT] = {
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+};
 
-char* flag_index_to_string(int index) {
-    switch(index) {
-        //%%FLAG STR SWITCH%%
-		case ATOM_CT__FLAG_EXPR_DBG:
-			return ATOM_CT__FLAG_EXPR_DBG_STR;
-		case ATOM_CT__FLAG_VEXPR_DBG:
-			return ATOM_CT__FLAG_VEXPR_DBG_STR;
-		case ATOM_CT__FLAG_TOK_OUT:
-			return ATOM_CT__FLAG_TOK_OUT_STR;
-		case ATOM_CT__FLAG_VTOK_OUT:
-			return ATOM_CT__FLAG_VTOK_OUT_STR;
-		case ATOM_CT__FLAG_VLTOK_OUT:
-			return ATOM_CT__FLAG_VLTOK_OUT_STR;
-		case ATOM_CT__FLAG_AST_OUT:
-			return ATOM_CT__FLAG_AST_OUT_STR;
-		case ATOM_CT__FLAG_FLAGS_OUT:
-			return ATOM_CT__FLAG_FLAGS_OUT_STR;
-		case ATOM_CT__FLAG_HADRON_EXPAND:
-			return ATOM_CT__FLAG_HADRON_EXPAND_STR;
-		default:
-			return "ERROR NO ENUM NAME";
-        //%%END%%
-    }
-}
+const StaticOptionInfo ATOM_CT__OPTIONINFO[ATOM_CT__OPTION_COUNT] = {
+	[ATOM_CT__OPTION_DEBUGLVL]= (StaticOptionInfo) {
+		.option_name= "DEBUGLVL",
+		.arg_info_count= 1,
+		.args= (StaticOptionArgInfo[]) {
+			{
+				.arg_name= "LVL",
+				.repeated= false,
+				.type= FP_TYPE_NATURAL,
+				.arg_option_count= 3,
+				.data= (OptionData[]) {
+					{.natural= 0},
+					{.natural= 1},
+					{.natural= 2},
+				},
+			},
+		},
+	},
+	[ATOM_CT__OPTION_E]= (StaticOptionInfo) {
+		.option_name= "E",
+		.arg_info_count= 1,
+		.args= (StaticOptionArgInfo[]) {
+			{
+				.arg_name= "Entry",
+				.repeated= false,
+				.type= FP_TYPE_STR,
+				.arg_option_count= 0,
+				.data= (OptionData[]) {
+				},
+			},
+		},
+	},
+	[ATOM_CT__OPTION_O]= (StaticOptionInfo) {
+		.option_name= "O",
+		.arg_info_count= 1,
+		.args= (StaticOptionArgInfo[]) {
+			{
+				.arg_name= "OUTPUT-FORMAT",
+				.repeated= false,
+				.type= FP_TYPE_STR,
+				.arg_option_count= 0,
+				.data= (OptionData[]) {
+				},
+			},
+		},
+	},
+	[ATOM_CT__OPTION_OUT]= (StaticOptionInfo) {
+		.option_name= "OUT",
+		.arg_info_count= 1,
+		.args= (StaticOptionArgInfo[]) {
+			{
+				.arg_name= "OUTPUT",
+				.repeated= true,
+				.type= FP_TYPE_STR,
+				.arg_option_count= 6,
+				.data= (OptionData[]) {
+					{.str= "AST"},
+					{.str= "FLAGS"},
+					{.str= "SCOPE"},
+					{.str= "TOK"},
+					{.str= "VLTOK"},
+					{.str= "VTOK"},
+				},
+			},
+		},
+	},
+	[ATOM_CT__OPTION_TEST]= (StaticOptionInfo) {
+		.option_name= "TEST",
+		.arg_info_count= 3,
+		.args= (StaticOptionArgInfo[]) {
+			{
+				.arg_name= "INP1-FOR",
+				.repeated= false,
+				.type= FP_TYPE_STR,
+				.arg_option_count= 0,
+				.data= (OptionData[]) {
+				},
+			},
+			{
+				.arg_name= "INP2-FOR",
+				.repeated= false,
+				.type= FP_TYPE_NATURAL,
+				.arg_option_count= 3,
+				.data= (OptionData[]) {
+					{.natural= 0},
+					{.natural= 5},
+					{.natural= 19},
+				},
+			},
+			{
+				.arg_name= "INP3-FOR",
+				.repeated= false,
+				.type= FP_TYPE_CHARACTER,
+				.arg_option_count= 3,
+				.data= (OptionData[]) {
+					{.character= 'a'},
+					{.character= 'b'},
+					{.character= 'c'},
+				},
+			},
+		},
+	},
+};
 
-int flag_to_index(char* flag) {
-    return flag_int_to_index(flag_to_int(flag));
-}
+typedef enum {
+	ATOM_CT__OPTION_DEBUGLVL_ARG_LVL,
+} ATOM_CT__OPTION_DEBUGLVL_ARGS_ENUM;
 
-bool flag_set(char* flagName, bool enable) {
-    int index = flag_to_index(flagName);
+typedef enum {
+	ATOM_CT__OPTION_E_ARG_Entry,
+} ATOM_CT__OPTION_E_ARGS_ENUM;
 
-    if (index == -1) {
-        return false;
-    }
+typedef enum {
+	ATOM_CT__OPTION_O_ARG_OUTPUT_FORMAT,
+} ATOM_CT__OPTION_O_ARGS_ENUM;
 
-    ATOM_VR__FLAGS[index] = enable;
-    return true;
-}
+typedef enum {
+	ATOM_CT__OPTION_OUT_ARG_OUTPUT,
+} ATOM_CT__OPTION_OUT_ARGS_ENUM;
 
-bool flag_set_from_idx(int index, bool enable) {
-    if (index == -1) {
-        return false;
-    }
+typedef enum {
+	ATOM_CT__OPTION_TEST_ARG_INP1_FOR,
+	ATOM_CT__OPTION_TEST_ARG_INP2_FOR,
+	ATOM_CT__OPTION_TEST_ARG_INP3_FOR,
+} ATOM_CT__OPTION_TEST_ARGS_ENUM;
 
-    ATOM_VR__FLAGS[index] = enable;
-    return true;
-}
-
-bool flag_get(enum ATOM_CT__FLAGS flag) {
-    return ATOM_VR__FLAGS[flag];
-}
-
-void print_flags(void) {
-    printf("\nFLAGS\n");
-    for (int i = 0; i < ATOM_CT__FLAG_COUNT - 1; i++) {
-        printf("|-%s : %s" C_RST "\n", flag_index_to_string(i), flag_get(i) == 1 ? C_GRN "True" : C_RED "False");
-    }
-    printf("`-%s : %s" C_RST "\n\n", flag_index_to_string(ATOM_CT__FLAG_COUNT - 1), flag_get(ATOM_CT__FLAG_COUNT - 1) == 1 ? C_GRN "True" : C_RED "False");
-}

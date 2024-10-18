@@ -8,6 +8,9 @@
 
 #include "Queue.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 static bool queue_resize_circular(Queue* queue, size_t new_elem_count, size_t new_size);
 static bool queue_resize_flat(Queue* queue, size_t new_elem_count, size_t new_size);
 

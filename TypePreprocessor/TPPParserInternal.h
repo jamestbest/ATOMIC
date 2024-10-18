@@ -1,0 +1,8 @@
+//
+// Created by james on 01/08/24.
+//
+
+#ifndef ATOMIC_TPPPARSERINTERNAL_H
+#define ATOMIC_TPPPARSERINTERNAL_H
+
+#endif // ATOMIC_TPPPARSERINTERNAL_H

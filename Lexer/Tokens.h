@@ -7,7 +7,6 @@
 
 #include "../Commons.h"
 
-
 #include "../SharedIncludes/Vector.h"
 #include "../SharedIncludes/Helper_String.h"
 #include "../SharedIncludes/Colours.h"
@@ -96,7 +95,9 @@ typedef enum ATOM_CT__LEX_TYPES_GENERAL_ENUM {
     STRING,
     CHAR,
     BOOLEAN,
-    NOT_A_VALUE
+    NOT_A_VALUE,
+    POINTER,
+    STRUCT, // todo: impl structs
 } ATOM_CT__LEX_TYPES_GENERAL_ENUM;
 
 typedef enum ATOM_CT__LEX_OP_IDENTIFIERS_ENUM {
@@ -152,8 +153,6 @@ typedef enum ATOM_CT__LEX_OPERATORS_ENUM {
  *   Calculating the position of a single token would require looking at all previous base_tokens
  *   But calculating the position of each token one by one sequentially would be fairly cheap
  *   I would have to store the whitespace characters as well in order to calc the position instead of dropping '\t' and '\s'
- *
- *   [[maybe]] For now this will not store the positions
  */
 
 typedef struct Position {
@@ -198,6 +197,8 @@ extern Arr ATOM_CT__LEX_TYPES;
 extern char* ATOM_CT__LEX_TYPES_RAW[];
 extern Arr ATOM_CT__LEX_TYPES_GENERAL;
 extern char* ATOM_CT__LEX_TYPES_GENERAL_RAW[];
+extern Arr ATOM_CT__LEX_TYPES_GENERAL_SMALL;
+extern char* ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW[];
 extern Arr ATOM_CT__LEX_LIT_BOOLS;
 extern char* ATOM_CT__LEX_LIT_BOOLS_RAW[];
 extern Arr ATOM_CT__LEX_OPERATORS;
@@ -211,6 +212,8 @@ const char* cons_token_type_colored(TokenType type);
 bool type_needs_free(TokenType type);
 bool is_whitespace_tkn(TokenType type);
 
+uint length_of_number_printout(const long long int n);
+uint length_of_position_printout(Position pos);
 int print_position(Position pos);
 void print_token_value(const Token* token);
 void print_token(const Token* token);

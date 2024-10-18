@@ -3,6 +3,8 @@
 //
 
 #include "Helper_String.h"
+#include <malloc.h>
+#include <string.h>
 
 LenSize len_basic(const char *string, const int from, const int offset, const char delimiter) {
     int i = from;
@@ -11,6 +13,7 @@ LenSize len_basic(const char *string, const int from, const int offset, const ch
         if ((string[i] & 0xC0) != 0x80) length++;
         i++;
     }
+
     return (LenSize){length, i};
 }
 
@@ -138,7 +141,7 @@ bool str_contains(const char* str, uint from, uint to, char c) {
     return false;
 }
 
-int find_last(char* string, char pattern) {
+int find_last(const char* string, const char pattern) {
     int out = -1;
 
     uint ls = len(string);
@@ -181,11 +184,11 @@ char* str_cpy_replace(const char* string, char find, char replace) {
     return out;
 }
 
-bool is_digit(uint32_t a) {
+bool is_digit(const uint32_t a) {
     return ((uint32_t)(a - ASCII_DIGIT_MIN)) < NUM_DIGITS;
 }
 
-bool is_digit_base(uint32_t a, uint base) {
+bool is_digit_base(const uint32_t a, const uint base) {
     if (base == 0) return false;
     if (base <= 10) {
         return ((uint32_t)(a - ASCII_DIGIT_MIN)) < base;
@@ -206,11 +209,11 @@ bool is_alph_low(uint32_t a) {
     return ((uint32_t)(a - ASCII_ALPH_LOW_MIN)) < NUM_ALPH;
 }
 
-bool is_alph(uint32_t a) {
+bool is_alph(const uint32_t a) {
     return is_alph_low(a) || is_alph_cap(a);
 }
 
-bool is_alph_numeric(uint32_t a) {
+bool is_alph_numeric(const uint32_t a) {
     return is_alph(a) || is_digit(a);
 }
 
@@ -222,35 +225,116 @@ bool is_newline(const uint32_t a) {
     return a == '\n';
 }
 
+void fputz(FILE* file, const char* string) {
+    fputs(string, file);
+}
+
 void putz(const char* string) {
     fputs(string, stdout);
 }
 
+UTF8Pos getutf8(const char* string) {
+    const unsigned char fbyte = *string;
+    uint32_t ret = fbyte;
+
+    uint inc = 1;
+
+    if (fbyte < 0x80) {
+        //1 byte character
+    }
+    else if ((fbyte & 0xE0) == 0xC0) {
+        ret = ((fbyte & 0x1F) << 6)             |
+                (string[1] & 0x3f);
+        inc = 2;
+    }
+    else if ((fbyte & 0xf0) == 0xe0) {
+        ret = ((fbyte & 0x0f) << 12)            |
+                ((string[1] & 0x3f) << 6)        |
+                (string[2] & 0x3f);
+        inc = 3;
+    }
+    else if ((fbyte & 0xf8) == 0xf0 && (fbyte <= 0xf4)) {
+        ret = ((fbyte & 0x07) << 18)            |
+                ((string[1] & 0x3f) << 12)       |
+                ((string[2] & 0x3f) << 6)        |
+                ((string[3] & 0x3f));
+        inc = 4;
+    }
+    else {
+        ret = -1; //allow it to skip the byte if consume();
+    }
+
+    return (UTF8Pos){ret, inc};
+}
+
+uint pututf8(const char* string) {
+    const UTF8Pos info = getutf8(string);
+
+    if (info.value != (uint)-1) printf("%lc", info.value);
+
+    return info.bytes;
+}
+
 // remove those pesky `\`
-void putz_santitize(const char* string) {
+void putz_santitize(char* string) {
+    if (!string) {
+        putz("<<NULL>>");
+        return;
+    }
+
     uint pos = 0;
+    const char* start_point = string;
+    const char* buff;
+
     while (string[pos] != '\0') {
         switch (string[pos]) {
             case '\n':
-                putz("\\n");
+                buff = "\\n";
                 break;
             case '\r':
-                putz("\\r");
+                buff = "\\r";
                 break;
             case '\t':
-                putz("\\t");
+                buff = "\\t";
                 break;
             default:
-                if (string[pos] < 0x20) {
-                    printf("%03o", string[pos]);
-                } else {
-                    putchar(string[pos]);
-                }
+                pos++;
+                continue;
         }
-        pos++;
+        const char save = string[pos];
+        string[pos] = '\0';
+        printf("%s%s", start_point, buff);
+        string[pos] = save;
+
+        start_point = &string[++pos];
     }
+
+    printf("%s", start_point);
 }
 
 void newline() {
     putchar('\n');
+}
+
+char* remove_ws_prefix(char* string) {
+    uint pos = 0;
+    while (is_whitespace(string[pos++])){}
+    return &string[pos];
+}
+
+char* str_cat_dyn(const char* stra, const char* strb) {
+    const size_t l1 = strlen(stra);
+    const size_t l2 = strlen(strb);
+
+    char* res = malloc((l1 + l2 + 1) * sizeof (char));
+
+    if (!res) {
+        return NULL;
+    }
+
+    memcpy(res, stra, l1);
+    memcpy(res + l1, strb, l2);
+    res[l1 + l2] = '\0';
+
+    return res;
 }

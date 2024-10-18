@@ -4,6 +4,8 @@
 
 #include "Tokens.h"
 
+#include <math.h>
+
 const char* ATOM_CT__LEX_NAV = "nav";
 
 char* ATOM_CT__LEX_KEYWORDS_RAW[] = {
@@ -56,12 +58,29 @@ char* ATOM_CT__LEX_TYPES_GENERAL_RAW[] = {
         "STRING",
         "CHAR",
         "BOOLEAN",
-        "NOT A VALUE"
+        "NOT A VALUE",
+        "POINTER"
 };
 
 Arr ATOM_CT__LEX_TYPES_GENERAL = {
         ATOM_CT__LEX_TYPES_GENERAL_RAW,
         sizeof(ATOM_CT__LEX_TYPES_GENERAL_RAW) / sizeof(char*)
+};
+
+char* ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW[] = {
+    "i",
+    "n",
+    "r",
+    "q",
+    "str",
+    "chr",
+    "bool",
+    "nav"
+};
+
+Arr ATOM_CT__LEX_TYPES_GENERAL_SMALL = {
+        ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW,
+        sizeof(ATOM_CT__LEX_TYPES_GENERAL_SMALL) / sizeof (char*)
 };
 
 char* ATOM_CT__LEX_LIT_BOOLS_RAW[] = {
@@ -121,6 +140,39 @@ Arr ATOM_CT__LEX_OPERATORS = {
         ATOM_CT__LEX_OPERATORS_RAW,
     sizeof(ATOM_CT__LEX_OPERATORS_RAW) / sizeof(char*)
 };
+
+static uint lonp_helper(const long long unsigned int n) {
+    if (n < 1e1) return 1;
+    if (n < 1e2) return 2;
+    if (n < 1e3) return 3;
+    if (n < 1e4) return 4;
+    if (n < 1e5) return 5;
+    if (n < 1e6) return 6;
+    if (n < 1e7) return 7;
+
+    return lonp_helper(n / 1e7) + 7;
+}
+
+uint length_of_number_printout(const long long int n) {
+    return n < 0 ? lonp_helper(-n) + 1 : lonp_helper(n);
+}
+
+uint length_of_position_printout(Position pos) {
+    uint len = 4; // '<:->'
+
+    len += length_of_number_printout(pos.start_line);
+    len += length_of_number_printout(pos.start_col);
+
+    if (pos.end_line == (uint)-1 || pos.start_line == pos.end_line) {
+        if (pos.start_col != pos.end_col) len += length_of_number_printout(pos.end_col);
+        else len--;
+    } else {
+        len += length_of_number_printout(pos.end_col);
+        len += length_of_number_printout(pos.end_line);
+    }
+
+    return len;
+}
 
 int print_position(Position pos) {
     int ret = 0;
@@ -331,7 +383,7 @@ void print_token_value(const Token* token) {
             printf("%s", ATOM_CT__LEX_KEYWORDS.arr[token->data.integer]);
             break;
         case TYPE: {
-            encodedType encoded_data = token->data.type;
+            const encodedType encoded_data = token->data.type;
             printf("%s (size: %d, ptr: %d)",
                    ATOM_CT__LEX_TYPES_GENERAL.arr[encoded_data.general_type],
                    encoded_data.size,
@@ -573,7 +625,7 @@ bool is_any_operator(Token* tok) {
 }
 
 void consolidate(Token* base_token, Token* token_to_eat) {
-    bool base_before = base_token->pos.start_line < token_to_eat->pos.start_line ||
+    const bool base_before = base_token->pos.start_line < token_to_eat->pos.start_line ||
             base_token->pos.start_col < token_to_eat->pos.start_col;
 
     if (base_before) {

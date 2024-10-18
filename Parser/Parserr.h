@@ -15,16 +15,22 @@ typedef enum ParsErrors {
     PARSERR_SUB_CALL_EXPECTED_GOT_EXPR,
     PARSERR_UNEXPECTED_TOKEN_IDENTIFIER_STATEMENT,
     PARSERR_SUB_STATEMENT_ERROR_IN_BODY,
-    PARSERR_UNEXPECTED_TOKEN_STATEMENT_START
+    PARSERR_UNEXPECTED_TOKEN_STATEMENT_START,
+
+    PARSERR_SY_ASSIGNMENT_OPERATOR_CANNOT_BE_USED,
+
+    PARSERR_SA_ALREADY_DEFINED,
+    PARSERR_SA_NOT_IN_SCOPE,
 } ParsErrors;
 
 typedef enum ParseWarns {
-    PARSEWARN_,
+    PARSEWARN_SA_SHADOWS_PREVIOUS_DECL,
 } ParseWarns;
 
 extern const Vector* plines;
 
 NodeRet parserr(ParsErrors errorCode, Token* parent_token, Token* issue_token, ...);
+NodeRet parsewarn(const ParseWarns warningCode, Token* parent_token, Token* issue_token, ...);
 
 //ERRORS
 #define ATOM_CT__PARSERR_BLOCK_MISSING_BRACE "Block did not parse ending with curly brace." \
@@ -42,6 +48,14 @@ NodeRet parserr(ParsErrors errorCode, Token* parent_token, Token* issue_token, .
 
 #define ATOM_CT__PARSERR_UNEXPECTED_TOKEN_STATEMENT_START "Unexpected token found while parsing for a statement."
 
+#define ATOM_CT__PARSERR_SY_ASSIGNMENT_OPERATOR_CANNOT_BE_USED "Usage of assignment operator `%s` within an expression is not allowed.\n"
+
+#define ATOM_CT__PARSERR_SA_ALREADY_DEFINED "Declaration of '%s' already exists\n"
+
+#define ATOM_CT__PARSERR_SA_NOT_IN_SCOPE "Identifier '%s' not in accessible scope\n"
+
 //WARNINGS
+
+#define ATOM_CT__PARSEWARN_SA_SHADOWS_PREVIOUS_DECL "Declaration of '%s' shadows previous declaration\n"
 
 #endif // ATOMIC_PARSERR_H

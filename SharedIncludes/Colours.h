@@ -6,6 +6,7 @@
 #define ATOMIC_COLOURS_H
 
 #define C_RST  "\x1B[0m"
+#define C_BLK  "\x1B[30m"
 #define C_RED  "\x1B[31m"
 #define C_GRN  "\x1B[32m"
 #define C_YLW  "\x1B[33m"

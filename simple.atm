@@ -1,0 +1,23 @@
+d: i8
+
+func a(b: i4): i4 {
+    print("Hello world")
+    ret b
+}
+
+proc print(string: str) {
+    string[0] += 'a'
+
+    a: i4 = 12;
+    b: i8 = 14;
+    c: i4 = a;
+
+    *(a + 100) = d
+
+    b++
+
+    d: i8 = a->b
+
+    e: >i4 = &c
+}
+

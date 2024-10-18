@@ -3,10 +3,12 @@ project(ATOMIC C)
 
 set(CMAKE_C_STANDARD 99)
 
-#add_link_options(-fsanitize=undefined)
-
+#add_link_options(-fsanitize=undefined,address)
+#
 add_compile_options(-Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self
-        -Wno-unused-parameter -ggdb3 -pedantic-errors -Wswitch-enum -Wno-unused-function -Wno-pedantic)
+        -Wno-unused-parameter -ggdb3 -pedantic -pedantic-errors -Wswitch-enum -Wno-unused-function -Wno-pedantic
+#        -fsanitize=undefined,address
+)
 
 add_executable(ATOMICLI
         Compiler.c
@@ -24,46 +26,63 @@ add_executable(ATOMICLI
         Lexer/Tokens.c
         Lexer/Lexer.c
         Parser/Parser.c
-        Parser/Parser.h
         Parser/Node.c
-        Parser/Node.h
-        Parser/Parserr.h
         Errors.c
         Parser/Parserr.c
         Parser/ShuntingYard.c
-        Parser/ShuntingYard.h
         SharedIncludes/Queue.c
-        SharedIncludes/Queue.h
         SharedIncludes/Stack.c
-        SharedIncludes/Stack.h
         Lexer/OpFolder.c
-        Lexer/OpFolder.h
         Lexer/Lexerr.c
-        Commons.h
         SharedIncludes/Array.c
-        SharedIncludes/Array.h
 
-        hadron/hadron.c
-        hadron/hadron_internal.h
+        Parser/StaticVerification.c
+
+        InternalSettings.c
+        Parser/TypeConstInfo.h
+        Parser/StaticVerificationInternal.h
+
+        SharedIncludes/Messages.c
 )
 
-#target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a)
+target_compile_options(ATOMICLI BEFORE PUBLIC -include ${CMAKE_SOURCE_DIR}/libraries/hadron.h)
+target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a m) # link with hadron and the math lib
+target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/FLAG-PREPROCESSOR)
+target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/SharedIncludes)
 
 add_executable(Flag_preprocessor
-        FLAG-PREPROCESSOR/Flag_Preprocessor.c
-        FLAG-PREPROCESSOR/Flag_Preprocessor.h
+        FLAG-PREPROCESSOR/FlagPreprocessor.c
 
         SharedIncludes/Vector.c
         SharedIncludes/Buffer.c
-        SharedIncludes/Flag_shared.c
+        SharedIncludes/Array.c
 
         SharedIncludes/Helper_String.c
         SharedIncludes/Helper_Math.c
         SharedIncludes/Helper_File.c
-        Commons.h
 
-        hadron/hadron.c
-        hadron/hadron_internal.h
+        SharedIncludes/Messages.c
+        Commons.h
+        FLAG-PREPROCESSOR/FlagPreprocessorInternal.h
+        FLAG-PREPROCESSOR/FlagPreprocessorInject.h
 )
 
-# [[todo]] need to create a lib from these
+add_executable(Type_preprocessor
+        TypePreprocessor/TypePreprocessor.c
+
+        SharedIncludes/Buffer.c
+        SharedIncludes/Helper_String.c
+        SharedIncludes/Helper_File.c
+        SharedIncludes/Messages.c
+        SharedIncludes/Vector.c
+        SharedIncludes/Array.c
+        TypePreprocessor/TPPLexer.c
+        TypePreprocessor/TPPLexer.h
+        TypePreprocessor/TPPLexerInternal.h
+        TypePreprocessor/TPPParser.c
+        TypePreprocessor/TPPParser.h
+        TypePreprocessor/TPPParserInternal.h
+
+)
+
+# [[todo]] need to create a lib from theseadd_executable(Type_preprocessor TypePreprocessor/TypePreprocessor.c.c TypePreprocessor/TypePreprocessor.h)

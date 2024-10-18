@@ -4,6 +4,9 @@
 
 #include "Lexer.h"
 
+#include <string.h>
+#include <stdlib.h>
+
 // [[todo]] nav is not a type it is a value like `true` or `false` it is a null ptr
 
 static uint lex_line(const Buffer *line);
@@ -48,14 +51,12 @@ FILE* c_file;
 Buffer line_buffer;
 Vector *llines;
 
-#include "../../hadron/hadron.h"
-
 bool load_line(void) {
     update_line_count();
     c_char = line_buffer.data;
     bool success = get_line(c_file, &line_buffer);
 
-    if (success) vec_add(llines, buffer_copy(&line_buffer));
+    if (success) vector_add(llines, buffer_copy(&line_buffer));
 
     return success;
 }

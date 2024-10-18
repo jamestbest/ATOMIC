@@ -4,7 +4,10 @@
 
 #include "ShuntingYard.h"
 
+#include "Parserr.h"
 #include "../Lexer/Lexer.h"
+
+#include <Flag_shared.h>
 
 static bool is_valid_index(ShuntData data, uint index);
 
@@ -36,7 +39,7 @@ bool c_is_valid_expr_cont(Token *current_t, STATE current_state) {
         case EXPECTING_LEFT:
             return is_terminal(current_t) || is_l_paren(current_t) || current_t->type == OP_UN_PRE;
         case EXPECTING_CENTRE:
-            return (is_any_operator(current_t) && current_t->type != OP_UN_PRE) || is_r_paren(current_t) || is_square_bracket(current_t);
+            return (is_arith_operator(current_t) && current_t->type != OP_UN_PRE) || is_r_paren(current_t) || is_square_bracket(current_t);
         default:
             assert(false);
     }
@@ -236,7 +239,7 @@ ShuntRet parse_subroutine_call_arg(ShuntData data) {
 }
 
 Node* parse_subroutine_call_arguments(ShuntData data) {
-    Node* argsNode = create_parent_node(SUB_CALL_ARGS, NULL);
+    Node* argsNode = create_parent_node(EXPRESSION, SUB_CALL_ARGS,NULL);
 
     Token* c;
     if (c = current(data), !c || c->type == PAREN_CLOSE) {
@@ -252,14 +255,14 @@ Node* parse_subroutine_call_arguments(ShuntData data) {
 
         if (arg.err_code != SUCCESS) assert(false);
 
-        vec_add(&argsNode->children, arg.expressionNode);
+        vector_add(&argsNode->children, arg.expressionNode);
     } while(c = current(data), c && c->type == COMMA);
 
     return argsNode;
 }
 
 Node* parse_subroutine_call(ShuntData data) {
-    Node* funcNode = create_parent_node(SUB_CALL, NULL);
+    Node* funcNode = create_parent_node(EXPRESSION, SUB_CALL,NULL);
 
     Token* func_name = consume(data);
     consume(data); //eat the (
@@ -272,8 +275,8 @@ Node* parse_subroutine_call(ShuntData data) {
 
     consume(data); // eat the )
 
-    vec_add(&funcNode->children, create_leaf_node(TOKEN_WRAPPER, func_name));
-    vec_add(&funcNode->children, args);
+    vector_add(&funcNode->children, create_leaf_node(EXPRESSION, TOKEN_WRAPPER, func_name));
+    vector_add(&funcNode->children, args);
 
     return funcNode;
 }
@@ -287,7 +290,7 @@ void parse_identifier(ShuntData data, Token* next, Stack* output_s) {
     if (next->type == PAREN_OPEN) {
         stack_push(output_s, parse_subroutine_call(data));
     } else {
-        stack_push(output_s, create_leaf_node(EX_LIT, consume(data)));
+        stack_push(output_s, create_leaf_node(EXPRESSION, EX_LIT, consume(data)));
     }
 }
 
@@ -295,12 +298,12 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
     Stack output_s = stack_create(MIN_QUEUE_SIZE);
     Stack operator_s = stack_create(MIN_STACK_SIZE);
 
-    ShuntData data = (ShuntData){tokens, &t_pos};
+    const ShuntData data = (ShuntData){tokens, &t_pos};
 
     STATE c_state = EXPECTING_START;
 
-    bool expr_dbg = flag_get(ATOM_CT__FLAG_EXPR_DBG);
-    bool verbose_expr_dbg = flag_get(ATOM_CT__FLAG_VEXPR_DBG);
+    const bool expr_dbg = flag_get_value(ATOM_CT__FLAG_EXPR_DBG);
+    const bool verbose_expr_dbg = flag_get_value(ATOM_CT__FLAG_VEXPR_DBG);
 
     Token* c;
     while (c = current(data), c_is_valid_expr_cont(c, c_state)) {
@@ -317,7 +320,7 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
             case LIT_CHR:
             case LIT_NAV:
             case TYPE:
-                stack_push(&output_s, create_leaf_node(EX_LIT, consume(data)));
+                stack_push(&output_s, create_leaf_node(EXPRESSION, EX_LIT, consume(data)));
                 break;
             case IDENTIFIER:
                 parse_identifier(data, peek(data), &output_s);
@@ -398,7 +401,7 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
                 }
 
                 // todo: should this still be an expr binary??? or should this start to specialise at this point!?
-                Node* arrayNode = create_parent_node(EXPR_BIN, stack_pop(&operator_s));
+                Node* arrayNode = create_parent_node(EXPRESSION, EXPR_BIN, stack_pop(&operator_s));
 
                 Node* expr = stack_pop(&output_s);
                 Node* identifier = stack_pop(&output_s);
@@ -411,8 +414,8 @@ ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens) {
                     assert(false);
                 }
 
-                vec_add(&arrayNode->children, identifier);
-                vec_add(&arrayNode->children, expr);
+                vector_add(&arrayNode->children, identifier);
+                vector_add(&arrayNode->children, expr);
 
                 stack_push(&output_s, arrayNode);
 
@@ -459,9 +462,9 @@ Node* form_un_op_node(Token* op_token, Stack* output_s) {
         assert(false); //[[todo]] errors
     }
 
-    Node* op_node = create_parent_node(EXPR_UN, op_token);
+    Node* op_node = create_parent_node(EXPRESSION, EXPR_UN, op_token);
 
-    vec_add(&op_node->children, child);
+    vector_add(&op_node->children, child);
 
     return op_node;
 }
@@ -474,10 +477,12 @@ Node* form_bin_op_node(Token* op_token, Stack* output_s) {
         assert(false); //[[todo]] add errors to shunting yard
     }
 
-    Node* op_node = create_parent_node(EXPR_BIN, op_token);
+    NodeType type = op_token->type == OP_BIN ? EXPR_BIN : EXPR_ASSIGN;
 
-    vec_add(&op_node->children, l_expr);
-    vec_add(&op_node->children, r_expr);
+    Node* op_node = create_parent_node(EXPRESSION, type, op_token);
+
+    vector_add(&op_node->children, l_expr);
+    vector_add(&op_node->children, r_expr);
 
     return op_node;
 }
@@ -493,11 +498,13 @@ Node* form_operator_node(Token* op_token, Stack *output_s) {
         case OP_UN_POST:
             return form_un_op_node(op_token, output_s);
         case OP_BIN:
-        case OP_ARITH_ASSIGN:
-        case OP_ASSIGN:
             return form_bin_op_node(op_token, output_s);
         case OP_TRINARY:
             return form_tri_op_node(op_token, output_s);
+        case OP_ARITH_ASSIGN:
+        case OP_ASSIGN:
+            assert(false);
+
         case OP_BIN_OR_UN:
             assert(false); // should not exist anymore from OpFolder
     }
@@ -553,7 +560,7 @@ void print_token_stack(Stack* operator_stack) {
         return;
     }
 
-    for (int i = 0; i < operator_stack->ptr; ++i) {
+    for (uint i = 0; i < operator_stack->ptr; ++i) {
         Token* tok = operator_stack->arr[i];
         printf("[%d]: ", i);
         print_token_ln(tok);

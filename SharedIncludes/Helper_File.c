@@ -3,46 +3,17 @@
 //
 
 #include "Helper_File.h"
-
-FILE* validate_file(const char* filename, const char* mode) {
-    //need some way to allow checks for a file's existence
-    uint mode_length = len(mode);
-
-    if (access(filename, F_OK) != 0) {
-        return fopen(filename, mode);
-    }
-
-    for (uint i = 0; i < mode_length; i++) {
-        int dec;
-        switch (mode[i]) {
-            case 'r':
-                dec = R_OK;
-                break;
-            case 'w':
-                dec = W_OK;
-                break;
-            default:
-                assert(false);
-        }
-
-        int res = access(filename, dec);
-
-        if (res != 0) return NULL;
-    }
-
-    FILE* fp = fopen(filename, mode);
-
-    return fp;
-}
+#include <malloc.h>
+#include <string.h>
 
 FILE* open_file(const char* cwd, const char* filename, const char* mode) {
-    FILE* fp = validate_file(filename, mode);
+    FILE* fp = fopen(filename, mode);
 
     if (fp != NULL) return fp;
 
     const char* path = get_path(cwd, filename);
 
-    fp = validate_file(path, mode);
+    fp = fopen(filename, mode);
 
     free((char*) path);
 
@@ -64,9 +35,30 @@ char* get_dir(char* file) {
     return dir;
 }
 
+char* get_file_name(const char* file_path) {
+    // /dir/dir2/dir3/file = file
+
+    const int loc = find_last(file_path, '/');
+
+    const char* start = NULL;
+
+    if (loc == -1) start = file_path;
+    else start = &file_path[loc + 1];
+
+    uint len = 0;
+
+    while (start[len] != '\0' && start[len] != '.') len++;
+
+    char* file_name = malloc(sizeof (char) * (len + 1));
+    memcpy(file_name, start, len);
+    file_name[len] = '\0';
+
+    return file_name;
+}
+
 char* get_path(const char* dir, const char* file) {
-    uint l1 = len(dir);
-    uint l2 = len(file);
+    const uint l1 = len(dir);
+    const uint l2 = len(file);
 
     char* ret = malloc((l1 + l2 + 1) * sizeof(char));
 
@@ -89,7 +81,7 @@ bool get_line(FILE* file, Buffer* buffer) {
     do {
         if (feof(file) != 0) return buffer->pos != 0;
 
-        char* fres = fgets(temp_buff, BUFF_MIN, file);
+        const char* fres = fgets(temp_buff, BUFF_MIN, file);
 
         if (fres == NULL) {
             return pos != 0;

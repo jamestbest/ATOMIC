@@ -27,6 +27,10 @@ typedef long long int llint;
 
 #define ATOM_CT__CLI_ERR_LEXERR                 ERROR_BASE"Lexer exited with code: %d. Unable to compile other files\n"
 
+#define ATOM_CT__CLI_ERR_ARG_VALUE_INVALID      "Invalid argument type given to option `%s`, argument: `%s` expected type: `%s`, got: `%s`\n"
+#define ATOM_CT__CLI_ERR_ARG_VALUE_OUT_OF_RANGE "Value provided is out of range when parsing type `%s`. Got: `%s`\n"
+#define ATOM_CT__CLI_ERR_ARG_VALUE_UNKNOWN_ERR  "Unknown error occured when verifying argument `%s`, expected type: `%s`\n"
+
 bool verify_args(int argc, char** argv);
 void parse_args(int argc, char** argv);
 

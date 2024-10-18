@@ -5,6 +5,12 @@
 #include "CLI.h"
 
 #include "SharedIncludes/Helper_File.h"
+#include "SharedIncludes/Flag_shared.h"
+
+#include <errno.h>
+#include <Messages.h>
+#include <stdlib.h>
+#include <string.h>
 
 char* ATOM_VR__CLI_ENTRY_POINT = NULL;
 char* ATOM_VR__CLI_OUTPUT_NAME = ATOM_CT__CLI_DEFAULT_OUT;
@@ -21,7 +27,7 @@ Vector ATOM_VR__CLI_FILES;
 int main(int argc, char** argv) {
     puts("Welcome to the ATOMIC CLI!");
 
-    ATOM_VR__CLI_FILES = vec_create(ATOM_CT__CLI_DEFAULT_FILE_BUFF_SIZE);
+    ATOM_VR__CLI_FILES = vector_create(ATOM_CT__CLI_DEFAULT_FILE_BUFF_SIZE);
 
     if (!verify_args(argc, argv)) {
         return 1;
@@ -29,7 +35,7 @@ int main(int argc, char** argv) {
 
     parse_args(argc, argv);
 
-    if (flag_get(ATOM_CT__FLAG_FLAGS_OUT))
+    if (flag_get_value(ATOM_CT__FLAG_FLAGS_OUT))
         print_flags();
 
     printf("Entry point: %s\n"
@@ -37,19 +43,24 @@ int main(int argc, char** argv) {
 
     putchar('\n');
     for (uint i = 0; i < ATOM_VR__CLI_FILES.pos; i++) {
-        char* filename = vec_get(&ATOM_VR__CLI_FILES, i);
+        char* filename = vector_get_unsafe(&ATOM_VR__CLI_FILES, i);
 
         printf("File: %s\n", filename);
     }
 
     char* cwd = get_dir(argv[0]); //get the c_char working directory
 
-    CompileRet ret = compile(ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME, cwd, ATOM_VR__CLI_FILES);
+    const CompileRet ret = compile(ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME, cwd, ATOM_VR__CLI_FILES);
 
     free(cwd);
 
     putchar('\n');
     parse_compile_ret(ret);
+
+    vector_destroy(&ATOM_VR__CLI_FILES);
+
+    hadron_verify();
+    hadron_cleanup();
 
     return ret.code;
 }
@@ -112,7 +123,7 @@ void parse_args(int argc, char** argv) {
             if (arg_len >= 2 && arg[1] == '-') {
                 parse_flag(arg); //--flagSet  --!flagset
             } else {
-                parse_option(arg, argv, argc, &i); //-o optionarg optionarg   e.g. -o tok ast  --this can map to flags.  -outname main.out --changes output name
+                parse_option(&arg[1], argv, argc, &i); //-o optionarg optionarg   e.g. -o tok ast  --this can map to flags.  -outname main.out --changes output name
             }
         } else {
             parse_file(arg); // inputfile.atom/inputfile.atm
@@ -121,76 +132,176 @@ void parse_args(int argc, char** argv) {
 }
 
 void parse_file(char* file) {
-    vec_add(&ATOM_VR__CLI_FILES, file);
+    vector_add(&ATOM_VR__CLI_FILES, file);
 }
 
 void parse_option_entry(Vector* args) {
-    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, ATOM_CT__OPTION_E_STR);
+    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT,  flag_get_str(ATOM_CT__OPTION_E));
 
-    ATOM_VR__CLI_ENTRY_POINT = vec_get(args, 0);
+    ATOM_VR__CLI_ENTRY_POINT = vector_get_unsafe(args, 0);
 }
 
 void parse_option_output(Vector* args) {
-    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, ATOM_CT__OPTION_O_STR);
+    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, flag_get_str(ATOM_CT__OPTION_O));
 
-    ATOM_VR__CLI_OUTPUT_NAME = vec_get(args, 0);
+    ATOM_VR__CLI_OUTPUT_NAME = vector_get_unsafe(args, 0);
 }
 
-void parse_option_out(Vector* args) {
-    //for each arg get the string arg + "-out", then hash and set the flag
+void parse_option_hadron(const Vector* args) {
+    for (uint i = 0; i < args->pos; ++i) {
+        const char* arg = args->arr[i];
+    }
+}
 
-    for (uint i = 0; i < args->pos; i++) {
-        char* arg = args->arr[i];
+void parse_option_debuglvl(Array args) {
+    assert(false);
+}
 
-        llint hash = flag_split_to_int(arg, "-"ATOM_CT__OPTION_OUT_STR);
+void parse_option_out(Array args) {
 
-        int index = flag_int_to_index(hash);
+}
 
-        if (index == -1) {
-            PWarn(ATOM_CT__CLI_WRN_OPT_ARG_INVLD, ATOM_CT__OPTION_OUT_STR, arg);
-            continue;
+uint verify_numeric_errno(const char* arg, const StaticOptionArgInfo* arg_info) {
+    if (errno != 0) {
+        if (errno == ERANGE) {
+            error(ATOM_CT__CLI_ERR_ARG_VALUE_OUT_OF_RANGE,
+                ATOM_FP__TYPES_STR[arg_info->type],
+                arg
+            );
+        } else {
+            error(ATOM_CT__CLI_ERR_ARG_VALUE_UNKNOWN_ERR,
+                arg,
+                ATOM_FP__TYPES_STR[arg_info->type]
+            );
+        }
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+struct VerifiedArgs {
+    uint errcode;
+    Array translated_args;
+} verify_option_arguments(const Vector args, const enum ATOM_CT__OPTIONS option) {
+    const StaticOptionInfo* info = &ATOM_CT__OPTIONINFO[option];
+    Array ret_arr = arr_construct(sizeof (OptionData), args.pos);
+
+    for (uint i = 0; i < args.pos; ++i) {
+        const StaticOptionArgInfo* arg_info = &info->args[i];
+        const char* arg = args.arr[i];
+
+        switch (arg_info->type) {
+            case FP_TYPE_CHARACTER: {
+                if (strlen(arg) != 1) {
+                    goto verify_option_arguments_invalid_type;
+                }
+                arr_add_dyn(&ret_arr, &arg[0], sizeof (arg[0]));
+                break;
+            }
+            case FP_TYPE_INTEGER: {
+                char* end;
+                long long val = strtoll(arg, &end, 10);
+
+                if (verify_numeric_errno(arg, arg_info) != EXIT_SUCCESS) {
+                    goto verify_option_arguments_return_error;
+                }
+
+                if (end != &arg[strlen(arg)]) {
+                    goto verify_option_arguments_invalid_type;
+                }
+
+                arr_add_dyn(&ret_arr, &val, sizeof (val));
+                break;
+            }
+            case FP_TYPE_NATURAL: {
+                char* end;
+                unsigned long long val = strtoull(arg, &end, 10);
+
+                if (verify_numeric_errno(arg, arg_info) != EXIT_SUCCESS) {
+                    goto verify_option_arguments_return_error;
+                }
+
+                if (end != &arg[strlen(arg)]) {
+                    goto verify_option_arguments_invalid_type;
+                }
+
+                arr_add_dyn(&ret_arr, &val, sizeof (val));
+                break;
+            }
+            case FP_TYPE_STR: {
+                arr_add_dyn(&ret_arr, &arg, sizeof (arg));
+                break;
+            }
+            case FP_TYPES_COUNT:
+                assert(false);
         }
 
-        flag_set_from_idx(index, true);
+        continue;
+
+    verify_option_arguments_invalid_type:
+        error(ATOM_CT__CLI_ERR_ARG_VALUE_INVALID,
+            info->option_name,
+            arg_info->arg_name,
+            ATOM_FP__TYPES_STR[arg_info->type],
+            arg
+        );
+        goto verify_option_arguments_return_error;
     }
+
+verify_option_arguments_return_error:
+    return (struct VerifiedArgs){.errcode = EXIT_FAILURE, .translated_args = ARRAY_ERR};
 }
 
 /*
  * Parse the option and use the argv values as arguments
  */
-void parse_option(char *arg, char **argv, int argc, int *i) {
-    llint option_hash = flag_to_int(&arg[1]);
-
-    Vector args = get_option_args(argv, i, argc);
+void parse_option(char *option_name, char **cli_args, int cli_arg_count, int *option_name_index_in_args) {
+    Vector args = get_option_args(cli_args, option_name_index_in_args, cli_arg_count);
 
     if (args.pos == 0) {
-        PError(ATOM_CT__CLI_ERR_OPT_ARG, arg);
+        PError(ATOM_CT__CLI_ERR_OPT_ARG, option_name);
         exit(ARGERR);
     }
 
-    switch (option_hash) {
-        case ATOM_CT__OPTION_E_HASH:
-            parse_option_entry(&args);
+    const enum ATOM_CT__OPTIONS option_index = option_find(option_name);
+
+    if (option_index == (enum ATOM_CT__OPTIONS)-1) {
+        PWarn(ATOM_CT__CLI_WRN_OPT_INVALID, option_name);
+        return;
+    }
+
+    const struct VerifiedArgs res = verify_option_arguments(args, option_index);
+    vector_destroy(&args);
+
+    if (res.errcode != EXIT_SUCCESS) {
+        exit(ARGERR);
+    }
+
+    const Array args_t = res.translated_args;
+    switch (option_index) {
+        case ATOM_CT__OPTION_DEBUGLVL:
+            parse_option_debuglvl(args_t);
             break;
-        case ATOM_CT__OPTION_O_HASH:
-            parse_option_output(&args);
+        case ATOM_CT__OPTION_E:
             break;
-        case ATOM_CT__OPTION_OUT_HASH:
-            parse_option_out(&args);
+        case ATOM_CT__OPTION_O:
             break;
-        default:
-            printf("Error: Unknown option \"%s\"", arg);
+        case ATOM_CT__OPTION_OUT:
+            break;
+        case ATOM_CT__OPTION_TEST:
+            break;
+        case ATOM_CT__OPTION_COUNT:
             break;
     }
 
-    vec_destroy(&args);
+    vector_destroy(&args);
 }
 
 Vector get_option_args(char** argv, int* argp, int argc) {
-    Vector args = vec_create(ATOM_CT__CLI_DEFAULT_OPTION_BUFF_SIZE);
+    Vector args = vector_create(ATOM_CT__CLI_DEFAULT_OPTION_BUFF_SIZE);
 
     while (*argp + 1 < argc && argv[*argp + 1][0] != '-') {
-        vec_add(&args, argv[*argp + 1]);
+        vector_add(&args, argv[*argp + 1]);
         (*argp)++;
     }
 
@@ -199,19 +310,20 @@ Vector get_option_args(char** argv, int* argp, int argc) {
 
 void parse_flag(char* arg) {
     //turn the flag into an int from past --
-    //this should be based on the next 8 characters (bar '-') of the flag
     //e.g. --!AST-OUT
     bool enabled = true;
     uint start = 2;
     if (arg[2] == '!') {
-        start = 3;
+        start++;
         enabled = false;
     }
 
-    bool ret = flag_set(&arg[start], enabled);
+    const size_t flag_index = flag_find(&arg[start]);
 
-    if (!ret) {
-        PWarn(ATOM_CT__CLI_WRN_OPT_FLG_INVLD, &arg[start]);
+    if (flag_index == (size_t)-1) {
+        PWarn(ATOM_CT__CLI_WRN_FLAG_INVALID, &arg[start]);
         return;
     }
+
+    flag_set(flag_index, enabled);
 }
