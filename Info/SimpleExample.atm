@@ -8,8 +8,8 @@ entry func main (): i4 {
 
     a: i4 = 2; b : i4 = 13_00_12;
     b: r4 = 12.5;
-    c: r8 = 24.5e12;
-    d: r4 = .123e-12;
+¬    c: r8 = 24.5e12
+¬    d: r4 = .123e-12
     e: bool = true;
 
     ¬¬ alternative is a,b: i4 = 2, 13;

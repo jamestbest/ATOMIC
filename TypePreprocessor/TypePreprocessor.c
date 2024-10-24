@@ -26,7 +26,8 @@ static void print_information(const Array* information);
 static void print_operator_info(const OperatorInfo* info);
 
 
-static Array parse_type_file_two(FILE* file, const Vector* type_enums, const Vector* operator_enums);
+static TPPNode* parse_type_file_two(FILE* file, const Vector* type_enums,
+                                    const Vector* operator_enums);
 static Array parse_type_file(FILE* file, const Vector* type_enums);
 static OperatorInfo parse_operator_type_line(const char* line, const Vector* types_enum);
 void add_and_verify_type(const char* start, const uint length, Vector* types, const Vector* types_enum);
@@ -90,8 +91,8 @@ int main(const int argc, char** argv) {
         out_file_name
     );
 
-    FILE* type_file = validate_file(type_file_name, "r");
-    FILE* enum_file = validate_file(enum_file_name, "r");
+    FILE* type_file = fopen(type_file_name, "r");
+    FILE* enum_file = fopen(enum_file_name, "r");
 
     if (!type_file || !enum_file) {
         fatal_file_error("Unable to open read only type and enum file");
@@ -109,15 +110,22 @@ int main(const int argc, char** argv) {
     print_enums(&operator_enums);
     print_enums(&type_enums);
 
-    const Array tokens = parse_type_file_two(type_file, &type_enums, &operator_enums);
+    Buffer line_buffer = buffer_create(BUFF_MIN);
+    tpplex_setup(&type_enums, &operator_enums);
+    while (get_line(type_file, &line_buffer)) {
+        tpplex_line(&line_buffer);
+    }
+    const Array tokens = tpplex_end();
 
     for (uint i = 0; i < tokens.pos; ++i) {
-        TPPToken* token = arr_get(&tokens, i);
-
+        const TPPToken* token = arr_get(&tokens, i);
         print_tpptoken(token);
         newline();
     }
 
+    const TPPNode* global_node = tpp_parse(tokens, &type_enums, &operator_enums);
+
+    // this needs to change to parsing through the ast generated
     const Array operator_information = parse_type_file(type_file, &type_enums);
 
     verify_operator_information(&operator_information);
@@ -141,7 +149,7 @@ int main(const int argc, char** argv) {
         if (choice == 'n') return EXIT_FAILURE;
     }
 
-    FILE* out_file = validate_file(out_file_name, "w");
+    FILE* out_file = fopen(out_file_name, "w");
 
     if (!out_file) {
         fatal_file_error("Unable to open a writable output file");
@@ -385,16 +393,15 @@ void verify_operator_information(const Array* information) {
     }
 }
 
-Array parse_type_file_two(FILE* file, const Vector* type_enums, const Vector* operator_enums) {
-    Buffer line_buffer = buffer_create(100);
+TPPNode* parse_type_file_two(FILE* file, const Vector* type_enums,
+                             const Vector* operator_enums) {
+    Buffer line_buffer = buffer_create(BUFF_MIN);
 
     tpplex_setup(type_enums, operator_enums);
-
     while (get_line(file, &line_buffer)) {
         tpplex_line(&line_buffer);
     }
-
-    Array tokens = tpplex_end();
+    const Array tokens = tpplex_end();
 
     // need to parse the tokens into the 3 types of statements
     /*
@@ -403,15 +410,7 @@ Array parse_type_file_two(FILE* file, const Vector* type_enums, const Vector* op
      *  3. Type coercing statements - which types a type can be implicitly converted to
      */
 
-    tpp_parse(tokens, )
-
-    for (uint i = 0; i < tokens.pos; ++i) {
-        TPPToken* token = arr_get(&tokens, i);
-
-        if (token->type == ALIAS) {
-
-        }
-    }
+    return tpp_parse(tokens, type_enums, operator_enums);
 }
 
 Array parse_type_file(FILE* file, const Vector* type_enums) {

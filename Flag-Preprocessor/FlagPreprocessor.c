@@ -248,6 +248,63 @@ void write_header_out_examble(FILE* header) {
     fputs("#endif //"ATOM_FP__HEADER_GUARD, header);
 }
 
+void write_header_out_option_arg_enums(FILE* h_file) {
+    for (uint i = 0; i < optionInfos.pos; ++i) {
+        const OptionInfo* info = optionInfos.arr[i];
+
+        const size_t arg_c = info->arg_infos.pos;
+
+        if (arg_c == 0) continue;
+
+        const char* translated_name = translate_name_for_enum(info->option_name);
+        fprintf(h_file, "typedef enum {\n");
+        for (uint j = 0; j < arg_c; ++j) {
+            const OptionArgInfo* args = info->arg_infos.arr[j];
+            const char* translated_arg_name = translate_name_for_enum(args->arg_name);
+
+            fprintf(h_file, "\tATOM_CT__OPTION_%s_ARG_%s,\n", translated_name, translated_arg_name);
+
+            free((void*)translated_arg_name);
+        }
+        fprintf(h_file, "} ATOM_CT__OPTION_%s_ARGS_ENUM;\n\n", translated_name);
+
+        for (int j = 0; j < arg_c; ++j) {
+            const OptionArgInfo* args = info->arg_infos.arr[j];
+            if (args->arg_options.pos == 0) continue;
+
+            const char* translated_arg_name = translate_name_for_enum(args->arg_name);
+            fprintf(h_file, "typedef enum {\n");
+            for (int k = 0; k < args->arg_options.pos; ++k) {
+                const OptionData* valid = arr_get(&args->arg_options, k);
+
+                fprintf(h_file, "\tATOM_CT__OPTION_%s_ARG_%s_VALID_", translated_name, translated_arg_name);
+
+                switch (args->type) {
+                    case FP_TYPE_STR: {
+                        const char* translated_valid_name = translate_name_for_enum(valid->str);
+                        fprintf(h_file, "%s", translated_valid_name);
+                        free((void*)translated_valid_name);
+                        break;
+                    }
+                    case FP_TYPE_INTEGER:
+                        fprintf(h_file, "%lld", valid->integer);
+                        break;
+                    case FP_TYPE_NATURAL:
+                        fprintf(h_file, "%llu", valid->natural);
+                        break;
+                    case FP_TYPE_CHARACTER:
+                        fprintf(h_file, "%c", valid->character);
+                        break;
+                }
+                fprintf(h_file, ",\n");
+            }
+            fprintf(h_file, "} ATOM_CT__OPTION_%s_ARG_%s_VALID_ENUM;\n\n", translated_name, translated_arg_name);
+            free((void*)translated_arg_name);
+        }
+        free((void*)translated_name);
+    }
+}
+
 void write_header_out(FILE* header) {
     write_header_out_preamble(header);
 
@@ -255,6 +312,7 @@ void write_header_out(FILE* header) {
     append_option_enum(header);
 
     write_header_out_amble(header);
+    write_header_out_option_arg_enums(header);
     write_header_out_examble(header);
 }
 
@@ -346,35 +404,11 @@ void write_c_out_option_info_data(FILE* c_file) {
     fprintf(c_file, "};\n\n");
 }
 
-void write_c_out_option_arg_enums(FILE* c_file) {
-    for (uint i = 0; i < optionInfos.pos; ++i) {
-        const OptionInfo* info = optionInfos.arr[i];
-
-        const size_t arg_c = info->arg_infos.pos;
-
-        if (arg_c == 0) continue;
-
-        const char* translated_name = translate_name_for_enum(info->option_name);
-        fprintf(c_file, "typedef enum {\n");
-        for (uint j = 0; j < arg_c; ++j) {
-            const OptionArgInfo* args = info->arg_infos.arr[j];
-            const char* translated_arg_name = translate_name_for_enum(args->arg_name);
-
-            fprintf(c_file, "\tATOM_CT__OPTION_%s_ARG_%s,\n", translated_name, translated_arg_name);
-
-            free((void*)translated_arg_name);
-        }
-        fprintf(c_file, "} ATOM_CT__OPTION_%s_ARGS_ENUM;\n\n", translated_name);
-        free((void*)translated_name);
-    }
-}
-
 void write_c_out(FILE* c_file, const char* header_output_filename) {
     write_c_out_preamble(c_file, header_output_filename);
     write_c_out_flag_info_data(c_file);
     write_c_out_flag_array_data(c_file);
     write_c_out_option_info_data(c_file);
-    write_c_out_option_arg_enums(c_file);
 }
 
 uint write_out_flag_data(const char* output_filename) {

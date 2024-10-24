@@ -49,11 +49,26 @@ void arr_resize(Array* vec) {
     vec->capacity = new_capacity;
 }
 
+void arr_set(const Array* arr, const size_t index, const void* element) {
+    if (index >= arr->pos) return;
+
+    memcpy(&arr->arr[index * arr->element_size], element, arr->element_size);
+}
+
+void arr_set_dyn(const Array* arr, const size_t index, const void* element, const size_t element_size) {
+    if (index >= arr->pos) return;
+
+    memset(&arr->arr[index * arr->element_size], 0, arr->element_size);
+    memcpy(&arr->arr[index * arr->element_size], element, element_size);
+}
+
 void arr_add(Array* arr, const void* element) {
     if (arr_is_at_capacity(arr))
         arr_resize(arr);
 
-    memcpy(&arr->arr[arr->pos++ * arr->element_size], element, arr->element_size);
+    memcpy(&arr->arr[arr->pos * arr->element_size], element, arr->element_size);
+
+    arr->pos++;
 }
 
 // add to the array a value that is not the size of the array element size
@@ -62,7 +77,9 @@ void arr_add_dyn(Array* arr, const void* element, const size_t element_size) {
         arr_resize(arr);
 
     memset(&arr->arr[arr->pos * arr->element_size], 0, arr->element_size);
-    memcpy(&arr->arr[arr->pos++ * arr->element_size], element, element_size);
+    memcpy(&arr->arr[arr->pos * arr->element_size], element, element_size);
+
+    arr->pos++;
 }
 
 bool arr_remove(Array* arr, const uint index) {

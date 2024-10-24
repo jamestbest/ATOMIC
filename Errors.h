@@ -46,7 +46,7 @@ void highlight_line_start_and_error(Token* parent, Token* issue, const Vector* l
 #define PWarn(WarningMsg, ...) printf(WARN_BASE WarningMsg , ##__VA_ARGS__)
 
 #define ATOM_CT__CLI_WRN_FLAG_INVALID   "Invalid flag given \"%s\"\n"
-#define ATOM_CT__CLI_WRN_OPT_INVALID    "Invalid option given \"%s\"\n"
+#define ATOM_CT__CLI_ERR_OPT_INVALID    "Invalid option given \"%s\"\n"
 
 #define ATOM_CT__CLI_WRN_OPT_ARG_COUNT  "Option \"-%s\" only acts on 1 argument, ignoring others\n"
 #define ATOM_CT__CLI_WRN_OPT_ARG_INVLD  "Option \"-%s\" given invalid argument \"%s\". Ignoring\n"

@@ -22,7 +22,7 @@ static TPPToken* peek(void);
 static TPPToken* current(void);
 
 static const char* get_type_string(uint32_t position);
-static const char* get_tpptoken_type_string_from_token(TPPToken* token);
+static const char* get_tpptoken_type_string_from_token(const TPPToken* token);
 
 static void print_type_bitmap(uint32_t type_vector);
 
@@ -31,10 +31,11 @@ static bool type_exists(uint32_t type_value, uint32_t type_vector);
 
 static TPPNode* tpp_parse_statement(void);
 static TPPNode* tpp_parse_alias_stmnt(void);
-static TPPNode* tpp_parse_operator_stmnt(void) {};
-static TPPNode* tpp_parse_coerce_stmnt(void) {};
+static TPPNode* tpp_parse_operator_stmnt(void) {}
+static TPPNode* tpp_parse_coerce_stmnt(void) {}
 
-void tpp_parse(Array tokens, const Vector* types_enums, const Vector* operator_enums) {
+TPPNode* tpp_parse(Array tokens, const Vector* types_enums,
+                   const Vector* operator_enums) {
     t_pos = 0;
     t_tokens = tokens;
     t_types_enum = types_enums;
@@ -42,23 +43,37 @@ void tpp_parse(Array tokens, const Vector* types_enums, const Vector* operator_e
     type_aliases = arr_create(sizeof (TypeAlias));
     operator_types = arr_create(sizeof (OpInfo));
 
-    while (current()) {
+    TPPNode* global_node = malloc(sizeof (TPPNode));
+
+    while (current() && current()->type != EOS) {
         TPPNode* statement = tpp_parse_statement();
+        vector_add(&global_node->children, statement);
     }
+
+    return global_node;
 }
 
 static TPPNode* tpp_parse_statement() {
     if (current()->type == ALIAS) {
         return tpp_parse_alias_stmnt();
-    } else {
-        TPPToken* next = peek();
-
-        if (next->type == EQUALITY) {
-            return tpp_parse_operator_stmnt();
-        } else {
-            return tpp_parse_coerce_stmnt();
-        }
     }
+
+    const TPPToken* next = peek();
+
+    if (next->type == EQUALITY) {
+        return tpp_parse_operator_stmnt();
+    }
+    if (next->type == ARROW) {
+        return tpp_parse_coerce_stmnt();
+    }
+
+    error(
+        "Invalid statement start. Expected ALIAS|OPERATOR|COERCE statement, got tokens `%s` and `%s`",
+        get_tpptoken_type_string(current()->type),
+        next->type
+    );
+
+    return NULL;
 }
 
 static TPPNode* tpp_parse_alias_stmnt() {
@@ -67,16 +82,16 @@ static TPPNode* tpp_parse_alias_stmnt() {
     assert(alias_node->type == ALIAS);
 
     if (!expect(IDENTIFIER)) {
-        TPPToken* c = current();
+        const TPPToken* c = current();
         error("Expected identifier to follow ALIAS keyword got `%s`",
-              get_tpptoken_type_string_from_token(current()));
+              get_tpptoken_type_string_from_token(c));
         // [[todo]]: need to either return an error node or have some kind of recovery from this point
     }
 
     // an ALIAS statement is in the format
     //  ALIAS <IDENTIFIER> `=` <TYPE> <TYPE> <TYPE> // [[maybe]] could add the ability to use the aliases within each other; for now it has to be a type
 
-    TPPToken* identifier = consume();
+    const TPPToken* identifier = consume();
 
     if (!expect(EQUALITY)) {
         error("Expected equality sign `=` after alias identifier got `%s`",
@@ -91,9 +106,9 @@ static TPPNode* tpp_parse_alias_stmnt() {
     };
 
     while (expect(TYPE)) {
-        TPPToken* type = consume();
+        const TPPToken* type = consume();
 
-        uint32_t type_value = type->data.pos;
+        const uint32_t type_value = type->data.pos;
 
         if (type_exists(type_value, alias.types)) {
             error("ALIAS `%s` already includes the type `%s`",
@@ -129,7 +144,7 @@ static const char* get_type_string(uint32_t position) {
     return t_types_enum->arr[position];
 }
 
-static const char* get_tpptoken_type_string_from_token(TPPToken* token) {
+static const char* get_tpptoken_type_string_from_token(const TPPToken* token) {
     return !token ? "<<NULL>>" : get_tpptoken_type_string(token->type);
 }
 

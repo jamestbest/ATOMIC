@@ -187,9 +187,11 @@ void print_top_level_node(Node* tl_node) {
     Array levels = arr_construct(sizeof (NodeLevelPrintType), 10);
 
     print_node_basic(tl_node, &levels);
+
+    arr_destroy(&levels);
 }
 
-void print_node_levels(Array* levels) {
+void print_node_levels(const Array* levels) {
     for (uint i = 0; i < levels->pos; ++i) {
         putz(nodeLevelToString(nodeLevelEnum_arr_get(levels, i)));
     }
@@ -279,7 +281,7 @@ Position get_node_wrapping_position(Node* node) {
 void print_node_summary(const Node* node) {
     printf(C_YLW"0x%llx"C_RST" %s::", (uintptr_t)node, nodeTypeToString(node->type));
     print_token(node->token);
-    printf("::<s="C_YLW"0x%llx"C_RST";stmt="C_RED"%llu"C_RST";uid="C_RED"%llu"C_RST";l="C_YLW"0x%llx"C_RST">::<c.c=%llu>",
+    printf("::<s="C_YLW"0x%llx"C_RST";stmt="C_RED"%llu"C_RST";uid="C_RED"%llu"C_RST";l="C_YLW"0x%llx"C_RST">::<cc=%llu>",
         (uintptr_t)node->data.scope,
         node->statement_id,
         node->uid,

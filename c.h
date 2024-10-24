@@ -5,7 +5,7 @@
 #ifndef c_H
 #define c_H
 
-#include "../Lexer/Tokens.h"
+#include "Lexer/Tokens.h"
 
 typedef struct typeArray {
     unsigned int size;

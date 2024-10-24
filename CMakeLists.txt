@@ -4,9 +4,11 @@ project(ATOMIC C)
 set(CMAKE_C_STANDARD 99)
 
 #add_link_options(-fsanitize=undefined,address)
-#
-add_compile_options(-Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self
-        -Wno-unused-parameter -ggdb3 -pedantic -pedantic-errors -Wswitch-enum -Wno-unused-function -Wno-pedantic
+
+add_compile_options(
+        -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self -Wswitch-enum
+        -Wno-unused-parameter -Wno-unused-function -Wno-pedantic
+        -ggdb3
 #        -fsanitize=undefined,address
 )
 
@@ -46,9 +48,16 @@ add_executable(ATOMICLI
 )
 
 target_compile_options(ATOMICLI BEFORE PUBLIC -include ${CMAKE_SOURCE_DIR}/libraries/hadron.h)
-target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a m) # link with hadron and the math lib
+target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron.a m ${CMAKE_SOURCE_DIR}/libraries/DbgHelp.Lib) # link with hadron and the math lib, and DbgHelp
 target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/FLAG-PREPROCESSOR)
 target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/SharedIncludes)
+
+if (WIN32)
+    add_custom_command(TARGET ATOMICLI
+            POST_BUILD
+            COMMAND ../cv2pdb.exe $<TARGET_FILE:ATOMICLI> $<TARGET_FILE_DIR:ATOMICLI>/tempPdb.exe $<TARGET_FILE_DIR:ATOMICLI>/$<TARGET_NAME:ATOMICLI>.pdb
+    )
+endif (WIN32)
 
 add_executable(Flag_preprocessor
         FLAG-PREPROCESSOR/FlagPreprocessor.c
@@ -82,7 +91,6 @@ add_executable(Type_preprocessor
         TypePreprocessor/TPPParser.c
         TypePreprocessor/TPPParser.h
         TypePreprocessor/TPPParserInternal.h
-
 )
 
-# [[todo]] need to create a lib from theseadd_executable(Type_preprocessor TypePreprocessor/TypePreprocessor.c.c TypePreprocessor/TypePreprocessor.h)
+# [[todo]] need to create a lib from these add_executable(Type_preprocessor TypePreprocessor/TypePreprocessor.c.c TypePreprocessor/TypePreprocessor.h)

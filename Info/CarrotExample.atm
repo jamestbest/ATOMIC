@@ -9,7 +9,7 @@ entry func main(argc: i4, argv: string[]): i4 {
 }
 
 func my_func(count: i4): i4[]' {
-	ret_val: i4[..] = []
+	ret_val: i4[..]' = []
 	times count {
 		ret_val += 1
 	}

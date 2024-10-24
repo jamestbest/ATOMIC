@@ -23,6 +23,7 @@ typedef enum TPPType {
     DELIMITER,
 
     EOS, // End of Statement
+    TPPTYPE_COUNT,
 } TPPType;
 
 typedef struct TPPToken {

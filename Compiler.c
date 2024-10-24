@@ -26,6 +26,7 @@ ARRAY_ADD(Token, token)
 ARRAY_ADD(Node, node)
 
 static void free_tokens(Array* tokens);
+static void free_scopes(Scope* scope);
 
 //[[todo]] better to use something like a block allocator(? is that the name) (ARENA ALLOC?)
 // where a large part of memory is allocated and then the data for the base_tokens
@@ -119,8 +120,21 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     free_tokens(&folded_tokens);
 
     free_node_rec(parseRet.node);
+    // free_scopes(global_scope);
 
     return (CompileRet) {SUCCESS, NULL};
+}
+
+void free_scopes(Scope* scope) {
+    for (uint i = 0; i < scope->child_scopes.pos; ++i) {
+        free_scopes(scope->child_scopes.arr[i]);
+    }
+
+    vector_destroy(&scope->child_scopes);
+    vector_destroy(&scope->subroutines);
+    vector_destroy(&scope->variables);
+
+    free(scope);
 }
 
 void free_tokens(Array* tokens) {

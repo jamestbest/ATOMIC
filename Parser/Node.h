@@ -152,7 +152,7 @@ ARRAY_PROTO(NodeLevelPrintType, nodeLevelEnum)
 
 bool is_stmt(const NodeGeneralType type);
 
-Node* create_node_basic(NodeGeneralType gtype, NodeType type, Token* token,bool has_children);
+Node* create_node_basic(NodeGeneralType gtype, NodeType type, Token* token, bool has_children);
 Node* create_leaf_node(NodeGeneralType gtype, NodeType type, Token* token);
 Node* create_parent_node(NodeGeneralType gtype, NodeType type, Token* token);
 NodeRet construct_error_node(Token *token);

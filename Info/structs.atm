@@ -5,7 +5,7 @@ struct myStruct {
 }
 
 entry func main(args: str[]): i4 {
-    data: >chr = malloc(8 chrs)
+    data: >chr = malloc(8 * chr)
     info: str = args[0]
     checksum: n1 = 0
 

@@ -8,8 +8,6 @@
 #include "../SharedIncludes/Array.h"
 #include "TPPLexer.h"
 
-void tpp_parse(Array tokens, const Vector* types_enums, const Vector* operator_enums);
-
 typedef enum {
     ROOT,
     STMNT_ALIAS,
@@ -22,5 +20,8 @@ typedef struct TPPNode {
     TPPToken token;
     Vector children;
 } TPPNode;
+
+TPPNode* tpp_parse(Array tokens, const Vector* types_enums,
+                   const Vector* operator_enums);
 
 #endif // ATOMIC_TPPPARSER_H

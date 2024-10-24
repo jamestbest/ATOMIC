@@ -105,14 +105,14 @@ bool verify_args(int argc, char** argv) {
 void parse_args(int argc, char** argv) {
     //First arg is the program name and so can be ignored
 
-    for (int i = 1; i < argc; i++) {
+    for (uint i = 1; i < argc; i++) {
         char* arg = argv[i];
 
         if (arg == 0) {
             return;
         }
 
-        uint arg_len = len(arg);
+        const uint arg_len = len(arg);
 
         if (arg_len < 1) {
             continue;
@@ -135,18 +135,6 @@ void parse_file(char* file) {
     vector_add(&ATOM_VR__CLI_FILES, file);
 }
 
-void parse_option_entry(Vector* args) {
-    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT,  flag_get_str(ATOM_CT__OPTION_E));
-
-    ATOM_VR__CLI_ENTRY_POINT = vector_get_unsafe(args, 0);
-}
-
-void parse_option_output(Vector* args) {
-    if (args->pos != 1) PWarn(ATOM_CT__CLI_WRN_OPT_ARG_COUNT, flag_get_str(ATOM_CT__OPTION_O));
-
-    ATOM_VR__CLI_OUTPUT_NAME = vector_get_unsafe(args, 0);
-}
-
 void parse_option_hadron(const Vector* args) {
     for (uint i = 0; i < args->pos; ++i) {
         const char* arg = args->arr[i];
@@ -157,8 +145,43 @@ void parse_option_debuglvl(Array args) {
     assert(false);
 }
 
-void parse_option_out(Array args) {
+void parse_option_out(const Array args) {
+    for (uint i = 0; i < args.pos; ++i) {
+        const ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_ENUM arg = *(ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_ENUM*)arr_get(&args, i);
 
+        enum ATOM_CT__FLAGS flag;
+        switch (arg) {
+            case ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_AST:
+                flag = ATOM_CT__FLAG_AST_OUT;
+                break;
+            case ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_FLAGS:
+                flag = ATOM_CT__FLAG_FLAGS_OUT;
+                break;
+            case ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_SCOPE:
+                flag = ATOM_CT__FLAG_SCOPE_OUT;
+                break;
+            case ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_TOK:
+                flag = ATOM_CT__FLAG_TOK_OUT;
+                break;
+            case ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_VLTOK:
+                flag = ATOM_CT__FLAG_VLTOK_OUT;
+                break;
+            case ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_VTOK:
+                flag = ATOM_CT__FLAG_VTOK_OUT;
+                break;
+            default:
+                assert(false);
+        }
+        flag_set(flag, true);
+    }
+}
+
+void parse_option_o(const Array args) {
+    ATOM_VR__CLI_OUTPUT_NAME = *(char**)arr_get(&args, ATOM_CT__OPTION_O_ARG_OUTPUT_FORMAT);
+}
+
+void parse_option_entry(const Array args) {
+    ATOM_VR__CLI_ENTRY_POINT = *(char**)arr_get(&args, ATOM_CT__OPTION_E_ARG_Entry);
 }
 
 uint verify_numeric_errno(const char* arg, const StaticOptionArgInfo* arg_info) {
@@ -179,6 +202,82 @@ uint verify_numeric_errno(const char* arg, const StaticOptionArgInfo* arg_info) 
     return EXIT_SUCCESS;
 }
 
+int compare_ints(const void* a, const void* b) {
+    const long long av = *(long long*)a;
+    const long long bv = *(long long*)b;
+
+    if (av == bv) return 0;
+    if (av < bv) return -1;
+    return 1;
+}
+
+int compare_naturals(const void* a, const void* b) {
+    const unsigned long long av = *(unsigned long long*)a;
+    const unsigned long long bv = *(unsigned long long*)b;
+
+    if (av == bv) return 0;
+    if (av < bv) return -1;
+    return 1;
+}
+
+int compare_characters(const void* a, const void* b) {
+    const char av = *(char*)a;
+    const char bv = *(char*)b;
+
+    return av - bv;
+}
+
+int compare_strings(const void* a, const void* b) {
+    return strcasecmp(*(char**)a, *(char**)b);
+}
+
+int (*cmp_funcs[])(const void*, const void*) = {
+    [FP_TYPE_STR] = compare_strings,
+    [FP_TYPE_INTEGER] = compare_ints,
+    [FP_TYPE_NATURAL] = compare_naturals,
+    [FP_TYPE_CHARACTER] = compare_characters,
+};
+
+struct ArgInListRes {
+    uint errcode;
+    size_t enum_pos;
+} verify_arg_in_list(void* arg, const StaticOptionArgInfo* arg_info) {
+    if (arg_info->arg_option_count == 0) {
+        return (struct ArgInListRes){.errcode= EXIT_SUCCESS, .enum_pos = (size_t)-1};
+    }
+
+    const OptionData* res = bsearch(arg, arg_info->data, arg_info->arg_option_count, sizeof (*arg_info->data), cmp_funcs[arg_info->type]);
+
+    if (!res) {
+        return (struct ArgInListRes){.errcode= EXIT_FAILURE, .enum_pos = (size_t)-1};;
+    }
+    return (struct ArgInListRes){.errcode= EXIT_SUCCESS, .enum_pos = res - arg_info->data};
+}
+
+void print_valid_arg_options(const StaticOptionArgInfo* arg_info) {
+    for (uint i = 0; i < arg_info->arg_option_count; ++i) {
+        const OptionData* data = &arg_info->data[i];
+        printf("  %d: ", i + 1);
+        switch (arg_info->type) {
+            case FP_TYPE_STR:
+                printf("%s", data->str);
+                break;
+            case FP_TYPE_INTEGER:
+                printf("%lld", data->integer);
+                break;
+            case FP_TYPE_NATURAL:
+                printf("%llu", data->natural);
+                break;
+            case FP_TYPE_CHARACTER:
+                printf("%c", data->character);
+                break;
+            default:
+                assert(false);
+        }
+        newline();
+    }
+}
+
 struct VerifiedArgs {
     uint errcode;
     Array translated_args;
@@ -186,8 +285,24 @@ struct VerifiedArgs {
     const StaticOptionInfo* info = &ATOM_CT__OPTIONINFO[option];
     Array ret_arr = arr_construct(sizeof (OptionData), args.pos);
 
+    uint arg_info_pos = 0;
     for (uint i = 0; i < args.pos; ++i) {
-        const StaticOptionArgInfo* arg_info = &info->args[i];
+        const StaticOptionArgInfo* arg_info = &info->args[arg_info_pos];
+
+        // if the next arg info is valid then move on to it
+        if (arg_info_pos >= info->arg_info_count) {
+            // if the next arg info isn't valid then we need the last one to have been a repeatable arg, else error
+            if (!arg_info->repeated) {
+                error("Option `%s` given more arguments than allowed. Expected %zu args",
+                    info->option_name,
+                    info->arg_info_count
+                );
+                goto verify_option_arguments_return_error;
+            }
+        } else if (arg_info_pos + 1 < info->arg_info_count) {
+            arg_info_pos++;
+        }
+
         const char* arg = args.arr[i];
 
         switch (arg_info->type) {
@@ -236,7 +351,20 @@ struct VerifiedArgs {
                 assert(false);
         }
 
-        continue;
+        const struct ArgInListRes arg_verified = verify_arg_in_list(arr_get(&ret_arr, ret_arr.pos - 1), arg_info);
+
+        if (arg_verified.errcode == EXIT_SUCCESS) {
+            if (arg_verified.enum_pos != (size_t)-1) {
+                // if we are to choose from a number of options then give the index not the value
+                arr_set_dyn(&ret_arr, ret_arr.pos - 1, &arg_verified.enum_pos, sizeof (arg_verified.enum_pos));
+            }
+            continue;
+        }
+
+    verify_option_arguments_invalid_arg:
+        error("Argument `%s` given to option `%s` is not in list of valid options:\n", arg, info->option_name);
+        print_valid_arg_options(arg_info);
+        goto verify_option_arguments_return_error;
 
     verify_option_arguments_invalid_type:
         error(ATOM_CT__CLI_ERR_ARG_VALUE_INVALID,
@@ -248,14 +376,18 @@ struct VerifiedArgs {
         goto verify_option_arguments_return_error;
     }
 
+    return (struct VerifiedArgs){.errcode = EXIT_SUCCESS, .translated_args = ret_arr};
+
 verify_option_arguments_return_error:
+    arr_destroy(&ret_arr);
     return (struct VerifiedArgs){.errcode = EXIT_FAILURE, .translated_args = ARRAY_ERR};
 }
 
 /*
  * Parse the option and use the argv values as arguments
  */
-void parse_option(char *option_name, char **cli_args, int cli_arg_count, int *option_name_index_in_args) {
+void parse_option(char* option_name, char** cli_args, int cli_arg_count,
+                  uint* option_name_index_in_args) {
     Vector args = get_option_args(cli_args, option_name_index_in_args, cli_arg_count);
 
     if (args.pos == 0) {
@@ -266,8 +398,8 @@ void parse_option(char *option_name, char **cli_args, int cli_arg_count, int *op
     const enum ATOM_CT__OPTIONS option_index = option_find(option_name);
 
     if (option_index == (enum ATOM_CT__OPTIONS)-1) {
-        PWarn(ATOM_CT__CLI_WRN_OPT_INVALID, option_name);
-        return;
+        PError(ATOM_CT__CLI_ERR_OPT_INVALID, option_name);
+        exit(ARGERR);
     }
 
     const struct VerifiedArgs res = verify_option_arguments(args, option_index);
@@ -277,27 +409,28 @@ void parse_option(char *option_name, char **cli_args, int cli_arg_count, int *op
         exit(ARGERR);
     }
 
-    const Array args_t = res.translated_args;
+    Array args_t = res.translated_args;
     switch (option_index) {
         case ATOM_CT__OPTION_DEBUGLVL:
             parse_option_debuglvl(args_t);
             break;
         case ATOM_CT__OPTION_E:
+            parse_option_entry(args_t);
             break;
         case ATOM_CT__OPTION_O:
+            parse_option_o(args_t);
             break;
         case ATOM_CT__OPTION_OUT:
+            parse_option_out(args_t);
             break;
         case ATOM_CT__OPTION_TEST:
-            break;
         case ATOM_CT__OPTION_COUNT:
-            break;
+            assert(false);
     }
-
-    vector_destroy(&args);
+    arr_destroy(&args_t);
 }
 
-Vector get_option_args(char** argv, int* argp, int argc) {
+Vector get_option_args(char** argv, uint* argp, const int argc) {
     Vector args = vector_create(ATOM_CT__CLI_DEFAULT_OPTION_BUFF_SIZE);
 
     while (*argp + 1 < argc && argv[*argp + 1][0] != '-') {

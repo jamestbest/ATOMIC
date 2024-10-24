@@ -47,6 +47,7 @@ typedef union OptionData {
     long long integer;
     unsigned long long natural;
     char character;
+    size_t enum_pos;
 } OptionData;
 
 typedef struct StaticOptionArgInfo {

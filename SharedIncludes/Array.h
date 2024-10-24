@@ -45,7 +45,7 @@ typedef struct {
     uint pos;
 } Array;
 
-const static Array ARRAY_ERR;
+static const Array ARRAY_ERR;
 
 Array arr_construct(const uint element_size, const uint min_element_count);
 Array arr_create(const uint element_size);
@@ -53,6 +53,8 @@ bool arr_is_at_capacity(const Array* vec);
 void arr_resize(Array* vec);
 void arr_add(Array* arr, const void* element);
 void arr_add_dyn(Array* arr, const void* element, const size_t element_size);
+void arr_set(const Array* arr, const size_t index, const void* element);
+void arr_set_dyn(const Array* arr, const size_t index, const void* element, const size_t element_size);
 bool arr_remove(Array* arr, const uint index);
 void* arr_pop(Array* arr);
 void* arr_peek(const Array* arr);

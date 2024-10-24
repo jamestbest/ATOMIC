@@ -35,8 +35,8 @@ bool verify_args(int argc, char** argv);
 void parse_args(int argc, char** argv);
 
 void parse_flag(char* arg);
-void parse_option(char *arg, char **argv, int argc, int *i);
-Vector get_option_args(char** argv, int* argp, int argc);
+void parse_option(char* arg, char** argv, int argc, uint* i);
+Vector get_option_args(char** argv, uint* argp, int argc);
 void parse_file(char* file);
 
 void parse_compile_ret(CompileRet ret);
