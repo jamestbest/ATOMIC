@@ -120,7 +120,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     free_tokens(&folded_tokens);
 
     free_node_rec(parseRet.node);
-    // free_scopes(global_scope);
+    free_scopes(global_scope);
 
     return (CompileRet) {SUCCESS, NULL};
 }

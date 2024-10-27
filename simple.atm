@@ -1,7 +1,9 @@
 d: i8
 
 func a(b: i4): i4 {
-    print("Hello world")
+    times b {
+        print("Hello world")
+    }
     ret b
 }
 
