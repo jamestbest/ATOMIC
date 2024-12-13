@@ -67,12 +67,13 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
 
     Vector lines = vector_create(BUFF_MIN);
 
-    uint lexRet = lex(fp, &base_tokens, &lines);
-    print_tokens_with_flag_check(&base_tokens, &lines, "\n\nBASE TOKENS");
+    const uint lexRet = lex(fp, &base_tokens, &lines);
+    print_tokens_with_flag_check(&base_tokens, &lines, "\nBASE TOKENS");
     fflush(stdout);
 
     if (lexRet != SUCCESS) {
         free_tokens(&base_tokens);
+        vector_disseminate_destruction(&lines);
 
         return (CompileRet) {LEXERR, NULL};
     }

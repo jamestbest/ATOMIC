@@ -6,7 +6,7 @@
 #define ATOM_FLAGS_H
 
 #include <stdbool.h>
-#include "Flag-Preprocessor/FlagPreprocessorInject.h"
+#include "FlagPreprocessor/FlagPreprocessorInject.h"
 #include "SharedIncludes/Vector.h"
 
 enum ATOM_CT__FLAGS {

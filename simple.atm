@@ -10,13 +10,26 @@ func a(b: i4): i4 {
 proc print(string: str) {
     string[0] += 'a'
 
-    a: i4 = 12;
-    b: i8 = 14;
+    a: i4 = 12; b: i8 = 14;
     c: i4 = a;
+    d: i4 = 0b1
 
-    *(a + 100) = d
+    *(a + \
+    100) = d
 
-    b++
+    {
+        c: str = "Hello world"
+
+¬        d := c + " test"
+        e: i4 = 12
+
+¬        f :: str = d + e
+    }
+
+¬    *(a + \
+¬     100) = d
+
+    b++;
 
     d: i8 = a->b
 

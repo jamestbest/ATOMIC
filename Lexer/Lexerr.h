@@ -11,6 +11,8 @@
 extern Vector* llines;
 
 typedef enum Lexerrors {
+    LEXERR_UNKNOWN_SYMBOL,
+
     LEXERR_INT_INVALID_BASE,
     LEXERR_INT_INVALID_INT,
     LEXERR_INT_INVALID_DIGIT_FOR_BASE,
@@ -39,6 +41,9 @@ uint lexerr(Lexerrors errorCode, Position pos, ...);
 
 
 //ERRORS
+#define ATOM_CT__LEXERR_UNKNOWN_SYMBOL \
+            "Found invalid/unknown symbol `%c` (%u)\n"
+
 #define ATOM_CT__LEXERR_INT_INVALID_BASE \
             "Invalid base found for INT literal, found character \'%s\' after 0.\n"         \
             "Supported bases include binary (0b), trinary (0t), octonal (0o), denary (0d), and hex (0x)\n"

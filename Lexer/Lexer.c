@@ -54,7 +54,7 @@ Vector *llines;
 bool load_line(void) {
     update_line_count();
     c_char = line_buffer.data;
-    bool success = get_line(c_file, &line_buffer);
+    const bool success = get_line(c_file, &line_buffer);
 
     if (success) vector_add(llines, buffer_copy(&line_buffer));
 
@@ -90,17 +90,17 @@ uint lex(FILE* file, Array* tokens, Vector *lines) {
 }
 
 uint lex_line(const Buffer* line) {
-    while (c_char < line->data + line->pos && current_char() != '\0') {
-        const uint32_t c = current_char();
-
-        if (current_char() == '\n') {
+    uint32_t c;
+    uint ret = EXIT_SUCCESS;
+    while (c_char < line->data + line->pos && (c = current_char(), c != '\0')) {
+        if (c == '\n') {
             add_token((Token){NEWLINE, .data.ptr = NULL, (Position){line_num, col_num, line_num + 1, 0}});
             consume();
             continue;
         }
 
         TokenType type;
-        switch (current_char()) {
+        switch (c) {
             case ')':
                 type = PAREN_CLOSE;
                 break;
@@ -126,7 +126,7 @@ uint lex_line(const Buffer* line) {
                 type = DELIMITER;
                 break;
             case ':': {
-                uint32_t next = peek();
+                const uint32_t next = peek();
                 if (next == ':') {
                     consume();
                     type = TYPE_IMPL_CAST;
@@ -141,6 +141,9 @@ uint lex_line(const Buffer* line) {
             case '\t':
                 type = WS_T;
                 break;
+            case '\\':
+                type = BACKSLASH;
+                break;
 
             default:
                 goto lex_line_cont;
@@ -151,7 +154,7 @@ uint lex_line(const Buffer* line) {
         continue;
 
     lex_line_cont:
-        switch (current_char()) {
+        switch (c) {
             case COMMENT_START_ASCII_CODE:
                 lex_comment();
                 break;
@@ -172,19 +175,20 @@ uint lex_line(const Buffer* line) {
         }
         else if (is_digit(c)) {
             const uint errcode = lex_number();
-            if (errcode != SUCCESS) return errcode;
+            if (errcode != SUCCESS) ret = errcode;
         }
         else {
             const PosCharp op_pos = longest_word_in_arr(c_char, ATOM_CT__LEX_OPERATORS);
             if (op_pos.arr_pos != -1){
                 lex_operator(op_pos);
             } else {
+                ret = lexerr(LEXERR_UNKNOWN_SYMBOL, (Position){line_num, col_num, line_num, col_num}, c);
                 consume();
             }
         }
     }
 
-    return SUCCESS;
+    return ret;
 }
 
 void print_tokens(Array* tokens, bool include_ws, bool include_comments) {
@@ -393,8 +397,8 @@ int lex_comment(void) {
         return lex_multiline_comment();
     }
 
-    const uint col_start = col_num;
-    char* comment_start = c_char;
+    const uint col_start= col_num;
+    const char* comment_start = c_char;
 
     consume(); //eat the ¬
 
@@ -484,16 +488,14 @@ uint lex_number(void) {
         }
 
         if (end_char == decimal_pos) {
-            lexerr(LEXERR_FLOAT_TRAILING_DECIMAL, (Position){line_num, start_col, line_num, col_num - 1});
-            return FAIL;
+            return lexerr(LEXERR_FLOAT_TRAILING_DECIMAL, (Position){line_num, start_col, line_num, col_num - 1});
         }
 
         char* value_end;
         long double value = strtold(start_char, &value_end);
 
         if (value_end != end_char) {
-            lexerr(LEXERR_FLOAT_INVALID_FLOAT, (Position){line_num, start_col, line_num, col_num - 1}, end_char - 1, value_end - 1);
-            return FAIL;
+            return lexerr(LEXERR_FLOAT_INVALID_FLOAT, (Position){line_num, start_col, line_num, col_num - 1}, end_char - 1, value_end - 1);
         }
 
         add_token(construct_token(LIT_FLOAT, &value, start_col, col_num - 1));
@@ -505,8 +507,7 @@ uint lex_number(void) {
         llint value = strtoll(start_char, &value_end, base);
 
         if (value_end != end_char) {
-            lexerr(LEXERR_INT_INVALID_INT, (Position){line_num, start_col, line_num, col_num - 1}, end_char - 1, value_end - 1);
-            return FAIL;
+            return lexerr(LEXERR_INT_INVALID_INT, (Position){line_num, start_col, line_num, col_num - 1}, end_char - 1, value_end - 1);
         }
 
         const uint end_col = col_num;
@@ -517,10 +518,9 @@ uint lex_number(void) {
         }
 
         if (value_end != error_end_char) {
-            lexerr(LEXERR_INT_INVALID_DIGIT_FOR_BASE,
+            return lexerr(LEXERR_INT_INVALID_DIGIT_FOR_BASE,
                    (Position){line_num, end_col, line_num, col_num - 1},
                    base, end_char);
-            return FAIL;
         }
 
         add_token(construct_token(LIT_INT, &value, start_col, col_num - 1));

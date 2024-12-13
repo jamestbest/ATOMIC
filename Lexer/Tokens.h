@@ -57,6 +57,8 @@ typedef enum TokenType {
 
     DELIMITER,
 
+    BACKSLASH,      // `\` -- for removing `\n`
+
     WS_S,                   //White space single/tab
     WS_T,
     NEWLINE,

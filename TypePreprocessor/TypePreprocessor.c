@@ -103,12 +103,12 @@ int main(const int argc, char** argv) {
         enum_file
     );
 
-    const Vector operator_enums = collect_enums(enum_file, ENUM_FILE_OPERATOR_ENUM_NAME);
-    fseek(enum_file, 0, SEEK_SET);
-    const Vector type_enums = collect_enums(enum_file, ENUM_FILE_TYPE_ENUM_NAME);
+    // const Vector operator_enums = collect_enums(enum_file, ENUM_FILE_OPERATOR_ENUM_NAME);
+    // fseek(enum_file, 0, SEEK_SET);
+    // const Vector type_enums = collect_enums(enum_file, ENUM_FILE_TYPE_ENUM_NAME);
 
-    print_enums(&operator_enums);
-    print_enums(&type_enums);
+    // print_enums(&operator_enums);
+    // print_enums(&type_enums);
 
     Buffer line_buffer = buffer_create(BUFF_MIN);
     tpplex_setup(&type_enums, &operator_enums);

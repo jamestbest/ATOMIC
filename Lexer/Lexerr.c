@@ -4,7 +4,7 @@
 
 #include "Lexerr.h"
 
-char* lexerr_process_char(char a, char buff[2]) {
+char* lexerr_process_char(const char a, char buff[2]) {
     if (a == '\n') return "\\n";
     if (a == '\t') return "\\t";
 
@@ -12,7 +12,7 @@ char* lexerr_process_char(char a, char buff[2]) {
     return buff;
 }
 
-void highlight_current_line_err(Position pos) {
+void highlight_current_line_err(const Position pos) {
     highlight_line_err(pos, llines->arr[pos.start_line - 1], -1);
 }
 
@@ -30,26 +30,34 @@ uint lexerr(const Lexerrors errorCode, const Position pos, ...) {
 
     //the line we are on is still in its buffer
     switch (errorCode) {
+        case LEXERR_UNKNOWN_SYMBOL: {
+            const uint32_t symbol = va_arg(args, uint32_t);
+            printf(ATOM_CT__LEXERR_UNKNOWN_SYMBOL, symbol, symbol);
+            break;
+        }
         case LEXERR_INT_INVALID_INT: {
             char* atom_end = lexerr_process_char(*va_arg(args, char*), buff1);
             char* strtoll_end = lexerr_process_char(*va_arg(args, char*), buff2);
-                    printf(ATOM_CT__LEXERR_INT_INVALID_INT,
-                           atom_end,
-                           strtoll_end);
+            printf(ATOM_CT__LEXERR_INT_INVALID_INT,
+                   atom_end,
+                   strtoll_end
+            );
             break;
         }
         case LEXERR_INT_INVALID_BASE: {
             char* end_char = lexerr_process_char(*va_arg(args, char*), buff1);
             printf(ATOM_CT__LEXERR_INT_INVALID_BASE,
-                   end_char);
+                   end_char
+            );
             break;
         }
         case LEXERR_INT_INVALID_DIGIT_FOR_BASE: {
-            int base = va_arg(args, int);
+            const int base = va_arg(args, int);
             char* start_char = lexerr_process_char(*va_arg(args, char*), buff1);
             printf(ATOM_CT__LEXERR_INT_INVALID_DIGIT_FOR_BASE,
                    base,
-                   start_char);
+                   start_char
+            );
             break;
         }
         case LEXERR_FLOAT_TRAILING_DECIMAL: {
@@ -61,7 +69,8 @@ uint lexerr(const Lexerrors errorCode, const Position pos, ...) {
             char* strtold_end = lexerr_process_char(*va_arg(args, char*), buff2);
             printf(ATOM_CT__LEXERR_FLOAT_INVALID_FLOAT,
                    atom_end,
-                   strtold_end);
+                   strtold_end
+            );
             break;
         }
         case LEXERR_COMMENT_MULTILINE_NO_END: {
@@ -70,12 +79,12 @@ uint lexerr(const Lexerrors errorCode, const Position pos, ...) {
             break;
         }
         case LEXERR_PTR_OFFSET_OUT_OF_RANGE: {
-            int offset = va_arg(args, int);
+            const int offset = va_arg(args, int);
             printf(ATOM_CT__LEXERR_PTR_OFFSET_OUT_OF_RANGE, offset);
             break;
         }
         case LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET: {
-            Token* t = va_arg(args, Token*);
+            const Token* t = va_arg(args, Token*);
             printf(ATOM_CT__LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET,
                    get_token_type_string(t->type));
             break;

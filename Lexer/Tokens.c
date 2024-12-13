@@ -92,12 +92,6 @@ Arr ATOM_CT__LEX_LIT_BOOLS = {ATOM_CT__LEX_LIT_BOOLS_RAW,
         sizeof(ATOM_CT__LEX_LIT_BOOLS_RAW) / sizeof(char*)
 };
 
-struct test {
-    ATOM_CT__LEX_OPERATORS_ENUM e_val;
-    const char* op_str;
-
-};
-
 char* ATOM_CT__LEX_OPERATORS_RAW[] = {
     "+", "-",
     "*", "/",
@@ -141,23 +135,20 @@ Arr ATOM_CT__LEX_OPERATORS = {
     sizeof(ATOM_CT__LEX_OPERATORS_RAW) / sizeof(char*)
 };
 
-static uint lonp_helper(const long long unsigned int n) {
-    if (n < 1e1) return 1;
-    if (n < 1e2) return 2;
-    if (n < 1e3) return 3;
-    if (n < 1e4) return 4;
-    if (n < 1e5) return 5;
-    if (n < 1e6) return 6;
-    if (n < 1e7) return 7;
+static size_t lonp_helper(const long long unsigned int n) {
+    if (n == 0) return 1;
 
-    return lonp_helper(n / 1e7) + 7;
+    return floor(log10(n)) + 1;
 }
 
 uint length_of_number_printout(const long long int n) {
     return n < 0 ? lonp_helper(-n) + 1 : lonp_helper(n);
 }
 
-uint length_of_position_printout(Position pos) {
+uint length_of_position_printout(const Position pos) {
+    // I want to convert this to fprintf to NULL, but that's not possible, I could use snprintf NULL but that does not conform to the print_position format that
+    //  I want to mirror for changes. So instead I leave here a comment in the hopes that future James will not forget this and make a mistake. In actuality the
+    //  chances I ever look at this piece of code again are slim
     uint len = 4; // '<:->'
 
     len += length_of_number_printout(pos.start_line);
@@ -174,7 +165,10 @@ uint length_of_position_printout(Position pos) {
     return len;
 }
 
-int print_position(Position pos) {
+/*  [[INFO]]
+ *  See length_of_position_printout before making changes
+ */
+int print_position(const Position pos) {
     int ret = 0;
     ret += printf("<%d:%d", pos.start_line, pos.start_col);
 
@@ -229,6 +223,7 @@ const char* get_token_color(TokenType type) {
         case NEWLINE:
         case COMMENT:
         case DELIMITER:
+        case BACKSLASH:
             return C_WHT;
         case TOKEN_INVALID:
         default:
@@ -327,6 +322,9 @@ const char* get_token_type_string(TokenType type) {
         case DELIMITER:
             title = "DELIMITER";
             break;
+        case BACKSLASH:
+            title = "BACKSLASH";
+            break;
         case TOKEN_INVALID:
             title = "INVALID";
             break;
@@ -366,6 +364,10 @@ void print_token_value(const Token* token) {
             break;
         case CURLY_CLOSE:
             putchar('}');
+            break;
+
+        case BACKSLASH:
+            putchar('\\');
             break;
 
         case CARROT:
@@ -448,6 +450,8 @@ void print_token_value(const Token* token) {
         case TOKEN_INVALID:
             printf("\\INVALID\\");
             break;
+        default:
+            assert(false);
     }
 }
 
@@ -457,7 +461,7 @@ void print_token(const Token* token) {
     //{<POSITION> TYPE: VALUE}
     printf("{");
     Position pos = token->pos;
-    pos.end_col = (token->type == NEWLINE) ? 0 : pos.end_col;
+    pos.end_col = token->type == NEWLINE ? 0 : pos.end_col;
 
     print_position(pos);
 

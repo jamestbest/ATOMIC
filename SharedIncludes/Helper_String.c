@@ -47,11 +47,11 @@ bool str_eq(const char* stra, const char* strb) {
     return stra[i] == strb[i]; //have both strings ended?
 }
 
-char lower_unsafe(char a) {
+char lower_unsafe(const char a) {
     return (char)(a | 32);
 }
 
-char lower(char a) {
+char lower(const char a) {
     if (is_alph(a)) {
         return lower_unsafe(a);
     }

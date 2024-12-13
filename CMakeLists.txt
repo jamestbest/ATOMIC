@@ -12,9 +12,9 @@ add_compile_options(
 #        -fsanitize=undefined,address
 )
 
-if (NOT WIN32)
+if (UNIX)
     add_link_options(-rdynamic)
-endif (NOT WIN32)
+endif (UNIX)
 
 add_executable(ATOMICLI
         Compiler.c
@@ -54,11 +54,11 @@ add_executable(ATOMICLI
 target_compile_options(ATOMICLI BEFORE PUBLIC -include ${CMAKE_SOURCE_DIR}/libraries/hadron.h)
 if (WIN32)
     target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron_win.a)
-else (WIN32)
+elseif (UNIX)
     target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron_unix.a)
 endif (WIN32)
-target_link_libraries(ATOMICLI m ${CMAKE_SOURCE_DIR}/libraries/DbgHelp.Lib) # link with hadron and the math lib, and DbgHelp
-target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/FLAG-PREPROCESSOR)
+target_link_libraries(ATOMICLI m ${CMAKE_SOURCE_DIR}/libraries/DbgHelp.Lib) # link with the math lib and DbgHelp
+target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/FlagPreprocessor)
 target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/SharedIncludes)
 
 if (WIN32)
@@ -69,7 +69,7 @@ if (WIN32)
 endif (WIN32)
 
 add_executable(Flag_preprocessor
-        Flag-Preprocessor/FlagPreprocessor.c
+        FlagPreprocessor/FlagPreprocessor.c
 
         SharedIncludes/Vector.c
         SharedIncludes/Buffer.c

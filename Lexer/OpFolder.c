@@ -51,6 +51,14 @@ uint fold(Array* base_tokens, Array* folded_tokens) {
             // [[maybe]] just pass the current token and then edit it within the function
             //  and have it added here. Would add obsfuc.
             fold_operator(c);
+        } else if (c->type == COMMENT) {
+            // ignore including comments and free their data
+            free(c->data.ptr);
+        } else if (c->type == BACKSLASH) {
+            const Token* n = peek();
+            if (n && n->type == NEWLINE) {
+                consume(); // eat the newline -- neither are added to the ftokens
+            }
         } else if (!is_skippable(c->type)) {
             token_arr_add(ftokens, *c);
         }
@@ -66,7 +74,7 @@ bool is_whitespace_type(TokenType type) {
 }
 
 bool is_skippable(TokenType type) {
-    return is_whitespace_type(type) || type == COMMENT;
+    return is_whitespace_type(type);
 }
 
 bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator) {

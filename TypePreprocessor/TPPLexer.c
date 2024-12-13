@@ -19,8 +19,12 @@ Vector operators_enum;
 Vector types_enum;
 
 static char consume();
+static void gorge(size_t amount);
 static char peek();
+static char peer(size_t amount);
 static char current();
+static char expect(char e);
+static char expect_peek(char e);
 
 uint tpplex_setup(const Vector* type_enum, const Vector* operator_enum) {
     types_enum = *type_enum;
@@ -112,7 +116,7 @@ void tpplex_line(const Buffer* line_buffer) {
     while (c = current(), c != '\0') {
         if (is_alph(c)) {
             lex_identifier(&c_line->data[c_pos]);
-            goto skip_consume;
+            continue;
         }
 
         if (c == '=') {
@@ -120,26 +124,27 @@ void tpplex_line(const Buffer* line_buffer) {
         } else if (c == ';') {
             add_keyword(DELIMITER);
         } else if (c == '|') {
-            const bool join_next = peek() == '|';
-
-            add_keyword(join_next ? OR : PIPE);
-            if (join_next) consume();
+            if (expect_peek('|')) {
+                add_keyword(OR);
+            } else {
+                add_keyword(PIPE);
+            }
         } else if (c == '&') {
-            const bool join_next = peek() == '&';
-
-            if (!join_next) error("`&` is not a valid symbol, `&&` is. Peek is `%c`\n", peek());
-            else {
+            if (expect_peek('&')) {
                 add_keyword(AND);
-                consume();
+            } else error("`&` is not a valid symbol, `&&` is. Peek is `%c`\n", peek());
+        } else if (c == '<') {
+            const bool join_next = peek() == '-' && peer(2) == '>';
+
+            if (!join_next) error("`<` is not a valid symbol, `<->` is. Peek is `%c`\n", peek());
+            else {
+                add_keyword(BIRROW);
+                gorge(2);
             }
         } else if (c == '-') {
-            const bool join_next = peek() == '>';
-
-            if (!join_next) error("`-` is not a valid symbol, `->` is. Peek is `%c`\n", peek());
-            else {
+            if (expect_peek('>')) {
                 add_keyword(ARROW);
-                consume();
-            }
+            } else error("`-` is not a valid symbol, `->` is. Peek is `%c`\n", peek());
         } else if (is_whitespace(c) || is_newline(c)) {
             // ignore whitespace & newlines
         } else {
@@ -147,9 +152,6 @@ void tpplex_line(const Buffer* line_buffer) {
         }
 
         consume();
-
-    skip_consume:
-        continue;
     }
 
     TPPToken* temp;
@@ -177,16 +179,48 @@ char consume() {
     return c_line->data[c_pos++];
 }
 
+void gorge(const size_t amount) {
+    for (uint i= 0; i < amount; ++i) {
+        if (consume() == '\0') break;
+    }
+}
+
 char peek() {
     if (!is_valid_index(c_pos + 1)) return '\0';
 
     return c_line->data[c_pos + 1];
 }
 
+char peer(const size_t amount) {
+    if (!is_valid_index(c_pos + amount)) return '\0';
+
+    return c_line->data[c_pos + amount];
+}
+
 char current() {
     if (!is_valid_index(c_pos)) return '\0';
 
     return c_line->data[c_pos];
+}
+
+char expect(const char e) {
+    if (current() == e) {
+        return consume();
+    }
+
+    return '\0';
+}
+
+// this is a bit of a figglesome function; it is basically only to be used when checking
+//  if the peeked token is part of the same operator e.g. `||` It consumes once, expecting
+//  the calling function to consume the ending part.
+char expect_peek(const char e) {
+    if (peek() == e) {
+        consume();
+        return e;
+    }
+
+    return '\0';
 }
 
 const char* get_tpptoken_type_string(const TPPType type) {

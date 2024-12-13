@@ -462,20 +462,32 @@ void print_subroutine(const Node* subroutine) {
 }
 
 void print_subroutines(const Vector* subroutines) {
-    for (uint i = 0; i < subroutines->pos; ++i) {
-        const Node* subroutine = subroutines->arr[i];
+    for (uint i= 0; i < subroutines->pos; ++i) {
+        const Node* subroutine= subroutines->arr[i];
 
         print_subroutine(subroutine);
     }
 }
 
-void print_scope(const Scope* scope);
+static const char* const COLOUR_ROT[]= {
+    C_RED,
+    C_GRN,
+    C_BLU,
+    C_MGN,
+};
 void print_child_scopes(const Vector* scopes) {
+    static unsigned int colour_rot_i = 0;
+
+    const char* const col = COLOUR_ROT[colour_rot_i];
+    colour_rot_i = (colour_rot_i + 1) % (sizeof (COLOUR_ROT) / sizeof (COLOUR_ROT[0]));
+
+    printf("%s{\n"C_RST, col);
     for (uint i = 0; i < scopes->pos; ++i) {
         const Scope* scope = scopes->arr[i];
 
         print_scope(scope);
     }
+    printf("%s}"C_RST, col);
 }
 
 void print_scope(const Scope* scope) {

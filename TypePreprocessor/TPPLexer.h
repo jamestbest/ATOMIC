@@ -17,6 +17,7 @@ typedef enum TPPType {
 
     EQUALITY,
     ARROW,
+    BIRROW,
     PIPE,
     AND,
     OR,

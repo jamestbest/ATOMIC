@@ -28,7 +28,7 @@ static void update_data(ShuntData data, ShuntRet ret);
 static Node* parse_subroutine_call(ShuntData data);
 
 //[[DEBUG]]
-static void print_token_stack(Stack* operator_stack);
+static void print_token_stack(const Stack* operator_stack);
 static void print_node_stack(Stack *output_s);
 
 // function to determine if the current token is a valid continuation of the
@@ -552,7 +552,7 @@ void update_data(ShuntData data, ShuntRet ret) {
 }
 
 //[[DEBUG]]
-void print_token_stack(Stack* operator_stack) {
+void print_token_stack(const Stack* operator_stack) {
     printf("---------------STACK OP TOKENS--------------- \n");
 
     if (operator_stack->ptr == 0) {

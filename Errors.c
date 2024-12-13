@@ -120,7 +120,7 @@ void highlight_line_start_and_error(Token* parent, Token* issue, const Vector* l
         const uint start_len = length_of_position_printout(startPos);
         const uint err_len = length_of_position_printout(errorPos);
 
-        const uint max_len = max(start_len, err_len);
+        const uint max_len = umax(start_len, err_len);
 
         highlight_line_info(startPos, startLine, max_len);
         highlight_line_err(errorPos, errorLine, max_len);
