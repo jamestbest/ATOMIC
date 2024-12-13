@@ -68,8 +68,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     Vector lines = vector_create(BUFF_MIN);
 
     const uint lexRet = lex(fp, &base_tokens, &lines);
-    print_tokens_with_flag_check(&base_tokens, &lines, "\nBASE TOKENS");
-    fflush(stdout);
+    print_tokens_with_flag_check(&base_tokens, &lines, "\n\nBASE TOKENS");
 
     if (lexRet != SUCCESS) {
         free_tokens(&base_tokens);
@@ -82,7 +81,6 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     uint foldRet = fold(&base_tokens, &folded_tokens);
     // this is here for debug purposes, it should be after error checking in later versions
     print_tokens_with_flag_check(&folded_tokens, &lines, "\n\nFOLDED TOKENS");
-    fflush(stdout);
 
     // we no longer need the base tokens BUT the token data inside is now under the control of the folded tokens
     // we shouldn't call free_tokens unless something went wrong, otherwise we will double free the data

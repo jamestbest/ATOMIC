@@ -7,6 +7,13 @@
 
 #include "Parserr.h"
 
+/*  [[TODO]] for adding identifiers to symbol table
+ *      - Create 27 vectors indexed by the first letter
+ *      - Each vector just adds new identifiers to the end
+ *      - When accessing an element, if it is not sorted (bool) then sort the vector and search
+ *      - If known that there will be less additions then sort the vectors there for accessing
+ */
+
 uint64_t sub_uid = 0;
 uint64_t var_uid = 0;
 
