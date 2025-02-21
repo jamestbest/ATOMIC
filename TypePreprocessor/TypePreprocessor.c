@@ -40,43 +40,55 @@ static void write_output_file(FILE* file, const char* file_name, const Array* in
 
 static void inform(const char* message, ...);
 static void error(const char* message, ...);
+static void verror(const char* message, va_list args);
 static void panic(const char* message, ...);
 static void warning(const char* message, ...);
 
 static char await_choice(const char* reason);
 
 static void fatal_file_error(const char* message);
+static void fatal_file_errorf(const char* message, ...);
 
 uint errcode = EXIT_SUCCESS;
 uint warncode = EXIT_SUCCESS;
 
-#define NUMBER_OF_INPUTS 3
+#define INPUT_COUNT 3
 
 bool unsafe = false;
 
 #define ENUM_FILE_OPERATOR_ENUM_NAME "ATOM_CT__LEX_OPERATORS_ENUM"
 #define ENUM_FILE_TYPE_ENUM_NAME "ATOM_CT__LEX_TYPES_GENERAL_ENUM"
 
-//./TP <Types File> <Operator enum file> <output file> (--UNSAFE)
-int main(const int argc, char** argv) {
-    if (argc < NUMBER_OF_INPUTS + 1 || argc > NUMBER_OF_INPUTS + 2) {
-        printf(C_RED"USAGE: "C_RST"3 arguments are expected for type preprocessor in form ./TP <Types File> <Operator enum file> <output file> (--UNSAFE)\n");
+void verify_args(const int argc, char** argv) {
+    if (argc < INPUT_COUNT + 1 || argc > INPUT_COUNT + 2) {
+        printf(C_RED"USAGE: "C_RST"3 arguments are expected for type preprocessor in form ./TP <Types File> <Enum file out> <Matrix file out> (--UNSAFE)\n");
         exit(EXIT_FAILURE);
     }
 
+    for (int i= 1; i < argc; ++i) {
+        if (!argv[i]) {
+            printf(C_RED"USAGE: "C_RST"argument %d is NULL, expected three valid filepaths", i + 1);
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+//./TP <Types File> <Operator enum file> <output file> (--UNSAFE)
+int main(const int argc, char** argv) {
+    verify_args(argc, argv);
+
     /*  STEPS
-     *  1. open types file & operator enum file
-     *  2. parse to get [OPERATOR] [SYMMERTIC] [LIST OF ENUMS] [""]
-     *  3. write to another file the const data - would know the length at preprocessor stage
-     *
-     *  If enum is missing or others are present then given an error
+     *  1. open types file
+     *  2. parse to get the types, coercion, and operator operand type validation
+     *  3. write to another file the types enum
+     *  4. write to another file the matrices for the coercion and operand types
      */
     const char* type_file_name = argv[1];
-    const char* enum_file_name = argv[2];
-    const char* out_file_name = argv[3];
+    const char* out_enum_file_name = argv[2];
+    const char* out_matrices_file_name = argv[3];
 
-    if (argc == NUMBER_OF_INPUTS + 2) {
-        const char* option = argv[4];
+    if (argc == INPUT_COUNT + 2) {
+        const char* option = argv[5];
 
         if (str_eq(option, "--UNSAFE")) {
             unsafe = true;
@@ -85,30 +97,24 @@ int main(const int argc, char** argv) {
         else warning("Invalid option given, only --UNSAFE is accepted\n");
     }
 
-    inform("Collected file locations:\n\tType File: %s\n\tEnum File: %s\n\tOutput File: %s\n",
+    inform("Collected file locations:\n\tType file: %s\n\tOutput enum file: %s\n\tOutput matrix file: %s\n",
         type_file_name,
-        enum_file_name,
-        out_file_name
+        out_enum_file_name,
+        out_matrices_file_name
     );
 
     FILE* type_file = fopen(type_file_name, "r");
-    FILE* enum_file = fopen(enum_file_name, "r");
 
-    if (!type_file || !enum_file) {
-        fatal_file_error("Unable to open read only type and enum file");
+    if (!type_file) {
+        fatal_file_errorf("Unable to open read only type file (%p)", type_file);
     }
 
-    inform("File pointers:\n\tType File: %p\n\tEnum File: %p\n",
-        type_file,
-        enum_file
+    inform("File pointers:\n\tType File: %p\n",
+        type_file
     );
 
-    // const Vector operator_enums = collect_enums(enum_file, ENUM_FILE_OPERATOR_ENUM_NAME);
-    // fseek(enum_file, 0, SEEK_SET);
-    // const Vector type_enums = collect_enums(enum_file, ENUM_FILE_TYPE_ENUM_NAME);
-
-    // print_enums(&operator_enums);
-    // print_enums(&type_enums);
+    const Vector operator_enums = vector_create(MIN_ARRAY_SIZE);
+    const Vector type_enums = vector_create(MIN_ARRAY_SIZE);
 
     Buffer line_buffer = buffer_create(BUFF_MIN);
     tpplex_setup(&type_enums, &operator_enums);
@@ -123,7 +129,9 @@ int main(const int argc, char** argv) {
         newline();
     }
 
-    const TPPNode* global_node = tpp_parse(tokens, &type_enums, &operator_enums);
+    exit(EXIT_SUCCESS);
+
+    const TPPNode* root_node = tpp_parse(tokens, &type_enums, &operator_enums);
 
     // this needs to change to parsing through the ast generated
     const Array operator_information = parse_type_file(type_file, &type_enums);
@@ -149,13 +157,27 @@ int main(const int argc, char** argv) {
         if (choice == 'n') return EXIT_FAILURE;
     }
 
-    FILE* out_file = fopen(out_file_name, "w");
+    FILE* out_file = fopen(out_matrices_file_name, "w");
 
     if (!out_file) {
         fatal_file_error("Unable to open a writable output file");
     }
 
-    write_output_file(out_file, out_file_name, &operator_information);
+    write_output_file(out_file, out_matrices_file_name, &operator_information);
+}
+
+void fatal_file_errorf(const char* message, ...) {
+    char* cwd = getcwd(NULL, 0);
+
+    va_list args;
+    va_start(args, message);
+    verror(message, args);
+    va_end(args);
+
+    printf("\n\tcwd: %s", cwd);
+    free(cwd);
+
+    exit(EXIT_FAILURE);
 }
 
 void fatal_file_error(const char* message) {
@@ -209,14 +231,18 @@ void warning(const char* message, ...) {
     va_end(args);
 }
 
-void error(const char* message, ...) {
+void verror(const char* message, const va_list args) {
     errcode = EXIT_FAILURE;
 
     putz(C_RED"ERROR: "C_RST);
 
+    vprintf(message, args);
+}
+
+void error(const char* message, ...) {
     va_list args;
     va_start(args, message);
-    vprintf(message, args);
+    verror(message, args);
     va_end(args);
 }
 
@@ -607,14 +633,18 @@ Vector collect_enums(FILE* file, const char* enum_name) {
     Buffer line_buff = buffer_create(100);
 
     char buff[50];
-    const uint bytes_written = snprintf(buff, sizeof (buff), "typedef enum %s", enum_name);
 
-    if (bytes_written >= sizeof (buff) - 1) {
-        warning("Large enum name provided; may not be supported. Enum name %s, buff: %s",
+    const char* enum_header = "typedef enum ";
+    // [[todo]] this is stupid
+    if (strlen(enum_name) >= sizeof (buff) - 1 - strlen(enum_header)) {
+        error("Too large an enum name provided; Not be supported. Enum name %s, buff: %s",
             enum_name,
             buff
         );
+        exit(EXIT_FAILURE);
     }
+
+    snprintf(buff, sizeof (buff), "%s%s", enum_header, enum_name);
 
     bool in_enum_def = false;
     while (get_line(file, &line_buff)) {

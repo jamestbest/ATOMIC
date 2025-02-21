@@ -54,7 +54,7 @@ TPPNode* tpp_parse(Array tokens, const Vector* types_enums,
 }
 
 static TPPNode* tpp_parse_statement() {
-    if (current()->type == ALIAS) {
+    if (current()->type == ALIASES) {
         return tpp_parse_alias_stmnt();
     }
 
@@ -77,9 +77,9 @@ static TPPNode* tpp_parse_statement() {
 }
 
 static TPPNode* tpp_parse_alias_stmnt() {
-    TPPToken* alias_node = consume();
+    const TPPToken* alias_node = consume();
 
-    assert(alias_node->type == ALIAS);
+    assert(alias_node->type == ALIASES);
 
     if (!expect(IDENTIFIER)) {
         const TPPToken* c = current();
@@ -105,7 +105,7 @@ static TPPNode* tpp_parse_alias_stmnt() {
         .types = 0
     };
 
-    while (expect(TYPE)) {
+    while (expect(TYPES)) {
         const TPPToken* type = consume();
 
         const uint32_t type_value = type->data.pos;

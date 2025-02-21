@@ -31,101 +31,96 @@ Array arr_construct(const uint element_size, const uint min_element_count) {
 
 // todo: refactor to make more clear that the input is the element_size and not the array size
 Array arr_create(const uint element_size) {
-    return arr_construct(element_size, MIN_VEC_SIZE);
+    return arr_construct(element_size, MIN_ARRAY_SIZE);
 }
 
-bool arr_is_at_capacity(const Array* vec) {
-    return vec->pos == vec->capacity;
+bool arr_is_at_capacity(const Array* array) {
+    return array->pos == array->capacity;
 }
 
-void arr_resize(Array* vec) {
-    const uint new_capacity = vec->capacity << 1;
+void arr_resize(Array* array) {
+    const uint new_capacity = array->capacity << 1;
 
-    char* new_memory = realloc(vec->arr, new_capacity * vec->element_size);
+    char* new_memory = realloc(array->arr, new_capacity * array->element_size);
 
     if (!new_memory) exit(ENOMEM);
 
-    vec->arr = new_memory;
-    vec->capacity = new_capacity;
+    array->arr = new_memory;
+    array->capacity = new_capacity;
 }
 
-void arr_set(const Array* arr, const size_t index, const void* element) {
-    if (index >= arr->pos) return;
+void arr_set(const Array* array, const size_t index, const void* element) {
+    if (index >= array->pos) return;
 
-    memcpy(&arr->arr[index * arr->element_size], element, arr->element_size);
+    memcpy(&array->arr[index * array->element_size], element, array->element_size);
 }
 
-void arr_set_dyn(const Array* arr, const size_t index, const void* element, const size_t element_size) {
-    if (index >= arr->pos) return;
+void arr_set_dyn(const Array* array, const size_t index, const void* element, const size_t element_size) {
+    if (index >= array->pos) return;
 
-    memset(&arr->arr[index * arr->element_size], 0, arr->element_size);
-    memcpy(&arr->arr[index * arr->element_size], element, element_size);
+    memset(&array->arr[index * array->element_size], 0, array->element_size);
+    memcpy(&array->arr[index * array->element_size], element, element_size);
 }
 
-void arr_add(Array* arr, const void* element) {
-    if (arr_is_at_capacity(arr))
-        arr_resize(arr);
+void arr_add(Array* array, const void* element) {
+    if (arr_is_at_capacity(array))
+        arr_resize(array);
 
-    memcpy(&arr->arr[arr->pos * arr->element_size], element, arr->element_size);
+    memcpy(&array->arr[array->pos * array->element_size], element, array->element_size);
 
-    arr->pos++;
+    array->pos++;
 }
 
 // add to the array a value that is not the size of the array element size
-void arr_add_dyn(Array* arr, const void* element, const size_t element_size) {
-    if (arr_is_at_capacity(arr))
-        arr_resize(arr);
+void arr_add_dyn(Array* array, const void* element, const size_t element_size) {
+    if (arr_is_at_capacity(array))
+        arr_resize(array);
 
-    memset(&arr->arr[arr->pos * arr->element_size], 0, arr->element_size);
-    memcpy(&arr->arr[arr->pos * arr->element_size], element, element_size);
+    memset(&array->arr[array->pos * array->element_size], 0, array->element_size);
+    memcpy(&array->arr[array->pos * array->element_size], element, element_size);
 
-    arr->pos++;
+    array->pos++;
 }
 
-bool arr_remove(Array* arr, const uint index) {
-    if (index >= arr->pos) return false;
+bool arr_remove(Array* array, const uint index) {
+    if (index >= array->pos) return false;
 
-    const uint elements_right = arr->pos - index - 1;
+    const uint elements_right = array->pos - index - 1;
 
-    arr->pos--;
+    array->pos--;
 
-    void* dst = &arr->arr[index * arr->element_size];
-    const void* src = &arr->arr[(index + 1) * arr->element_size];
+    void* dst = &array->arr[index * array->element_size];
+    const void* src = &array->arr[(index + 1) * array->element_size];
 
     memmove(dst, src, elements_right);
 
     return true;
 }
 
-void* arr_pop(Array* arr) {
-    if (arr->pos == 0) return NULL;
+void* arr_pop(Array* array) {
+    if (array->pos == 0) return NULL;
 
-    const uint index = arr->pos - 1;
-    void* element = arr_get(arr, index);
-    arr_remove(arr, index);
+    const uint index = array->pos - 1;
+    void* element = arr_get(array, index);
+    arr_remove(array, index);
 
     return element;
 }
 
-void* arr_peek(const Array* arr) {
-    if (arr->pos == 0) return NULL;
+void* arr_peek(const Array* array) {
+    if (array->pos == 0) return NULL;
 
-    return arr_get(arr, arr->pos - 1);
+    return arr_get(array, array->pos - 1);
 }
 
-void* arr_get(const Array* arr, const uint index) {
-    if (index >= arr->pos) return NULL;
+void* arr_get(const Array* array, const uint index) {
+    if (index >= array->pos) return NULL;
 
-    return &arr->arr[index * arr->element_size];
+    return &array->arr[index * array->element_size];
 }
 
-void arr_destroy(Array* vec) {
-    free(vec->arr);
+void arr_destroy(Array* array) {
+    free(array->arr);
 
-    *vec = (Array) {
-        -1,
-        NULL,
-        -1,
-        -1
-    };
+    *array = ARRAY_ERR;
 }

@@ -15,6 +15,15 @@ typedef enum {
     STMNT_COERCE
 } TPPNodeType;
 
+typedef enum TPPParserState {
+    STATE_NONE,
+    STATE_TYPES,
+    STATE_ALIASES,
+    STATE_OPERATORS,
+    STATE_COERCION,
+    STATE_OPERANDS
+} TPPParserState;
+
 typedef struct TPPNode {
     TPPNodeType type;
     TPPToken token;

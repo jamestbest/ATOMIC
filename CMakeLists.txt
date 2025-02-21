@@ -89,6 +89,7 @@ add_executable(Type_preprocessor
         SharedIncludes/Buffer.c
         SharedIncludes/Helper_String.c
         SharedIncludes/Helper_File.c
+        SharedIncludes/Helper_Math.c
         SharedIncludes/Messages.c
         SharedIncludes/Vector.c
         SharedIncludes/Array.c

@@ -7,6 +7,8 @@
 
 #include "../Commons.h"
 
+#define MIN_VEC_SIZE 10
+
 typedef unsigned int uint;
 
 typedef struct {

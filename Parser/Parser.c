@@ -1106,16 +1106,16 @@ Token* current(void) {
     return arr_get(ptokens, t_pos);
 }
 
-bool expect_op(TokenType type, ATOM_CT__LEX_OPERATORS_ENUM op) {
+bool expect_op(const TokenType type, const ATOM_CT__LEX_OPERATORS_ENUM op) {
     return expect(type) && current()->data.enum_pos == op;
 }
 
-bool expect_keyword(ATOM_CT__LEX_KEYWORD_ENUM keyword) {
+bool expect_keyword(const ATOM_CT__LEX_KEYWORD_ENUM keyword) {
     return expect(KEYWORD) && current()->data.enum_pos == keyword;
 }
 
-bool expect(TokenType type) {
-    Token* c = current();
+bool expect(const TokenType type) {
+    const Token* c = current();
 
     return c && c->type == type;
 }

@@ -9,11 +9,14 @@
 #include "../SharedIncludes/Buffer.h"
 
 typedef enum TPPType {
-    ALIAS,
+    TYPES,
+    ALIASES,
+    OPERATORS,
+    COERCIONS,
+    OPERANDS,
 
     IDENTIFIER,
-    OPERATOR,
-    TYPE,
+    NUMERIC,
 
     EQUALITY,
     ARROW,
@@ -32,6 +35,7 @@ typedef struct TPPToken {
     union {
         char* str;
         unsigned int pos;
+        long long numeric;
     } data;
 } TPPToken;
 

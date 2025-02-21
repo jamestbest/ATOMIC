@@ -5,6 +5,8 @@
 #include "Vector.h"
 
 #include "../Errors.h"
+#include "Helper_Math.h"
+
 #include <malloc.h>
 #include <string.h>
 
@@ -15,13 +17,14 @@ const static Vector VEC_ERR = (Vector){
 };
 
 Vector vector_create(const size_t element_count) {
-    void* arr = malloc(element_count * sizeof (void*));
+    const size_t min_element_count = smax(element_count, MIN_VEC_SIZE);
+    void** arr = malloc(min_element_count * sizeof (void*));
 
     if (!arr) return VEC_ERR;
 
     return (Vector) {
         .arr = arr,
-        .capacity = element_count,
+        .capacity = min_element_count,
         .pos = 0
     };
 }
@@ -49,7 +52,7 @@ bool vector_resize(Vector* vec, const size_t new_element_count) {
     return true;
 }
 
-static size_t vector_resize_function(size_t capacity) {
+static size_t vector_resize_function(const size_t capacity) {
     return capacity << 1;
 }
 

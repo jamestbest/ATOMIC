@@ -4,18 +4,28 @@
 
 #include "Helper_Math.h"
 
-uint umin(uint a, uint b) {
+size_t smin(const size_t a, const size_t b) {
     return a < b ? a : b;
 }
 
-int min(int a, int b) {
+uint umin(const uint a, const uint b) {
     return a < b ? a : b;
 }
 
-uint umax(uint a, uint b) {
+int min(const int a, const int b) {
+    return a < b ? a : b;
+}
+
+size_t smax(const size_t a, const size_t b) {
     return a > b ? a : b;
 }
 
-int max(int a, int b) {
+uint umax(const uint a, const uint b) {
     return a > b ? a : b;
 }
+
+int max(const int a, const int b) {
+    return a > b ? a : b;
+}
+
+
