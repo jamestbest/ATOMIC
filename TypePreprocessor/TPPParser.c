@@ -13,8 +13,14 @@ Array t_tokens;
 
 const Vector* t_types_enum;
 
-Array type_aliases;
+Array typefixes;
+Array types;
+
 Array operator_types;
+
+Array type_aliases;
+
+TypeMatrix coercions;
 
 static bool expect(TPPType type);
 static TPPToken* consume(void);
@@ -29,33 +35,39 @@ static void print_type_bitmap(uint32_t type_vector);
 static void add_type(uint32_t type_value, uint32_t* type_vector);
 static bool type_exists(uint32_t type_value, uint32_t type_vector);
 
-static TPPNode* tpp_parse_statement(void);
+static TPPNode* tpp_parse_statement(const TPPToken* c);
 static TPPNode* tpp_parse_alias_stmnt(void);
 static TPPNode* tpp_parse_operator_stmnt(void) {}
 static TPPNode* tpp_parse_coerce_stmnt(void) {}
 
-TPPNode* tpp_parse(Array tokens, const Vector* types_enums,
-                   const Vector* operator_enums) {
+TPPNode* tpp_parse(const Array tokens) {
     t_pos = 0;
     t_tokens = tokens;
-    t_types_enum = types_enums;
 
     type_aliases = arr_create(sizeof (TypeAlias));
     operator_types = arr_create(sizeof (OpInfo));
 
     TPPNode* global_node = malloc(sizeof (TPPNode));
 
-    while (current() && current()->type != EOS) {
-        TPPNode* statement = tpp_parse_statement();
+    TPPToken* c;
+    while (c = current(), c && c->type != EOS) {
+        TPPNode* statement = tpp_parse_statement(c);
         vector_add(&global_node->children, statement);
     }
 
     return global_node;
 }
 
-static TPPNode* tpp_parse_statement() {
-    if (current()->type == ALIASES) {
-        return tpp_parse_alias_stmnt();
+static TPPNode* tpp_parse_keyword(const TPPToken* c) {
+    switch (c->data.keyword) {
+        case ALIASES:
+            return tpp_parse_alias_stmnt();
+    }
+}
+
+static TPPNode* tpp_parse_statement(const TPPToken* c) {
+    if (c->type == KEYWORD) {
+        return tpp_parse_keyword(c);
     }
 
     const TPPToken* next = peek();

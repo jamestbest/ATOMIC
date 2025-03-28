@@ -10,6 +10,15 @@ func a(b: i4): i4 {
 proc print(string: str) {
     string[0] += 'a'
 
+    f: >func(a: i4, b: str): i4= nav
+
+    struct my_struct {
+        a: i4
+        b: i8
+    }
+
+    val: my_struct = {12,14}
+
     a: i4 = 12; b: i8 = 14;
     c: i4 = a;
     d: i4 = 0b1

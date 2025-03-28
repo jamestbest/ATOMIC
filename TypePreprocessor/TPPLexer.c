@@ -18,6 +18,7 @@ Array tok_arr;
 Vector const* operators_enum;
 Vector const* types_enum;
 
+static void idx_to(size_t new_idx);
 static char consume();
 static void gorge(size_t amount);
 static char peek();
@@ -80,7 +81,7 @@ void add_token(const TPPType type, void* data) {
         .type = type
     };
 
-    if (type == IDENTIFIER) {
+    if (type == IDENTIFIER || type == CUSTOM_OPERATOR) {
         token.data.str = data;
     } else if (type == NUMERIC) {
         token.data.numeric = *(long long*)data;
@@ -90,8 +91,22 @@ void add_token(const TPPType type, void* data) {
     TPPToken_arr_add(&tok_arr, token);
 }
 
-void add_keyword(const TPPType type) {
-    add_token(type, NULL);
+void add_keyword(const enum KEYWORDS keyword) {
+    const TPPToken tok = {
+        .type= KEYWORD,
+        .data.keyword= keyword
+    };
+
+    TPPToken_arr_add(&tok_arr, tok);
+}
+
+void add_symbol(const TPPType type) {
+    const TPPToken tok = {
+        .type= type,
+        .data.str=NULL
+    };
+
+    TPPToken_arr_add(&tok_arr, tok);
 }
 
 char* copy_identifier(const char* start, const char* end) {
@@ -108,7 +123,7 @@ bool is_valid_idenitifier_tail(const char character) {
     return is_alph_numeric(character) || character == '_';
 }
 
-const char* get_identifier_end(const char* start) {
+char* get_identifier_end(char* start) {
     while (is_valid_idenitifier_tail(*start)) start++;
 
     return start;
@@ -128,26 +143,48 @@ bool matches_keyword(const char keyword[], const uint length, const char* start)
     return strncmp(start, keyword, length) == 0;
 }
 
-void lex_identifier(const char* start) {
-    const char* end = get_identifier_end(start);
+int compare_strings_for_search(const void* stra, const void* strb) {
+    return strcmp(stra, *(char**)strb);
+}
+
+void lex_identifier(char* start) {
+    char* const end = get_identifier_end(start);
     const uint length = end - start;
 
-    // I actually *really* hate this, why can I not make a char[][] in C!? it's really fucking ridiculous
-    if (matches_keyword(KEYWORD_ALIASES, length, start)) {
-        add_keyword(ALIASES);
-    } else if (matches_keyword(KEYWORD_TYPES, length, start)) {
-        add_keyword(TYPES);
-    } else if (matches_keyword(KEYWORD_OPERANDS, length, start)) {
-        add_keyword(OPERANDS);
-    } else if (matches_keyword(KEYWORD_COERCIONS, length, start)) {
-        add_keyword(COERCIONS);
-    } else if (matches_keyword(KEYWORD_OPERATORS, length, start)) {
-        add_keyword(OPERATORS);
-    }  else {
+    const char end_save = *end;
+    *end = '\0';
+
+    const char** res = bsearch(start, KEYWORD_STRINGS, KEYWORD_COUNT, sizeof (KEYWORD_STRINGS[0]), compare_strings_for_search);
+
+    *end = end_save;
+
+    if (res) {
+        add_keyword(res - KEYWORD_STRINGS);
+    } else {
         add_token(IDENTIFIER, copy_identifier(start, end));
     }
 
     c_pos += length;
+}
+
+bool is_non_op_symbol(char c) {
+    return is_whitespace(c) || is_alph_numeric(c) || c == '\n' || c == '\0';
+}
+
+bool is_exact_symbol(const char* start, const char* symbol) {
+    uint i = 0;
+    while (symbol[i] != '\0') {
+        if (start[i] != symbol[i]) return false;
+        i++;
+    }
+
+    return is_non_op_symbol(start[i]);
+}
+
+bool consume_symbol(const char* start, const char* symbol) {
+    if (is_exact_symbol(start, symbol)) {
+        gorge(strlen(symbol));
+    }
 }
 
 void tpplex_line(const Buffer* line_buffer) {
@@ -157,6 +194,10 @@ void tpplex_line(const Buffer* line_buffer) {
 
     c_pos = 0;
     c_line = line_buffer;
+
+    if ((current() == '/' && peek() == '/')) {
+        goto next;
+    }
 
     char c;
     while (c = current(), c != '\0') {
@@ -170,47 +211,47 @@ void tpplex_line(const Buffer* line_buffer) {
             continue;
         }
 
-        if (c == '=') {
-            add_keyword(EQUALITY);
-        } else if (c == ';') {
-            add_keyword(DELIMITER);
-        } else if (c == '|') {
-            if (expect_peek('|')) {
-                add_keyword(OR);
-            } else {
-                add_keyword(PIPE);
-            }
-        } else if (c == '&') {
-            if (expect_peek('&')) {
-                add_keyword(AND);
-            } else error("`&` is not a valid symbol, `&&` is. Peek is `%c`\n", peek());
-        } else if (c == '<') {
-            const bool join_next = peek() == '-' && peer(2) == '>';
-
-            if (!join_next) error("`<` is not a valid symbol, `<->` is. Peek is `%c`\n", peek());
-            else {
-                add_keyword(BIRROW);
-                gorge(2);
-            }
-        } else if (c == '-') {
-            if (expect_peek('>')) {
-                add_keyword(ARROW);
-            } else error("`-` is not a valid symbol, `->` is. Peek is `%c`\n", peek());
+        const char* const c_ptr = current_ptr();
+        if (consume_symbol(c_ptr, "=")) {
+            add_symbol(EQUALITY);
+        } else if (consume_symbol(c_ptr, ";")) {
+            add_symbol(DELIMITER);
+        } else if (consume_symbol(c_ptr, "||")) {
+            add_symbol(OR);
+        } else if (consume_symbol(c_ptr, "|")) {
+            add_symbol(PIPE);
+        } else if (consume_symbol(c_ptr, "&&")) {
+            add_symbol(AND);
+        } else if (consume_symbol(c_ptr, "<->")) {
+            add_symbol(BIRROW);
+        } else if (consume_symbol(c_ptr, "->")) {
+            add_symbol(ARROW);
         } else if (is_digit(c)) {
+            char* start = current_ptr();
             char* end;
-            long long number = strtoll(current_ptr(), &end, 10);
+            long long number = strtoll(start, &end, 10);
             // [[todo]] add error checking
             add_token(NUMERIC, &number);
-        } else {
-            // assume it to be an operator symbol and lex to whitespace
-            error("Invalid character `%c` provided, unable to lex to token\n", c);
-        }
 
-        consume();
+            idx_to(end - start + c_pos);
+        } else {
+            const char* const start = current_ptr();
+            char current_of_op;
+            while (current_of_op= current(), !is_non_op_symbol(current_of_op)) {
+                consume();
+            }
+
+            const char* const end = current_ptr();
+
+            char* custom_op = copy_identifier(start, end);
+
+            add_token(CUSTOM_OPERATOR, custom_op);
+        }
     }
 
+next:
     TPPToken* temp;
-    if (temp = arr_peek(&tok_arr), temp && temp->type != EOS) add_keyword(EOS);
+    if (temp = arr_peek(&tok_arr), temp && temp->type != EOS) add_symbol(EOS);
 }
 
 Array tpplex_end() {
@@ -225,6 +266,12 @@ Array tpplex_end() {
 
 bool is_valid_index(const uint index) {
     return index < c_line->pos;
+}
+
+void idx_to(size_t new_idx) {
+    if (!is_valid_index(new_idx)) assert(false);
+
+    c_pos = new_idx;
 }
 
 // Only supports ascii
@@ -288,6 +335,10 @@ const char* get_tpptoken_type_string(const TPPType type) {
     return TPPTypesStrings[type];
 }
 
+const char* get_tpptoken_keyword_string(const enum KEYWORDS keyword) {
+    return KEYWORD_STRINGS[keyword];
+}
+
 void print_tpptoken_type(const TPPType type) {
     printf("%s", get_tpptoken_type_string(type));
 }
@@ -297,9 +348,18 @@ void print_tpptoken(const TPPToken* token) {
 
     const TPPType type = token->type;
 
-    if (type == IDENTIFIER) {
-        printf("::%s", token->data.str);
-    } else if (type == NUMERIC) {
-        printf("::%lld", token->data.numeric);
+    switch (type) {
+        case IDENTIFIER:
+        case CUSTOM_OPERATOR:
+            printf("::%s", token->data.str);
+            break;
+        case NUMERIC:
+            printf("::%lld", token->data.numeric);
+            break;
+        case KEYWORD:
+            printf("::%s", get_tpptoken_keyword_string(token->data.keyword));
+            break;
+        default:
+
     }
 }

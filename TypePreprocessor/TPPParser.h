@@ -10,13 +10,17 @@
 
 typedef enum {
     ROOT,
-    STMNT_ALIAS,
+    STMNT_TYPEFIX,
+    STMNT_TYPE,
     STMNT_OPERATOR,
-    STMNT_COERCE
+    STMNT_ALIAS,
+    STMNT_COERCE,
+    STMNT_OPERANDS
 } TPPNodeType;
 
 typedef enum TPPParserState {
     STATE_NONE,
+    STATE_TYPEFIX,
     STATE_TYPES,
     STATE_ALIASES,
     STATE_OPERATORS,
@@ -30,7 +34,6 @@ typedef struct TPPNode {
     Vector children;
 } TPPNode;
 
-TPPNode* tpp_parse(Array tokens, const Vector* types_enums,
-                   const Vector* operator_enums);
+TPPNode* tpp_parse(Array tokens);
 
 #endif // ATOMIC_TPPPARSER_H

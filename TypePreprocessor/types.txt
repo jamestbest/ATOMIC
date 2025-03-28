@@ -1,3 +1,12 @@
+// TYPEFIX is the possible pre/post fix values to the types
+//  E.g. pointer (>), reference (&)
+TYPEFIX DEFAULT PREFIX
+ POINTER >
+
+// The types create keywords, and general types for the language
+// OVER designates sizes
+// REQUIRE means that the type cannot exist unless it has the TYPEFIX specified
+// VIRTUAL means the type should exist but is not part of the type matrix i.e. cannot be used in calculations
 TYPES
  INTEGER PREFIX i OVER 1 2 4 8
  NATURAL PREFIX n OVER 1 2 4 8
@@ -6,23 +15,41 @@ TYPES
  CHAR chr
  STRING str
  BOOLEAN bool
- VOID void
+ VOID void REQUIRE POINTER
+ FUNCTION VIRTUAL REQUIRE POINTER
+ STRUCT VIRTUAL
 
-OPERATORS
- MULT *
- PLUS +
+// Operators gives a list of operator names, their symbol, the associativity, and precedence
+OPERATORS DEFAULT LEFT BI
+ MULT  *   5
+ PLUS  +   5
+ INC   ++  3  PREFIX
+ INC   ++  3  POSTFIX
+ EQ    =   1
 
+// Alias is just used in this file, a short hand for types
 ALIASES
  NUMERIC = INTEGER | NATURAL | REAL | RATIONAL
  ALPHABETICAL = CHAR STRING
 
+// Coercions are what types can be implicitly converted to which when validating that an
+//  operator can be done on two given operand types
+// Coercions can only happen where a destination type's size is >= to the source type's size
 COERCIONS
  CHAR <-> INTEGER|NATURAL
  INTEGER <-> NATURAL
  NUMERIC|ALPHABETICAL|NOT_A_VALUE -> BOOLEAN
 
+// The types that are valid for a given operator
+// ; designates a new pattern
+// Single types mean symmetric, aliases expand to repeated singles
+//  e.g. ALPHABETICAL; => CHAR; STRING;
+//  it does not mean that CHAR + STRING is valid
+// || means that there is a strict type on one side but that it can occur on the left or right
+// && means that there is a strict type that must occur on that side
+// aliased types within || and && expand to repeated `|` i.e. || ALPHABETICAL => || CHAR|STRING
 OPERANDS
  PLUS=NUMERIC; ALPHABETICAL; POINTER || INTEGER|NATURAL|POINTER
- MINUS=NUMERIC; CHAR; POINTER && INTEGER|NATURAL|POINTER
+ MINUS=NUMERIC; CHAR; POINTER && INTEGER | NATURAL|POINTER
 
  MULT=NUMERIC; CHAR || INTEGER|NATURAL

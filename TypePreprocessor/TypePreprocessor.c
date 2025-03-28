@@ -20,17 +20,20 @@ ARRAY_ADD(Vector, Vector)
 static void parse_enum_line(const char* line, Vector* enums);
 static Vector collect_enums(FILE* file, const char* enum_name);
 
-static void fprint_enum(FILE* file, const uint index, const char* name);
+static void fprint_enum(FILE* file, uint index, const char* name);
 static void print_enums(const Vector* enums);
 static void print_information(const Array* information);
 static void print_operator_info(const OperatorInfo* info);
 
+static TPPNode parse_types_file(Array tokens);
+static TPPNode parse_keyword_statement(const TPPToken* token);
+static TPPNode parse_identifier_statement(const TPPToken* token);
 
 static TPPNode* parse_type_file_two(FILE* file, const Vector* type_enums,
                                     const Vector* operator_enums);
 static Array parse_type_file(FILE* file, const Vector* type_enums);
 static OperatorInfo parse_operator_type_line(const char* line, const Vector* types_enum);
-void add_and_verify_type(const char* start, const uint length, Vector* types, const Vector* types_enum);
+void add_and_verify_type(const char* start, uint length, Vector* types, const Vector* types_enum);
 
 static uint get_matching_enum(const Vector* enums, const char* operator);
 static void verify_operator_information(const Array* information);
@@ -58,6 +61,10 @@ bool unsafe = false;
 
 #define ENUM_FILE_OPERATOR_ENUM_NAME "ATOM_CT__LEX_OPERATORS_ENUM"
 #define ENUM_FILE_TYPE_ENUM_NAME "ATOM_CT__LEX_TYPES_GENERAL_ENUM"
+
+size_t idx = 0;
+
+TPPParserState state = STATE_NONE;
 
 void verify_args(const int argc, char** argv) {
     if (argc < INPUT_COUNT + 1 || argc > INPUT_COUNT + 2) {
@@ -129,9 +136,11 @@ int main(const int argc, char** argv) {
         newline();
     }
 
+    TPPNode root = parse_types_file(tokens);
+
     exit(EXIT_SUCCESS);
 
-    const TPPNode* root_node = tpp_parse(tokens, &type_enums, &operator_enums);
+    const TPPNode* root_node = tpp_parse(tokens);
 
     // this needs to change to parsing through the ast generated
     const Array operator_information = parse_type_file(type_file, &type_enums);
@@ -164,6 +173,63 @@ int main(const int argc, char** argv) {
     }
 
     write_output_file(out_file, out_matrices_file_name, &operator_information);
+}
+
+TPPNode parse_types_file(const Array tokens) {
+    while (idx < tokens.pos) {
+        const TPPToken* token = arr_get(&tokens, idx);
+
+        switch (token->type) {
+            case KEYWORD:
+                parse_keyword_statement(token);
+                break;
+            case IDENTIFIER:
+                parse_identifier_statement(token);
+                break;
+            default:
+                error("Expected statement to start with either a KEYWORD or IDENTIFIER found: %s", get_tpptoken_type_string(token->type));
+        }
+    }
+}
+
+bool is_header_keyword(enum KEYWORDS keyword) {
+    switch (keyword) {
+        case TYPEFIX:
+        case TYPES:
+        case OPERATORS:
+        case ALIASES:
+        case COERCIONS:
+        case OPERANDS:
+            return true;
+        default:
+            return false;
+    }
+}
+
+void update_state(enum KEYWORDS keyword) {
+    switch (keyword) {
+        case TYPEFIX: state= STATE_TYPEFIX; break;
+        case TYPES: state= STATE_TYPES; break;
+        case OPERATORS: state= STATE_OPERATORS; break;
+        case ALIASES: state= STATE_ALIASES; break;
+        case COERCIONS: state= STATE_COERCION; break;
+        case OPERANDS: state= STATE_OPERANDS; break;
+    }
+}
+
+TPPNode parse_keyword_statement(const TPPToken* token) {
+    const enum KEYWORDS keyword = token->data.keyword;
+
+    if (!is_header_keyword(keyword)) {
+        error("Expected keyword statement to start with a valid header keyword i.e. TYPEFIX, TYPES, ALIASES, OPERATORS, COERCIONS, OPERANDS. Got %s", get_tpptoken_keyword_string(keyword));
+        return;
+    }
+
+    update_state(keyword);
+}
+
+TPPNode parse_identifier_statement(const TPPToken* token) {
+
 }
 
 void fatal_file_errorf(const char* message, ...) {
@@ -300,7 +366,7 @@ uint verify_enums_usage(const Vector* enums, const Array* information) {
     return exitcode;
 }
 
-const char* out_file_preamble = ""
+const char* out_file_preamble =
         "//\n"
         "//  CREATED BY TypePreprocessor on %s\n"   // %s = time & date
         "//\n"
@@ -436,7 +502,7 @@ TPPNode* parse_type_file_two(FILE* file, const Vector* type_enums,
      *  3. Type coercing statements - which types a type can be implicitly converted to
      */
 
-    return tpp_parse(tokens, type_enums, operator_enums);
+    return tpp_parse(tokens);
 }
 
 Array parse_type_file(FILE* file, const Vector* type_enums) {

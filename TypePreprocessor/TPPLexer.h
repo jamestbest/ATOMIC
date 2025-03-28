@@ -9,13 +9,10 @@
 #include "../SharedIncludes/Buffer.h"
 
 typedef enum TPPType {
-    TYPES,
-    ALIASES,
-    OPERATORS,
-    COERCIONS,
-    OPERANDS,
+    KEYWORD,
 
     IDENTIFIER,
+    CUSTOM_OPERATOR,
     NUMERIC,
 
     EQUALITY,
@@ -30,12 +27,32 @@ typedef enum TPPType {
     TPPTYPE_COUNT,
 } TPPType;
 
+// SORTED!
+enum KEYWORDS {
+    ALIASES,
+    BI,
+    COERCIONS,
+    DEFAULT,
+    LEFT,
+    OPERANDS,
+    OPERATORS,
+    POSTFIX,
+    PREFIX,
+    RIGHT,
+    TRI,
+    TYPEFIX,
+    TYPES,
+    VIRTUAL,
+    KEYWORD_COUNT
+};
+
 typedef struct TPPToken {
     TPPType type;
     union {
         char* str;
         unsigned int pos;
         long long numeric;
+        enum KEYWORDS keyword;
     } data;
 } TPPToken;
 
@@ -46,8 +63,9 @@ void tpplex_line(const Buffer* line_buffer);
 Array tpplex_end();
 
 void print_tpptoken(const TPPToken* token);
-void print_tpptoken_type(const TPPType type);
+void print_tpptoken_type(TPPType type);
 
-const char* get_tpptoken_type_string(const TPPType type);
+const char* get_tpptoken_type_string(TPPType type);
+const char* get_tpptoken_keyword_string(enum KEYWORDS keyword);
 
 #endif //TPPLEXER_H
