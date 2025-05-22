@@ -1070,7 +1070,7 @@ Token* peer(int amount) {
         return NULL;
     }
 
-    return arr_get(ptokens, t_pos + amount);
+    return arr_ptr(ptokens, t_pos + amount);
 }
 
 Token* peek(void) {
@@ -1078,7 +1078,7 @@ Token* peek(void) {
         return NULL;
     }
 
-    return arr_get(ptokens, t_pos + 1);
+    return arr_ptr(ptokens, t_pos + 1);
 }
 
 Token* justify(void) {
@@ -1086,7 +1086,7 @@ Token* justify(void) {
         return NULL;
     }
 
-    return arr_get(ptokens, t_pos - 1);
+    return arr_ptr(ptokens, t_pos - 1);
 }
 
 // todo: need to allow `\` to mean continue statement to next line
@@ -1095,7 +1095,7 @@ Token* consume(void) {
         return NULL;
     }
 
-    return arr_get(ptokens, t_pos++);
+    return arr_ptr(ptokens, t_pos++);
 }
 
 Token* current(void) {
@@ -1103,7 +1103,7 @@ Token* current(void) {
         return NULL;
     }
 
-    return arr_get(ptokens, t_pos);
+    return arr_ptr(ptokens, t_pos);
 }
 
 bool expect_op(const TokenType type, const ATOM_CT__LEX_OPERATORS_ENUM op) {

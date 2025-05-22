@@ -4,8 +4,7 @@
 
 #include "FlagPreprocessorInternal.h"
 
-#include "../SharedIncludes/Messages.h"
-#include "../TypePreprocessor/TypePreprocessorInternal.h"
+#include "SharedIncludes/Messages.h"
 
 #include <errno.h>
 #include <malloc.h>
@@ -15,7 +14,7 @@
 
 #define ARGS_COUNT 3
 
-bool verify_arguments(const int argc, char** argv);
+bool verify_arguments(int argc, char** argv);
 char* get_cwd();
 
 uint parse_flag_file(FILE* file);
@@ -171,7 +170,7 @@ void append_enum(FILE* file, const char* enum_name,
                  const char* enum_element_prefix,
                  const char* count_element_name,
                  const Vector* vector,
-                 const char* (*get)(const size_t index)) {
+                 const char* (*get)(size_t index)) {
     fprintf(file, "enum %s {\n", enum_name);
     for (uint i = 0; i < vector->pos; ++i) {
         const char* name = get(i);
@@ -275,7 +274,7 @@ void write_header_out_option_arg_enums(FILE* h_file) {
             const char* translated_arg_name = translate_name_for_enum(args->arg_name);
             fprintf(h_file, "typedef enum {\n");
             for (int k = 0; k < args->arg_options.pos; ++k) {
-                const OptionData* valid = arr_get(&args->arg_options, k);
+                const OptionData* valid = arr_ptr(&args->arg_options, k);
 
                 fprintf(h_file, "\tATOM_CT__OPTION_%s_ARG_%s_VALID_", translated_name, translated_arg_name);
 
@@ -372,7 +371,7 @@ void write_c_out_option_info_data(FILE* c_file) {
             fprintf(c_file, "\t\t\t\t.data= (OptionData[]) {\n");
 
             for (uint k = 0; k < arg->arg_options.pos; ++k) {
-                const OptionData* data = arr_get(&arg->arg_options, k);
+                const OptionData* data = arr_ptr(&arg->arg_options, k);
 
                 fprintf(c_file, "\t\t\t\t\t{");
                 switch (arg->type) {
@@ -709,7 +708,7 @@ uint lex_flag_file(FILE* file) {
     buffer_destroy(&line_buffer);
 
     for (uint i = 0; i < tokens.pos; ++i) {
-        const FPToken* tok = arr_get(&tokens, i);
+        const FPToken* tok = arr_ptr(&tokens, i);
         print_tptoken(tok);
         newline();
     }
@@ -718,15 +717,15 @@ uint lex_flag_file(FILE* file) {
 }
 
 FPToken* consume() {
-    return arr_get(&tokens, p_pos++);
+    return arr_ptr(&tokens, p_pos++);
 }
 
 FPToken* peek() {
-    return arr_get(&tokens, p_pos + 1);
+    return arr_ptr(&tokens, p_pos + 1);
 }
 
 FPToken* current() {
-    return arr_get(&tokens, p_pos);
+    return arr_ptr(&tokens, p_pos);
 }
 
 FPToken* expect(const TokenType type) {
@@ -741,8 +740,8 @@ FPToken* expect(const TokenType type) {
     return consume(); // eat the keyword (๑ᵔ⤙ᵔ๑)
 }
 
-FPToken* expect_keyword(Keywords keyword) {
-    const FPToken* tok = (FPToken*)arr_get(&tokens, p_pos);
+FPToken* expect_keyword(const Keywords keyword) {
+    const FPToken* tok = arr_ptr(&tokens, p_pos);
 
     if (tok->type != FP_KEYWORD) {
         return NULL;
@@ -974,16 +973,16 @@ void print_arg_info(const OptionArgInfo* info) {
     for (uint i = 0; i < info->arg_options.pos; ++i) {
         switch (info->type) {
             case FP_TYPE_STR:
-                printf("%s", *(char**)arr_get(&info->arg_options, i));
+                printf("%s", *(char**)arr_ptr(&info->arg_options, i));
                 break;
             case FP_TYPE_INTEGER:
-                printf("%lld", *(long long*)arr_get(&info->arg_options, i));
+                printf("%lld", *(long long*)arr_ptr(&info->arg_options, i));
                 break;
             case FP_TYPE_NATURAL:
-                printf("%llu", *(unsigned long long*)arr_get(&info->arg_options, i));
+                printf("%llu", *(unsigned long long*)arr_ptr(&info->arg_options, i));
                 break;
             case FP_TYPE_CHARACTER:
-                printf("%c", *(char*)arr_get(&info->arg_options, i));
+                printf("%c", *(char*)arr_ptr(&info->arg_options, i));
                 break;
             default:
                 assert(false);

@@ -4,9 +4,12 @@
 
 #include "TPPLexer.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "TPPLexerInternal.h"
-#include "../SharedIncludes/Helper_String.h"
-#include "../SharedIncludes/Messages.h"
+#include "SharedIncludes/Helper_String.h"
+#include "SharedIncludes/Messages.h"
 
 ARRAY_ADD(TPPToken, TPPToken)
 

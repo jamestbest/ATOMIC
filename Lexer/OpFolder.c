@@ -307,7 +307,7 @@ bool is_valid_index(int index) {
 Token* confungry(int offset, bool consume, bool ignore_whitespace,
                  bool ignore_newline) {
     if (offset == 0) {
-        return arr_get(btokens, t_pos);
+        return arr_ptr(btokens, t_pos);
     }
 
     if (!ignore_whitespace) {
@@ -320,10 +320,10 @@ Token* confungry(int offset, bool consume, bool ignore_whitespace,
 
         if (consume) {
             t_pos += offset;
-            return arr_get(btokens, t_pos);
+            return arr_ptr(btokens, t_pos);
         }
 
-        return arr_get(btokens, t_pos + offset);
+        return arr_ptr(btokens, t_pos + offset);
     }
 
     int valid_skipped = 0;
@@ -349,10 +349,10 @@ Token* confungry(int offset, bool consume, bool ignore_whitespace,
 
     if (consume) {
         t_pos += current_offset;
-        return arr_get(btokens, t_pos);
+        return arr_ptr(btokens, t_pos);
     }
 
-    return arr_get(btokens, t_pos + current_offset);
+    return arr_ptr(btokens, t_pos + current_offset);
 }
 
 Token* peer(int amount) {
@@ -372,5 +372,5 @@ Token* consume(void) {
 }
 
 Token* current(void) {
-    return arr_get(btokens, t_pos);
+    return arr_ptr(btokens, t_pos);
 }

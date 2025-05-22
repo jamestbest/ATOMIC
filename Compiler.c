@@ -23,7 +23,7 @@
  */
 
 ARRAY_ADD(Token, token)
-ARRAY_ADD(Node, node)
+ARRAY_JOINT(Node, node)
 
 static void free_tokens(Array* tokens);
 static void free_scopes(Scope* scope);
@@ -93,7 +93,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     }
 
     //parse
-    NodeRet parseRet = parse(&folded_tokens, &lines);
+    const NodeRet parseRet = parse(&folded_tokens, &lines);
 
     if (parseRet.retCode != SUCCESS) {
         free_tokens(&folded_tokens); //[[todo]] do the nodes take over control & responsibility of the base_tokens -- I think not

@@ -5,7 +5,7 @@
 #ifndef ATOMIC_TPPPARSER_H
 #define ATOMIC_TPPPARSER_H
 
-#include "../SharedIncludes/Array.h"
+#include "SharedIncludes/Array.h"
 #include "TPPLexer.h"
 
 typedef enum {
@@ -18,15 +18,16 @@ typedef enum {
     STMNT_OPERANDS
 } TPPNodeType;
 
-typedef enum TPPParserState {
-    STATE_NONE,
-    STATE_TYPEFIX,
-    STATE_TYPES,
-    STATE_ALIASES,
-    STATE_OPERATORS,
-    STATE_COERCION,
-    STATE_OPERANDS
-} TPPParserState;
+typedef enum sections {
+    SECTION_NONE,
+    SECTION_TYPEFIX,
+    SECTION_TYPES,
+    SECTION_OPERATORS,
+    SECTION_ALIASES,
+    SECTION_COERCIONS,
+    SECTION_OPERANDS,
+    SECTION_COUNT
+} sections;
 
 typedef struct TPPNode {
     TPPNodeType type;

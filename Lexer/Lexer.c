@@ -46,7 +46,7 @@ static uint32_t consume_utf_char(char *start, bool consume, char** next_char);
 uint line_num, col_num;
 char* c_char;
 
-Array* ltokens;
+tokenArray* ltokens;
 FILE* c_file;
 Buffer line_buffer;
 Vector *llines;
@@ -224,7 +224,7 @@ void print_verbose_tokens(Array* tokens, Vector* lines, bool print_labels) {
     }
 
     uint current_tok_pos = 0;
-    const Token* current_tok = arr_get(tokens, current_tok_pos);
+    const Token* current_tok = arr_ptr(tokens, current_tok_pos);
 
     for (uint i = 0; i < lines->pos; i++) {
         bool printable_token_on_line = false;
@@ -235,7 +235,7 @@ void print_verbose_tokens(Array* tokens, Vector* lines, bool print_labels) {
             printf(C_RST);
 
             if (++current_tok_pos >= tokens->pos) break;
-            current_tok = arr_get(tokens, current_tok_pos);
+            current_tok = arr_ptr(tokens, current_tok_pos);
         }
         if (printable_token_on_line) putchar('\n');
     }
@@ -810,7 +810,7 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
     return t;
 }
 
-void add_token(Token t) {
+void add_token(const Token t) {
     token_arr_add(ltokens, t);
 }
 

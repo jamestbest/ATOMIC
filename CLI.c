@@ -6,9 +6,9 @@
 
 #include "SharedIncludes/Helper_File.h"
 #include "SharedIncludes/Flag_shared.h"
+#include "SharedIncludes/Messages.h"
 
 #include <errno.h>
-#include <Messages.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -147,7 +147,7 @@ void parse_option_debuglvl(Array args) {
 
 void parse_option_out(const Array args) {
     for (uint i = 0; i < args.pos; ++i) {
-        const ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_ENUM arg = *(ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_ENUM*)arr_get(&args, i);
+        const ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_ENUM arg = *(ATOM_CT__OPTION_OUT_ARG_OUTPUT_VALID_ENUM*)arr_ptr(&args, i);
 
         enum ATOM_CT__FLAGS flag;
         switch (arg) {
@@ -177,11 +177,11 @@ void parse_option_out(const Array args) {
 }
 
 void parse_option_o(const Array args) {
-    ATOM_VR__CLI_OUTPUT_NAME = *(char**)arr_get(&args, ATOM_CT__OPTION_O_ARG_OUTPUT_FORMAT);
+    ATOM_VR__CLI_OUTPUT_NAME = *(char**)arr_ptr(&args, ATOM_CT__OPTION_O_ARG_OUTPUT_FORMAT);
 }
 
 void parse_option_entry(const Array args) {
-    ATOM_VR__CLI_ENTRY_POINT = *(char**)arr_get(&args, ATOM_CT__OPTION_E_ARG_Entry);
+    ATOM_VR__CLI_ENTRY_POINT = *(char**)arr_ptr(&args, ATOM_CT__OPTION_E_ARG_Entry);
 }
 
 uint verify_numeric_errno(const char* arg, const StaticOptionArgInfo* arg_info) {
@@ -351,7 +351,7 @@ struct VerifiedArgs {
                 assert(false);
         }
 
-        const struct ArgInListRes arg_verified = verify_arg_in_list(arr_get(&ret_arr, ret_arr.pos - 1), arg_info);
+        const struct ArgInListRes arg_verified = verify_arg_in_list(arr_ptr(&ret_arr, ret_arr.pos - 1), arg_info);
 
         if (arg_verified.errcode == EXIT_SUCCESS) {
             if (arg_verified.enum_pos != (size_t)-1) {

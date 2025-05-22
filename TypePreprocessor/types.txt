@@ -29,8 +29,9 @@ OPERATORS DEFAULT LEFT BI
 
 // Alias is just used in this file, a short hand for types
 ALIASES
+ INTEGRAL = INTEGER | NATURAL
  NUMERIC = INTEGER | NATURAL | REAL | RATIONAL
- ALPHABETICAL = CHAR STRING
+ ALPHABETICAL = CHAR | STRING
 
 // Coercions are what types can be implicitly converted to which when validating that an
 //  operator can be done on two given operand types

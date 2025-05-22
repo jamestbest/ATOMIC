@@ -5,10 +5,11 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
 
-void inform(const char* message, ...);
-void error(const char* message, ...);
+int inform  (const char* message, ...);
+int warning (const char* message, ...);
+int error   (const char* message, ...);
+
 __attribute__((noreturn)) void usage(const char* message, ...);
 __attribute__((noreturn)) void panic(const char* message, ...);
-void warning(const char* message, ...);
 
 #endif //MESSAGES_H

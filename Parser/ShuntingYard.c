@@ -7,7 +7,7 @@
 #include "Parserr.h"
 #include "../Lexer/Lexer.h"
 
-#include <Flag_shared.h>
+#include <SharedIncludes/Flag_shared.h>
 
 static bool is_valid_index(ShuntData data, uint index);
 
@@ -520,7 +520,7 @@ Token* current(ShuntData data) {
         return NULL;
     }
 
-    return arr_get(data.tokens, *data.t_pos);
+    return arr_ptr(data.tokens, *data.t_pos);
 }
 
 Token* peek(ShuntData data) {
@@ -528,7 +528,7 @@ Token* peek(ShuntData data) {
         return NULL;
     }
 
-    return arr_get(data.tokens, *data.t_pos + 1);
+    return arr_ptr(data.tokens, *data.t_pos + 1);
 }
 
 Token* consume(ShuntData data) {
@@ -536,7 +536,7 @@ Token* consume(ShuntData data) {
         return NULL;
     }
 
-    return arr_get(data.tokens, (*data.t_pos)++);
+    return arr_ptr(data.tokens, (*data.t_pos)++);
 }
 
 bool expect(ShuntData data, TokenType type) {

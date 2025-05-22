@@ -2,10 +2,18 @@
 // Created by jamescoward on 07/06/2024.
 //
 
-#include "Array.h"
-#include "../Errors.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include "Array.h"
+#include "Errors.h"
+
+// [[todo]] Generic usages of array should be updated to use typed
+//  structure and functions
+
+// [[todo]] updated the CMP extensions to include the bsearch and qsort
+//   any usages of these in the other files should be updated to use new
+//   extension functions
 
 const static Array ARRAY_ERR = (Array) {
     .arr = NULL,
@@ -101,7 +109,7 @@ void* arr_pop(Array* array) {
     if (array->pos == 0) return NULL;
 
     const uint index = array->pos - 1;
-    void* element = arr_get(array, index);
+    void* element = arr_ptr(array, index);
     arr_remove(array, index);
 
     return element;
@@ -110,10 +118,10 @@ void* arr_pop(Array* array) {
 void* arr_peek(const Array* array) {
     if (array->pos == 0) return NULL;
 
-    return arr_get(array, array->pos - 1);
+    return arr_ptr(array, array->pos - 1);
 }
 
-void* arr_get(const Array* array, const uint index) {
+void* arr_ptr(const Array* array, const uint index) {
     if (index >= array->pos) return NULL;
 
     return &array->arr[index * array->element_size];
@@ -123,4 +131,27 @@ void arr_destroy(Array* array) {
     free(array->arr);
 
     *array = ARRAY_ERR;
+}
+
+void arr_sort(const Array* arr, int (*cmp_func)(const void* a, const void* b)) {
+    qsort(
+        arr->arr,
+        arr->pos,
+        arr->element_size,
+        cmp_func
+    );
+}
+
+uint arr_search(const Array* array, const void* search_elem, int (*cmp_func)(const void* a, const void* b)) {
+    const void* pos= bsearch(
+        search_elem,
+        array->arr,
+        array->pos,
+        array->element_size,
+        cmp_func
+    );
+
+    if (!pos) return -1;
+
+    return pos - array->arr;
 }

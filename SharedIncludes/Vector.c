@@ -10,7 +10,7 @@
 #include <malloc.h>
 #include <string.h>
 
-const static Vector VEC_ERR = (Vector){
+static const Vector VEC_ERR = (Vector){
     .arr = NULL,
     .capacity = -1,
     .pos = -1

@@ -58,8 +58,8 @@ elseif (UNIX)
     target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron_unix.a)
 endif (WIN32)
 target_link_libraries(ATOMICLI m ${CMAKE_SOURCE_DIR}/libraries/DbgHelp.Lib) # link with the math lib and DbgHelp
-target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/FlagPreprocessor)
-target_include_directories(ATOMICLI PRIVATE ${CMAKE_SOURCE_DIR}/SharedIncludes)
+
+include_directories(${CMAKE_SOURCE_DIR})
 
 if (WIN32)
     add_custom_command(TARGET ATOMICLI

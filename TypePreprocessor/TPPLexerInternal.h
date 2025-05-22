@@ -26,7 +26,9 @@ const char* KEYWORD_STRINGS[KEYWORD_COUNT] = {
     [TYPEFIX] = "TYPEFIX",
     [VIRTUAL] = "VIRTUAL",
     [BI] = "BI",
-    [TRI] = "TRI"
+    [TRI] = "TRI",
+    [OVER] = "OVER",
+    [REQUIRE] = "REQUIRE"
 };
 
 const char* TPPTypesStrings[TPPTYPE_COUNT] = {
