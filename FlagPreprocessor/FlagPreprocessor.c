@@ -797,7 +797,7 @@ uint parse_keyword_option() {
 
 uint parse_keyword_arg() {
     if (optionInfos.pos == 0) {
-        error("Attempting to add argument, but no option defined before");
+        error("Attempting to add argument, but no option defined before\n");
         return EXIT_FAILURE;
     }
 
@@ -875,7 +875,7 @@ uint parse_keyword_arg() {
             continue;
 
         identifier_error:
-            error("Expected identifier in FROM list");
+            error("Expected identifier in FROM list\n");
             return EXIT_FAILURE;
         }
 

@@ -49,6 +49,8 @@ add_executable(ATOMICLI
         Parser/StaticVerificationInternal.h
 
         SharedIncludes/Messages.c
+        Lexer/Tokerr.c
+        Lexer/Tokerr.h
 )
 
 target_compile_options(ATOMICLI BEFORE PUBLIC -include ${CMAKE_SOURCE_DIR}/libraries/hadron.h)
@@ -99,6 +101,7 @@ add_executable(Type_preprocessor
         TypePreprocessor/TPPParser.c
         TypePreprocessor/TPPParser.h
         TypePreprocessor/TPPParserInternal.h
+        Errors.c
 )
 
 # [[todo]] need to create a lib from these add_executable(Type_preprocessor TypePreprocessor/TypePreprocessor.c.c TypePreprocessor/TypePreprocessor.h)

@@ -15,10 +15,10 @@
 
 #include <math.h>
 
-void* HADRON__MALLOC(size_t bytes, const char* file_name, const char* func_sig, const uint32_t line_number);
-void* HADRON__REALLOC(void* ptr, size_t bytes, const char* file_name, const char* func_sig, const uint32_t line_number);
-void HADRON__FREE(void* ptr, const char* file_name, const char* func_sig, const uint32_t line_number);
-void* HADRON__CALLOC(const size_t member_count, const size_t member_size, const char* file_name, const char* func_sig, const uint32_t line_number);
+void* HADRON__MALLOC(size_t bytes, const char* file_name, const char* func_sig, uint32_t line_number);
+void* HADRON__REALLOC(void* ptr, size_t bytes, const char* file_name, const char* func_sig, uint32_t line_number);
+void HADRON__FREE(void* ptr, const char* file_name, const char* func_sig, uint32_t line_number);
+void* HADRON__CALLOC(size_t member_count, size_t member_size, const char* file_name, const char* func_sig, uint32_t line_number);
 
 #define malloc(size) HADRON__MALLOC(size, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define realloc(ptr, new_size) HADRON__REALLOC(ptr, new_size, __FILE__, __PRETTY_FUNCTION__, __LINE__)

@@ -15,7 +15,7 @@ typedef struct TypeFixInfo {
     const char* name;
     const char* symbol;
 
-    char prefix: 1;
+    unsigned char prefix: 1;
 } TypeFixInfo;
 
 typedef struct TypeInfo {
@@ -40,8 +40,8 @@ typedef struct OperatorInfo {
 
     const uint precedence;
 
-    char assoc: 1;
-    char op_type: 2;
+    unsigned char assoc: 1;
+    unsigned char op_type: 2;
 } OperatorInfo;
 
 typedef struct AliasInfo {
@@ -65,7 +65,7 @@ typedef struct OperandInfo {
 } OperandInfo;
 
 typedef struct DefaultTypeFixInfo {
-    char prefix: 1;         // Prefix, Postfix
+    unsigned char prefix: 1;         // Prefix, Postfix
 } DefaultTypeFixInfo;
 
 typedef struct DefaultTypesInfo {
@@ -84,8 +84,8 @@ typedef enum DefaultOperatorInfoGType {
 } DefaultOperatorInfoGType;
 
 typedef struct DefaultOperatorsInfo {
-    char assoc: 1;          // Left, Right
-    char general_type: 2;   // Prefix, Postfix, Binary, Trinary
+    unsigned char assoc: 1;          // Left, Right
+    unsigned char general_type: 2;   // Prefix, Postfix, Binary, Trinary
 } DefaultOperatorsInfo;
 
 typedef struct DefaultAliasesInfo {

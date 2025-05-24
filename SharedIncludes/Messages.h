@@ -5,9 +5,12 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
 
-int inform  (const char* message, ...);
-int warning (const char* message, ...);
-int error   (const char* message, ...);
+#include <Errors.h>
+
+errcode inform  (const char* message, ...);
+errcode warning (const char* message, ...);
+errcode error   (const char* message, ...);
+errcode fatal   (const char* message, ...);
 
 __attribute__((noreturn)) void usage(const char* message, ...);
 __attribute__((noreturn)) void panic(const char* message, ...);

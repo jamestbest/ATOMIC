@@ -1,7 +1,11 @@
 // TYPEFIX is the possible pre/post fix values to the types
 //  E.g. pointer (>), reference (&)
+
+TYPES
+
 TYPEFIX DEFAULT PREFIX
  POINTER >
+ REFERENCE &
 
 // The types create keywords, and general types for the language
 // OVER designates sizes
@@ -16,8 +20,8 @@ TYPES
  STRING str
  BOOLEAN bool
  VOID void REQUIRE POINTER
- FUNCTION VIRTUAL REQUIRE POINTER
- STRUCT VIRTUAL
+ FUNCTION func | proc VIRTUAL REQUIRE POINTER
+ STRUCT struct VIRTUAL
 
 // Operators gives a list of operator names, their symbol, the associativity, and precedence
 OPERATORS DEFAULT LEFT BI

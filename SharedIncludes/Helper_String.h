@@ -28,7 +28,12 @@ typedef struct {
     uint bytes;
 } UTF8Pos;
 
-int find_last(const char* string, const char pattern);
+typedef struct marked_string {
+    char* str;
+    bool is_heap;
+} marked_string;
+
+int find_last(const char* string, char pattern);
 int starts_with_ips(const char* string, const char* pattern);
 int starts_with(const char* string, const char* pattern);
 int starts_with_ic(const char* string, const char* pattern);

@@ -12,7 +12,7 @@
 #include "SharedIncludes/Helper_String.h"
 #include "Errors.h"
 
-int inform(const char* message, ...) {
+errcode inform(const char* message, ...) {
     putz(C_BLU"INFO: "C_RST);
 
     va_list args;
@@ -20,10 +20,10 @@ int inform(const char* message, ...) {
     vprintf(message, args);
     va_end(args);
 
-    return EXIT_SUCCESS;
+    return SUCC;
 }
 
-int warning(const char* message, ...) {
+errcode warning(const char* message, ...) {
     putz(C_MGN"WARNING: "C_RST);
 
     va_list args;
@@ -31,18 +31,30 @@ int warning(const char* message, ...) {
     vprintf(message, args);
     va_end(args);
 
-    return EXIT_SUCCESS;
+    return SUCC;
 }
 
-int error(const char* message, ...) {
+void verror(const char* message, va_list args) {
     putz(C_RED"ERROR: "C_RST);
+    vprintf(message, args);
+}
 
+errcode error(const char* message, ...) {
     va_list args;
     va_start(args, message);
-    vprintf(message, args);
+    verror(message, args);
     va_end(args);
 
-    return EXIT_FAILURE;
+    return ERROR(FAIL);
+}
+
+errcode fatal(const char* message, ...) {
+    va_list args;
+    va_start(args, message);
+    verror(message, args);
+    va_end(args);
+
+    return FATAL(FAIL);
 }
 
 __attribute__((noreturn)) void usage(const char* message, ...) {
@@ -53,7 +65,7 @@ __attribute__((noreturn)) void usage(const char* message, ...) {
     vprintf(message, args);
     va_end(args);
 
-    exit(EXIT_FAILURE);
+    exit(ERRORC(FAIL));
 }
 
  __attribute__((noreturn)) void panic(const char* message, ...) {
@@ -64,5 +76,5 @@ __attribute__((noreturn)) void usage(const char* message, ...) {
     vprintf(message, args);
     va_end(args);
 
-    exit(EXIT_FAILURE);
+    exit(ERRORC(FAIL));
 }

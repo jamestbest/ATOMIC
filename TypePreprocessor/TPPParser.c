@@ -4,14 +4,15 @@
 
 #include "TPPParser.h"
 
-#include <stdlib.h>
-#include <string.h>
-
-#include "TPPParserInternal.h"
-#include "TypePreprocessor.h"
-#include "TPPLexer.h"
 #include "SharedIncludes/Helper_Math.h"
 #include "SharedIncludes/Messages.h"
+#include "TPPLexer.h"
+#include "TPPParserInternal.h"
+#include "TypePreprocessor.h"
+
+#include <Errors.h>
+#include <stdlib.h>
+#include <string.h>
 
 const Vector* t_types_enum;
 
@@ -29,7 +30,7 @@ static TPPToken* consume(void);
 static TPPToken* peek(void);
 static TPPToken* current(void);
 
-static int unexpected(const TPPType expected, const char* context, const TPPToken* found);
+static errcode unexpected(const TPPType expected, const char* context, const TPPToken* found);
 
 static const char* get_type_string(uint32_t position);
 static const char* get_tpptoken_type_string_from_token(const TPPToken* token);
@@ -41,8 +42,8 @@ static bool type_exists(uint32_t type_value, uint32_t type_vector);
 
 static TPPNode* tpp_parse_statement(const TPPToken* c);
 
-static void parse_keyword_statement(const TPPToken* token);
-static void parse_identifier_statement(const TPPToken* identifier_token);
+static errcode parse_keyword_statement(const TPPToken* token);
+static errcode parse_identifier_statement(const TPPToken* identifier_token);
 
 static void print_typefix_info(const TypeFixInfo* info);
 static void print_type_info(const TypeInfo* info);
@@ -54,14 +55,17 @@ static void print_typemap_all(const char* prefix, uint64_t map);
 static void print_alias_info(const AliasInfo* info);
 static void print_coercion_info(const CoercionInfo* info);
 
+ARRAY_JOINT(char*, String)
+
 size_t t_idx= 0;
-Array t_tokens;
+TPPTokenArray t_tokens;;
 
 sections section_state= SECTION_NONE;
 sections last_section_state= SECTION_NONE;
 DefaultInfo default_info;
 
 const char* section_strings[SECTION_COUNT] = {
+    [SECTION_NONE]= "None",
     [SECTION_TYPEFIX]= "Typefix",
     [SECTION_TYPES]= "Types",
     [SECTION_OPERATORS]= "Operators",
@@ -74,6 +78,7 @@ bool parsed_sections[SECTION_COUNT] = {};
 
 #define MAX_SECTION_REQUIREMENTS 5
 int section_requirements[SECTION_COUNT][MAX_SECTION_REQUIREMENTS] = {
+    [SECTION_NONE]= {-1},
     [SECTION_TYPEFIX]= {-1},
     [SECTION_TYPES]= {SECTION_TYPEFIX, -1},
     [SECTION_OPERATORS]= {-1},
@@ -97,7 +102,7 @@ void print_section_requirements() {
         const int* requirements= section_requirements[section];
 
         if (*requirements == -1) {
-            printf("None");
+            printf("  None\n");
             continue;
         }
 
@@ -108,23 +113,23 @@ void print_section_requirements() {
     }
 }
 
-int assert_required_sections_met(const sections section) {
+errcode assert_required_sections_met(const sections section) {
     for (int i = 0; i < MAX_SECTION_REQUIREMENTS; ++i) {
         const sections requirement= section_requirements[section][i];
 
         if (requirement == -1) break;
 
         if (!parsed_sections[requirement]) {
-            const int ret_code= error("Section requirement not met section `%s` requires that section `%s` exists before.\n"
+            const errcode ret_code= error("Section requirement not met section `%s` requires that section `%s` exists before.\n"
                          "Recommended section order is TYPEFIX -> TYPES -> OPERATORS -> ALIASES -> COERCIONS -> OPERANDS.\n"
-                         "Section requirements are as follows: \n");
+                         "Section requirements are as follows: \n", section_strings[section], section_strings[requirement]);
             print_section_requirements();
 
             return ret_code;
         }
     }
 
-    return EXIT_SUCCESS;
+    return SUCC;
 }
 
 void setup_arrays() {
@@ -133,26 +138,37 @@ void setup_arrays() {
     operators= OperatorInfo_arr_create();
 }
 
-void parse_types_file(const Array tokens) {
+errcode parse_types_file(const TPPTokenArray tokens) {
     t_tokens= tokens;
 
     setup_arrays();
 
+    errcode code= SUCC;
     while (t_idx < t_tokens.pos) {
         const TPPToken* token= current();
 
+        errcode stmt_code;
         switch (token->type) {
             case KEYWORD:
-                parse_keyword_statement(token);
-            break;
+                stmt_code= parse_keyword_statement(token);
+                break;
             case IDENTIFIER:
-                parse_identifier_statement(token);
-            break;
+                stmt_code= parse_identifier_statement(token);
+                break;
             default:
-                error("Expected statement to start with either a KEYWORD or IDENTIFIER found: %s", get_tpptoken_type_string(token->type));
+                stmt_code= error("Expected statement to start with either a KEYWORD or IDENTIFIER found: %s\n", get_tpptoken_type_string(token->type));
                 consume();
         }
+
+        if (stmt_code.code != SUCCESS) {
+            if (stmt_code.fatal) {
+                error("TPPParser encountered fatal error during parsing. Terminating `%s`", error_code_string(stmt_code));
+            }
+            code= stmt_code;
+        }
     }
+
+    return code;
 }
 
 static void clean_default() {
@@ -167,13 +183,13 @@ static void warn_no_default() {
 }
 
 static void set_default_typefix(const enum KEYWORDS keyword) {
-    TypeFixInfo* info= &default_info.info.type_fix;
+    DefaultTypeFixInfo* info= &default_info.info.type_fix;
     switch (keyword) {
         case PREFIX:
             info->prefix= true;
-        break;
+            break;
         default:
-            error("Invalid keyword given to default settings for typefix. Got `%s`", get_tpptoken_keyword_string(keyword));
+            error("Invalid keyword given to default settings for typefix. Got `%s`\n", get_tpptoken_keyword_string(keyword));
         break;
     }
 }
@@ -218,7 +234,7 @@ static void set_default_operators(const enum KEYWORDS keyword) {
             info->general_type= keyword_to_info_gtype(keyword);
             break;
         default:
-            error("Invalid keyword given to default settings for operators. Got `%s`", get_tpptoken_keyword_string(keyword));
+            error("Invalid keyword given to default settings for operators. Got `%s`\n", get_tpptoken_keyword_string(keyword));
         break;
     }
 }
@@ -284,7 +300,7 @@ void cleanup_section(sections section) {
     }
 }
 
-void parse_keyword_statement(const TPPToken* token) {
+errcode parse_keyword_statement(const TPPToken* token) {
     if (last_section_state != SECTION_NONE) {
         cleanup_section(last_section_state);
     }
@@ -293,29 +309,35 @@ void parse_keyword_statement(const TPPToken* token) {
     const enum KEYWORDS keyword = token->data.keyword;
 
     if (!is_header_keyword(keyword)) {
-        error("Expected keyword statement to start with a valid header keyword i.e. TYPEFIX, TYPES, ALIASES, OPERATORS, COERCIONS, OPERANDS. Got %s", get_tpptoken_keyword_string(keyword));
-        return;
+        return error("Expected keyword statement to start with a valid header keyword i.e. TYPEFIX, TYPES, ALIASES, OPERATORS, COERCIONS, OPERANDS. Got %s", get_tpptoken_keyword_string(keyword));
     }
 
     update_state(keyword);
 
-    if (assert_required_sections_met(section_state) != EXIT_SUCCESS) {
-        return;
+    errcode err= assert_required_sections_met(section_state);
+    if (err.code != SUCCESS) {
+        consume();
+        return err;
     }
 
+    consume(); // EAT THE KEYWORD w(ﾟДﾟ)w
+
     clean_default();
-    if (!expect_keyword(DEFAULT)) return;
+    if (!expect_keyword(DEFAULT)) goto parse_keyword_statement_end;
 
     TPPToken* tok;
-    while (tok= expect(KEYWORD), tok) {
+    while (tok=expect(KEYWORD), tok) {
         set_default(tok->data.keyword);
     }
 
+parse_keyword_statement_end:
     if (!expect(EOS)) {
-        error("Unexpected token type in keyword statement. Found `%s`", get_tpptoken_type_string_from_token(peek()));
+        return error("Unexpected token type in keyword statement. Found `%s`", get_tpptoken_type_string_from_token(peek()));
     }
 
     set_section_parsed(section_state);
+
+    return SUCC;
 }
 
 bool is_symbolic(const TPPType type) {
@@ -362,10 +384,12 @@ char* parse_symbol() {
     // so convert any symbols to customs operators
     const TPPToken* c= current();
 
-    char* symbol= to_custom_op(c->type);
+    char* symbol;
+    if (c->type == CUSTOM_OPERATOR) symbol= c->data.str;
+    else symbol= to_custom_op(c->type);
 
     if (!symbol) {
-        error("Unable to convert non-symbolic types to custom operator. Found: `%s`", get_tpptoken_type_string_from_token(c));
+        error("Unable to convert non-symbolic types to custom operator. Found: `%s`\n", get_tpptoken_type_string_from_token(c));
         return NULL;
     }
 
@@ -374,14 +398,14 @@ char* parse_symbol() {
     return symbol;
 }
 
-int parse_typefix_identifier_statement() {
+errcode parse_typefix_identifier_statement() {
     // The typefix line consists of
     //  <name> <symbol> <PREFIX|POSTFIX>? <EOS>
     const TPPToken* identifier= consume();
     const char* symbol= parse_symbol();
 
     if (!symbol) {
-        return error("Unable to parse typefix statement from invalid symbol");
+        return error("Unable to parse typefix statement from invalid symbol\n");
     }
 
     bool prefix= false;
@@ -400,14 +424,14 @@ int parse_typefix_identifier_statement() {
     const TypeFixInfo info = (TypeFixInfo) {
         .name= identifier->data.str,
         .symbol= symbol,
-        .prefix= prefix ? 1 : 0
+        .prefix= prefix
     };
 
     TypeFixInfo_arr_add(&typefixes, info);
 
     print_typefix_info(&info);
 
-    return EXIT_SUCCESS;
+    return SUCC;
 }
 
 uint find_typefix(const char* name) {
@@ -434,23 +458,24 @@ struct TypeLikePos {
     const uint type_pos= find_type(name);
     const uint alias_pos= find_alias(name);
 
-    if (typefix_pos == -1 && type_pos == -1 && alias_pos == -1)
-        return {.type= TYPE_TYPE, .pos= -1};
+    const uint MINUS_ONE= (uint)-1;
+    if (typefix_pos == MINUS_ONE && type_pos == MINUS_ONE && alias_pos == MINUS_ONE)
+        return (struct TypeLikePos){.type= TYPE_TYPE, .pos= -1};
 
-    if (type_pos != -1)
-        return {.type= TYPE_TYPE, .pos= type_pos};
+    if (type_pos != MINUS_ONE)
+        return (struct TypeLikePos){.type= TYPE_TYPE, .pos= type_pos};
 
-    if (typefix_pos != -1)
-        return {.type= TYPE_TYPEFIX, .pos= typefix_pos};
+    if (typefix_pos != MINUS_ONE)
+        return (struct TypeLikePos){.type= TYPE_TYPEFIX, .pos= typefix_pos};
 
-    return {.type= TYPE_ALIAS, .pos= alias_pos};
+    return (struct TypeLikePos){.type= TYPE_ALIAS, .pos= alias_pos};
 }
 
-int parse_types_tail(TypeInfo* info) {
+errcode parse_types_tail(TypeInfo* info) {
     TPPToken* p= expect(KEYWORD);
 
     if (!p) {
-        return error("Expected keyword as first token in tail of types statement. Found `%s`", get_tpptoken_type_string_from_token(p));
+        return error("Expected keyword as first token in tail of types statement. Found `%s`\n", get_tpptoken_type_string_from_token(p));
     }
 
     const enum KEYWORDS keyword= p->data.keyword;
@@ -463,7 +488,7 @@ int parse_types_tail(TypeInfo* info) {
         TPPToken* requirement= expect(IDENTIFIER);
 
         if (!requirement) {
-            return error("Expected typefix requirement after require keyword in types statement. Found `%s`", get_tpptoken_type_string_from_token(peek()));
+            return error("Expected typefix requirement after require keyword in types statement. Found `%s`\n", get_tpptoken_type_string_from_token(peek()));
         }
 
         while (requirement) {
@@ -482,11 +507,13 @@ int parse_types_tail(TypeInfo* info) {
 
         info->requirements= requirements;
     } else {
-        return error("Expected only VIRTUAL or REQUIRE keyword in type info tail. Found `%s`", get_tpptoken_type_string_from_token(p));
+        return error("Expected only VIRTUAL or REQUIRE keyword in type info tail. Found `%s`\n", get_tpptoken_type_string_from_token(p));
     }
+
+    return SUCC;
 }
 
-int parse_types_identifier_statement() {
+errcode parse_types_identifier_statement() {
     // The type line consists of
     //  <general name> PREFIX <prefix> OVER <SIZE..>
     // OR
@@ -501,6 +528,9 @@ int parse_types_identifier_statement() {
     };
 
     if (default_info.has_info) {}
+
+    bool is_multi_named= false;
+    StringArray multi_names= String_arr_create();
 
     if (expect_keyword(PREFIX)) {
         // <prefix> OVER <SIZE..>
@@ -532,14 +562,25 @@ int parse_types_identifier_statement() {
         info.prefix= prefix->data.str;
         info.sizes= sizes;
     } else {
-        // <name>
-        const TPPToken* identifier= expect(IDENTIFIER);
+        // <name> or <name> | <name>
+        const TPPToken* identifier;
+        do {
+            identifier= expect(IDENTIFIER);
 
-        if (!identifier) {
-            return error("Expected identifier after general type in type statement. Found `%s`", get_tpptoken_type_string_from_token(peek()));
+            if (!identifier) {
+                return error("Expected identifier after general type in type statement. Found `%s`", get_tpptoken_type_string_from_token(peek()));
+            }
+
+            String_arr_add(&multi_names, identifier->data.str);
+        } while (expect(PIPE));
+
+        if (multi_names.pos == 1) {
+            is_multi_named= false;
+            info.name= identifier->data.str;
+            String_arr_destroy(&multi_names);
+        } else {
+            is_multi_named= true;
         }
-
-        info.name= identifier->data.str;
     }
 
     TPPToken* c;
@@ -547,14 +588,28 @@ int parse_types_identifier_statement() {
         parse_types_tail(&info);
     }
 
-    TypeInfo_arr_add(&types, info);
+    if (c)
+        consume(); // EAT THE EOS
 
-    print_type_info(&info);
+    if (!is_multi_named) {
+        TypeInfo_arr_add(&types, info);
 
-    return EXIT_SUCCESS;
+        print_type_info(&info);
+    }
+    else {
+        for (uint i= 0; i < multi_names.pos; ++i) {
+            const char* name= String_arr_get(&multi_names, i);
+            info.name= name;
+            TypeInfo_arr_add(&types, info);
+            print_type_info(&info);
+        }
+        String_arr_destroy(&multi_names);
+    }
+
+    return SUCC;
 }
 
-int parse_operator_tail(OperatorInfo* info) {
+errcode parse_operator_tail(OperatorInfo* info) {
     const TPPToken* c;
     if (c=expect(KEYWORD), !c) {
         return error(
@@ -582,10 +637,10 @@ int parse_operator_tail(OperatorInfo* info) {
             );
     }
 
-    return EXIT_SUCCESS;
+    return SUCC;
 }
 
-int parse_operators_identifier_statement() {
+errcode parse_operators_identifier_statement() {
     const DefaultOperatorsInfo* default_op= &default_info.info.operators;
 
     const TPPToken* identifier= consume();
@@ -593,7 +648,7 @@ int parse_operators_identifier_statement() {
     const char* symbol= parse_symbol();
 
     if (!symbol) {
-        return error("Expected valid symbol after identifier in operator statement");
+        return error("Expected valid symbol after identifier in operator statement\n");
     }
 
     const TPPToken* pres= expect(NUMERIC);
@@ -619,31 +674,31 @@ int parse_operators_identifier_statement() {
 
     OperatorInfo_arr_add(&operators, info);
 
-    return EXIT_SUCCESS;
+    return SUCC;
 }
 
 int add_to_type_map(uint64_t* map, const char* name) {
     const struct TypeLikePos res= find_type_like(name);
 
-    if (res.pos == -1) return EXIT_FAILURE;
+    if (res.pos == -1) return FAIL;
 
     switch (res.type) {
         case TYPE_TYPE:
             *map |= res.pos;
-        break;
+            break;
         case TYPE_TYPEFIX:
             *map |= res.pos + types.pos;
-        break;
-        case TYPE_ALIAS:
+            break;
+        case TYPE_ALIAS:;
             const AliasInfo* alias= AliasInfo_arr_ptr(&aliases, res.pos);
-        *map |= alias->type_map;
-        break;
+            *map |= alias->type_map;
+            break;
     }
 
-    return EXIT_SUCCESS;
+    return SUCCESS;
 }
 
-int parse_type_pipe_statement(uint64_t* type_map) {
+errcode parse_type_pipe_statement(uint64_t* type_map) {
     // format type_like | type_like | ...
     while (true) {
         const TPPToken* type_ident= expect(IDENTIFIER);
@@ -653,7 +708,7 @@ int parse_type_pipe_statement(uint64_t* type_map) {
         }
 
         if (!add_to_type_map(type_map, type_ident->data.str)) {
-            return error("Could not find type identifier in types, typefixes, or aliases. Found identifier `%s`", identifier->data.str);
+            return error("Could not find type identifier in types, typefixes, or aliases. Found identifier `%s`", type_ident->data.str);
         }
 
         if (!expect(PIPE)) {
@@ -661,10 +716,10 @@ int parse_type_pipe_statement(uint64_t* type_map) {
         }
     }
 
-    return EXIT_SUCCESS;
+    return SUCC;
 }
 
-int parse_aliases_identifier_statement() {
+errcode parse_aliases_identifier_statement() {
     const TPPToken* identifier= consume();
 
     if (!expect(EQUALITY)) {
@@ -681,10 +736,11 @@ int parse_aliases_identifier_statement() {
 
     AliasInfo_arr_add(&aliases, info);
 
-    return EXIT_SUCCESS;
+    return SUCC;
 }
 
-int parse_coercions_identifier_statement() {
+errcode parse_coercions_identifier_statement() {
+    // todo wtf is the return?!
     uint64_t left_type_map= 0;
     uint64_t right_type_map= 0;
 
@@ -698,48 +754,51 @@ int parse_coercions_identifier_statement() {
     parse_type_pipe_statement(&right_type_map);
 
 parse_coercions_error:
-    return EXIT_FAILURE;
+    return ERROR(FAIL);
 }
 
-int parse_operands_identifier_statement(const TPPToken* identifier_tok) {
+errcode parse_operands_identifier_statement(const TPPToken* identifier_tok) {
 
 }
 
-void parse_identifier_statement(const TPPToken* identifier_token) {
-    int code;
+errcode parse_identifier_statement(const TPPToken* identifier_token) {
+    errcode err;
     switch (section_state) {
         case SECTION_TYPEFIX:
-            code= parse_typefix_identifier_statement();
+            err= parse_typefix_identifier_statement();
             break;
         case SECTION_TYPES:
-            code= parse_types_identifier_statement();
+            err= parse_types_identifier_statement();
             break;
         case SECTION_OPERATORS:
-            code= parse_operators_identifier_statement(identifier_token);
+            exit(0); //[[todo]] temp
+            err= parse_operators_identifier_statement(identifier_token);
             break;
         case SECTION_ALIASES:
-            code= parse_aliases_identifier_statement(identifier_token);
+            err= parse_aliases_identifier_statement(identifier_token);
             break;
         case SECTION_COERCIONS:
-            code= parse_coercions_identifier_statement(identifier_token);
+            err= parse_coercions_identifier_statement(identifier_token);
             break;
         case SECTION_OPERANDS:
-            code= parse_operands_identifier_statement(identifier_token);
+            err= parse_operands_identifier_statement(identifier_token);
             break;
         case SECTION_NONE:
-            code= error("Expected state header e.g. ALIASES, TYPEFIX, etc before identifier statement. Got identifier `%s`", identifier_token->data.str);
+            err= error("Expected state header e.g. ALIASES, TYPEFIX, etc before identifier statement. Got identifier `%s`", identifier_token->data.str);
             break;
         default:
             assert(false);
     }
 
-    if (code != EXIT_SUCCESS) {
+    if (err.code != SUCCESS) {
         // if we did not successfully parse a line
         //  then just go to the end of the line to skip bad tokens
         TPPToken* c;
         while (c= current(), c && c->type != EOS) consume();
         consume();
     }
+
+    return err;
 }
 
 static void add_type(uint32_t type_value, uint32_t* type_vector) {
@@ -974,7 +1033,7 @@ void print_coercion_info(const CoercionInfo* info) {
 }
 
 static TPPToken* expect(const TPPType type) {
-    if (peek()->type == type) {
+    if (current()->type == type) {
         return consume();
     }
 
@@ -982,7 +1041,8 @@ static TPPToken* expect(const TPPType type) {
 }
 
 static TPPToken* expect_keyword(const enum KEYWORDS keyword) {
-    if (peek()->type == KEYWORD && peek()->data.keyword == keyword) {
+    const TPPToken* const c= current();
+    if (c->type == KEYWORD && c->data.keyword == keyword) {
         return consume();
     }
 
@@ -996,22 +1056,22 @@ static bool is_valid_index(uint index) {
 static TPPToken* consume() {
     if (!is_valid_index(t_idx)) return NULL;
 
-    return arr_ptr(&t_tokens, t_idx++);
+    return TPPToken_arr_ptr(&t_tokens, t_idx++);
 }
 
 static TPPToken* peek() {
     if (!is_valid_index(t_idx + 1)) return NULL;
 
-    return arr_ptr(&t_tokens, t_idx + 1);
+    return TPPToken_arr_ptr(&t_tokens, t_idx + 1);
 }
 
 static TPPToken* current() {
     if (!is_valid_index(t_idx)) return NULL;
 
-    return arr_ptr(&t_tokens, t_idx);
+    return TPPToken_arr_ptr(&t_tokens, t_idx);
 }
 
-static int unexpected(const TPPType expected, const char* context, const TPPToken* found) {
+static errcode unexpected(const TPPType expected, const char* context, const TPPToken* found) {
     printf(
         "Expected `%s` in %s. Found `%s`",
         get_tpptoken_type_string(expected),
@@ -1019,5 +1079,5 @@ static int unexpected(const TPPType expected, const char* context, const TPPToke
         get_tpptoken_type_string_from_token(found)
     );
 
-    return EXIT_FAILURE;
+    return ERROR(FAIL);
 }

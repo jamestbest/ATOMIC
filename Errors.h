@@ -8,20 +8,58 @@
 #include "Commons.h"
 
 #include "SharedIncludes/Colours.h"
-#include "Lexer/Tokens.h"
+#include "SharedIncludes/Helper_String.h"
 
+/* Structure of error code
+ * |-------------|--------------|
+ * -             0              +
+ * ^^^^^^^^^^^       ^^^^^^^^^^^
+ *     ERRORS           WARNINGS
+ *            ^^^^^^^
+ *            12 bits of
+ *            semantics
+ */
 
-void highlight_line_err(Position pos, char* line, const uint min_pos_printout);
-void highlight_line_start_and_error(Token* parent, Token* issue, const Vector* lines);
+typedef struct errcode {
+    uint16_t fatal: 1;
+    uint16_t _UNUSED0: 1;
+    uint16_t _UNUSED1: 1;
+    uint16_t _UNUSED2: 1;
+    uint16_t _UNUSED3: 1;
+    uint16_t _UNUSED4: 1;
+    uint16_t _UNUSED5: 1;
+    uint16_t _UNUSED6: 1;
+    uint16_t _UNUSED7: 1;
+    uint16_t _UNUSED8: 1;
+    uint16_t _UNUSED9: 1;
+    uint16_t _UNUSED10: 1;
+    uint16_t _UNUSED11: 1;
 
-#define FAIL    -1
+    uint16_t CODE_1_B: 1;
+    uint16_t CODE_2_B: 1;
+    uint16_t CODE_3_B: 1;
+    uint16_t CODE_4_B: 1;
+
+    int16_t code;
+} errcode;
+
 #define SUCCESS 0
+#define FAIL    1
+
 #define END     1   // found end, either end of parsing
 #define ARGERR  2
 #define ENOMEM  12
 
+extern const char** const ERROR_CODE_STRINGS;
+marked_string error_code_string(errcode err);
 
-#define BASEERR 256
+#define FATAL(c)      ((errcode){.fatal= true , .code= c})
+#define ERROR(c)      ((errcode){.fatal= false, .code= -c})
+#define ERRORC(code)  (-code)
+#define WARN(c)       ((errcode){.code= c})
+#define SUCC          ((errcode){.code= SUCCESS})
+
+#define BASEERR SEMANTIC_B_END
 #define LEXERR (BASEERR + 1)
 #define LEXERR_MAX (LEXERR + 1024)
 #define PARSERR (LEXERR_MAX + 1)

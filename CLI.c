@@ -293,7 +293,7 @@ struct VerifiedArgs {
         if (arg_info_pos >= info->arg_info_count) {
             // if the next arg info isn't valid then we need the last one to have been a repeatable arg, else error
             if (!arg_info->repeated) {
-                error("Option `%s` given more arguments than allowed. Expected %zu args",
+                error("Option `%s` given more arguments than allowed. Expected %zu args\n",
                     info->option_name,
                     info->arg_info_count
                 );

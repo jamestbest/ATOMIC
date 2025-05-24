@@ -5,11 +5,11 @@
 #ifndef ATOMIC_TOKENS_H
 #define ATOMIC_TOKENS_H
 
-#include "../Commons.h"
+#include "Commons.h"
 
-#include "../SharedIncludes/Vector.h"
-#include "../SharedIncludes/Helper_String.h"
-#include "../SharedIncludes/Colours.h"
+#include "SharedIncludes/Vector.h"
+#include "SharedIncludes/Helper_String.h"
+#include "SharedIncludes/Colours.h"
 
 typedef struct Arr {
     char** arr;
