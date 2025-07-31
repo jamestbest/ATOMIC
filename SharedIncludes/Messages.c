@@ -69,7 +69,7 @@ __attribute__((noreturn)) void usage(const char* message, ...) {
 }
 
  __attribute__((noreturn)) void panic(const char* message, ...) {
-    putz(C_RED"PANIC: "C_RST);
+    putz(C_RED"PANIC!!: "C_RST);
 
     va_list args;
     va_start(args, message);

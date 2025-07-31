@@ -12,6 +12,8 @@ errcode warning (const char* message, ...);
 errcode error   (const char* message, ...);
 errcode fatal   (const char* message, ...);
 
+void    verror  (const char* message, va_list args);
+
 __attribute__((noreturn)) void usage(const char* message, ...);
 __attribute__((noreturn)) void panic(const char* message, ...);
 
