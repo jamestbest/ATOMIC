@@ -15,7 +15,6 @@
 #define ARGS_COUNT 3
 
 bool verify_arguments(int argc, char** argv);
-char* get_cwd();
 
 uint parse_flag_file(FILE* file);
 
@@ -131,8 +130,7 @@ int main(const int argc, char** argv) {
     const uint ret = parse_flag_file(flag_file);
 
     if (ret != EXIT_SUCCESS) {
-        error("Errors found during parsing of flag file, please fix and re-run. Errcode: %u\n", ret);
-        return ret;
+        return error("Errors found during parsing of flag file, please fix and re-run. Errcode: %u\n", ret).code;
     }
 
     sort_all_data();
