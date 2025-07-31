@@ -11,7 +11,7 @@
 
 typedef unsigned int uint;
 
-typedef struct {
+typedef struct Vector {
     void** arr;
     size_t pos;
     size_t capacity;
