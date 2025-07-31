@@ -149,6 +149,7 @@ uint length_of_position_printout(const Position pos) {
     // I want to convert this to fprintf to NULL, but that's not possible, I could use snprintf NULL but that does not conform to the print_position format that
     //  I want to mirror for changes. So instead I leave here a comment in the hopes that future James will not forget this and make a mistake. In actuality the
     //  chances I ever look at this piece of code again are slim
+    // - future james does not understand this comment but I will [[todo]] tag it
     uint len = 4; // '<:->'
 
     len += length_of_number_printout(pos.start_line);

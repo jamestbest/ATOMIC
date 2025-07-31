@@ -165,10 +165,10 @@ typedef struct Position {
 } Position;
 
 typedef struct encodedType {
-    unsigned short general_type : 16;
-    unsigned short size : 16;
-    unsigned short ptr_offset : 16;
-    unsigned short enum_position : 16;
+    uint64_t general_type: 16;
+    uint64_t size: 16;
+    uint64_t ptr_offset: 16;
+    uint64_t enum_position: 16;
 } encodedType;
 
 //a base_tokens value is the |func mainfunction () : i4|
