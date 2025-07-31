@@ -22,18 +22,17 @@
 
 typedef struct errcode {
     uint16_t fatal: 1;
-    uint16_t _UNUSED0: 1;
-    uint16_t _UNUSED1: 1;
-    uint16_t _UNUSED2: 1;
-    uint16_t _UNUSED3: 1;
-    uint16_t _UNUSED4: 1;
-    uint16_t _UNUSED5: 1;
-    uint16_t _UNUSED6: 1;
-    uint16_t _UNUSED7: 1;
-    uint16_t _UNUSED8: 1;
-    uint16_t _UNUSED9: 1;
+    uint16_t _UNUSED0 : 1;
+    uint16_t _UNUSED1 : 1;
+    uint16_t _UNUSED2 : 1;
+    uint16_t _UNUSED3 : 1;
+    uint16_t _UNUSED4 : 1;
+    uint16_t _UNUSED5 : 1;
+    uint16_t _UNUSED6 : 1;
+    uint16_t _UNUSED7 : 1;
+    uint16_t _UNUSED8 : 1;
+    uint16_t _UNUSED9 : 1;
     uint16_t _UNUSED10: 1;
-    uint16_t _UNUSED11: 1;
 
     uint16_t CODE_1_B: 1;
     uint16_t CODE_2_B: 1;
