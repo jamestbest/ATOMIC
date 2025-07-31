@@ -3,15 +3,17 @@
 //
 
 #include "TypePreprocessor.h"
-#include "TypePreprocessorInternal.h"
 
 #include "SharedIncludes/Colours.h"
 #include "SharedIncludes/Helper_File.h"
+#include "TPPGenerator.h"
+#include "TypePreprocessorInternal.h"
 
+#include <Errors.h>
+#include <SharedIncludes/Messages.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <time.h>
 
 ARRAY_ADD(Vector, Vector)
@@ -25,8 +27,6 @@ static void print_enums(const Vector* enums);
 static void print_information(const Array* information);
 static void print_operator_info(const OperatorInfo* info);
 
-static void parse_types_file(Array tokens);
-
 static TPPNode* parse_type_file_two(FILE* file, const Vector* type_enums,
                                     const Vector* operator_enums);
 static Array parse_type_file(FILE* file, const Vector* type_enums);
@@ -39,20 +39,10 @@ static uint verify_enums_usage(const Vector* enums, const Array* information);
 
 static void write_output_file(FILE* file, const char* file_name, const Array* information);
 
-static int  inform  (const char* message, ...);
-static int  warning (const char* message, ...);
-static int  error   (const char* message, ...);
-static void panic   (const char* message, ...);
-
-static int  verror  (const char* message, va_list args);
-
 static char await_choice(const char* reason);
 
 static void fatal_file_error(const char* message);
 static void fatal_file_errorf(const char* message, ...);
-
-uint errcode = EXIT_SUCCESS;
-uint warncode = EXIT_SUCCESS;
 
 #define INPUT_COUNT 3
 
@@ -60,6 +50,14 @@ bool unsafe = false;
 
 #define ENUM_FILE_OPERATOR_ENUM_NAME "ATOM_CT__LEX_OPERATORS_ENUM"
 #define ENUM_FILE_TYPE_ENUM_NAME "ATOM_CT__LEX_TYPES_GENERAL_ENUM"
+
+TypeFixInfoArray typefixes;
+TypeInfoArray types;
+OperatorInfoArray operators;
+AliasInfoArray aliases;
+
+TypeMatrix coercions;
+OperandInfoArray operands;
 
 void verify_args(const int argc, char** argv) {
     if (argc < INPUT_COUNT + 1 || argc > INPUT_COUNT + 2) {
@@ -101,7 +99,10 @@ int main(const int argc, char** argv) {
         else warning("Invalid option given, only --UNSAFE is accepted\n");
     }
 
-    inform("Collected file locations:\n\tType file: %s\n\tOutput enum file: %s\n\tOutput matrix file: %s\n",
+    inform("Collected file locations:\n"
+        "\tType file: %s\n"
+        "\tOutput enum file: %s\n"
+        "\tOutput matrix file: %s\n",
         type_file_name,
         out_enum_file_name,
         out_matrices_file_name
@@ -110,11 +111,30 @@ int main(const int argc, char** argv) {
     FILE* type_file = fopen(type_file_name, "r");
 
     if (!type_file) {
-        fatal_file_errorf("Unable to open read only type file (%p)", type_file);
+        fatal_file_errorf(
+            "Unable to open read only type file (%p)",
+            type_file
+        );
     }
 
-    inform("File pointers:\n\tType File: %p\n",
-        type_file
+    FILE* header_file= fopen(out_enum_file_name, "w");
+    FILE* code_file= fopen(out_matrices_file_name, "w");
+
+    if (!header_file ||  !code_file) {
+        fatal_file_errorf(
+            "Unable to open write only enum (%p) / code (%p) file",
+            header_file,
+            code_file
+        );
+    }
+
+    inform("File pointers:\n"
+        "\tType File: %p\n"
+        "\tEnum File: %p\n"
+        "\tCode File: %p\n",
+        type_file,
+        header_file,
+        code_file
     );
 
     const Vector operator_enums = vector_create(MIN_ARRAY_SIZE);
@@ -125,51 +145,30 @@ int main(const int argc, char** argv) {
     while (get_line(type_file, &line_buffer)) {
         tpplex_line(&line_buffer);
     }
-    const Array tokens = tpplex_end();
+    const TPPTokenArray tokens = tpplex_end();
 
     for (uint i = 0; i < tokens.pos; ++i) {
-        const TPPToken* token = arr_ptr(&tokens, i);
+        const TPPToken* token = TPPToken_arr_ptr(&tokens, i);
         print_tpptoken(token);
         newline();
     }
 
-    parse_types_file(tokens);
+    errcode err= parse_types_file(tokens);
+
+    if (err.code != SUCCESS) {
+        return error("Errors generated in the parsing of types file. Unable to continue\n").code;
+    }
+
+    err= generate(header_file, code_file, out_enum_file_name);
+
+    if (err.code != SUCCESS) {
+        return error("Errors generated in the generation of files. Unable to continue\n").code;
+    }
+
+//    hadron_verify();
+//    hadron_cleanup();
 
     exit(EXIT_SUCCESS);
-
-    const TPPNode* root_node = tpp_parse(tokens);
-
-    // this needs to change to parsing through the ast generated
-    const Array operator_information = parse_type_file(type_file, &type_enums);
-
-    verify_operator_information(&operator_information);
-    verify_enums_usage(&operator_enums, &operator_information);
-
-    print_information(&operator_information);
-
-    if (errcode != EXIT_SUCCESS) {
-        if (!unsafe) {
-            error("Errors during parsing of files; please correct, file will not be written until errcode == EXIT_SUCCESS\n");
-            return errcode;
-        }
-
-        const char choice = await_choice("Errors generated during parsing");
-
-        if (choice == 'n') return EXIT_FAILURE;
-    }
-    else if (warncode != EXIT_SUCCESS) {
-        const char choice = await_choice("Warnings generated during parsing");
-
-        if (choice == 'n') return EXIT_FAILURE;
-    }
-
-    FILE* out_file = fopen(out_matrices_file_name, "w");
-
-    if (!out_file) {
-        fatal_file_error("Unable to open a writable output file");
-    }
-
-    write_output_file(out_file, out_matrices_file_name, &operator_information);
 }
 
 void fatal_file_errorf(const char* message, ...) {
@@ -215,62 +214,6 @@ char await_choice(const char* reason) {
     };
 
     return a;
-}
-
-int inform(const char* message, ...) {
-    putz(C_BLU"INFO: "C_RST);
-
-    va_list args;
-    va_start(args, message);
-    vprintf(message, args);
-    va_end(args);
-
-    return EXIT_SUCCESS;
-}
-
-int warning(const char* message, ...) {
-    warncode = EXIT_FAILURE;
-
-    putz(C_MGN"WARNING: "C_RST);
-
-    va_list args;
-    va_start(args, message);
-    vprintf(message, args);
-    va_end(args);
-
-    return EXIT_SUCCESS;
-}
-
-int verror(const char* message, va_list args) {
-    errcode = EXIT_FAILURE;
-
-    putz(C_RED"ERROR: "C_RST);
-
-    vprintf(message, args);
-
-    return EXIT_FAILURE;
-}
-
-int error(const char* message, ...) {
-    va_list args;
-    va_start(args, message);
-    verror(message, args);
-    va_end(args);
-
-    return EXIT_FAILURE;
-}
-
-[[noreturn]] void panic(const char* message, ...) {
-    putz(C_RED"PANIC: "C_RST);
-
-    va_list args;
-    va_start(args, message);
-    vprintf(message, args);
-    va_end(args);
-
-    fflush(stdout);
-
-    exit(EXIT_FAILURE);
 }
 
 // uint get_matching_enum(const Vector* enums, const char* operator) {

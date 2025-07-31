@@ -14,6 +14,7 @@ ARRAY_PROTO(uint, uint)
 typedef struct TypeFixInfo {
     const char* name;
     const char* symbol;
+    const char* alt_name;
 
     unsigned char prefix: 1;
 } TypeFixInfo;
@@ -25,13 +26,16 @@ typedef struct TypeInfo {
         const char* name;
     };
 
-    bool has_variable_sizes;
-    uintArray sizes; // Array of uint sizes
+    union {
+        uintArray sizes; // Array of uint sizes
+        Vector names;
+    };
 
-    bool is_virtual;
-
-    //[[todo]] change to array of enum positions
     uintArray requirements; // Array of typefix positions
+
+    bool has_variable_sizes: 1;
+    bool has_multiple_names: 1;
+    bool is_virtual: 1;
 } TypeInfo;
 
 typedef struct OperatorInfo {
@@ -40,8 +44,9 @@ typedef struct OperatorInfo {
 
     const uint precedence;
 
-    unsigned char assoc: 1;
-    unsigned char op_type: 2;
+    uint8_t assoc: 1;
+    uint8_t op_type: 4;
+    uint8_t symbol_is_ident: 1;
 } OperatorInfo;
 
 typedef struct AliasInfo {
@@ -49,20 +54,41 @@ typedef struct AliasInfo {
     uint64_t type_map;
 } AliasInfo;
 
-typedef struct TypeMatrix {
-    uint64_t top_pad;
-    uint64_t bottom_pad;
-} TypeMatrix;
+typedef uint8_t* TypeMatrix;
 
 typedef struct CoercionInfo {
     TypeMatrix matrix;
 } CoercionInfo;
 
 typedef struct OperandInfo {
-    size_t type;
+    OperatorInfo* operator;
 
-    TypeMatrix matrix;
+    union {
+        TypeMatrix matrix; // for binary
+        uint64_t typemap;  // for unary
+        // [[todo]] how to support trinary operators?
+    };
+
+    uint16_t explicit_out_type  :  1;
+    uint16_t unwrapped_output   :  1;
+    uint16_t output_index       : 14;
+
+    unsigned char op_type: 2;
 } OperandInfo;
+
+ARRAY_PROTO(TypeFixInfo , TypeFixInfo)
+ARRAY_PROTO(TypeInfo    , TypeInfo)
+ARRAY_PROTO(OperatorInfo, OperatorInfo)
+ARRAY_PROTO(AliasInfo   , AliasInfo)
+ARRAY_PROTO(OperandInfo , OperandInfo)
+
+extern TypeFixInfoArray typefixes;
+extern TypeInfoArray types;
+extern OperatorInfoArray operators;
+extern AliasInfoArray aliases;
+
+extern TypeMatrix coercions;
+extern OperandInfoArray operands;
 
 typedef struct DefaultTypeFixInfo {
     unsigned char prefix: 1;         // Prefix, Postfix
@@ -79,13 +105,14 @@ typedef enum DefaultOperatorInfoAssoc {
 typedef enum DefaultOperatorInfoGType {
     OIGT_PREFIX,
     OIGT_POSTFIX,
+    OIGT_UNARY,
     OIGT_BINARY,
     OIGT_TRINARY
 } DefaultOperatorInfoGType;
 
 typedef struct DefaultOperatorsInfo {
     unsigned char assoc: 1;          // Left, Right
-    unsigned char general_type: 2;   // Prefix, Postfix, Binary, Trinary
+    unsigned char general_type: 3;   // Unary, Prefix, Postfix, Binary, Trinary
 } DefaultOperatorsInfo;
 
 typedef struct DefaultAliasesInfo {
