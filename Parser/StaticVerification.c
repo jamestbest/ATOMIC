@@ -17,9 +17,9 @@
 uint64_t sub_uid = 0;
 uint64_t var_uid = 0;
 
-static Scope* generate_scope(Node* creation_node, Node* brace_node, const bool is_global, Scope* parent);
+static Scope* generate_scope(Node* creation_node, Node* brace_node, bool is_global, Scope* parent);
 static InScopeRet variable_is_in_scope(const Scope* scope, Node* variable,
-                                       const bool am_parent_scope);
+                                       bool am_parent_scope);
 static InScopeRet subroutine_is_in_scope(const Scope* scope, Node* subroutine, bool is_parent_scope);
 
 bool has_scope(const Node* node) {
