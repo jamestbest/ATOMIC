@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(ATOMIC C)
 
+include(${CMAKE_SOURCE_DIR}/cmake/hadron.cmake)
+
 set(CMAKE_C_STANDARD 99)
 
 #add_link_options(-fsanitize=undefined,address)
@@ -53,22 +55,9 @@ add_executable(ATOMICLI
         Lexer/Tokerr.h
 )
 
-target_compile_options(ATOMICLI BEFORE PUBLIC -include ${CMAKE_SOURCE_DIR}/libraries/hadron.h)
-if (WIN32)
-    target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron_win.a)
-elseif (UNIX)
-    target_link_libraries(ATOMICLI ${CMAKE_SOURCE_DIR}/libraries/libhadron_unix.a)
-endif (WIN32)
-target_link_libraries(ATOMICLI m ${CMAKE_SOURCE_DIR}/libraries/DbgHelp.Lib) # link with the math lib and DbgHelp
+add_hadron_support(ATOMICLI)
 
 include_directories(${CMAKE_SOURCE_DIR})
-
-if (WIN32)
-    add_custom_command(TARGET ATOMICLI
-            POST_BUILD
-            COMMAND ../cv2pdb.exe $<TARGET_FILE:ATOMICLI> $<TARGET_FILE_DIR:ATOMICLI>/tempPdb.exe $<TARGET_FILE_DIR:ATOMICLI>/$<TARGET_NAME:ATOMICLI>.pdb
-    )
-endif (WIN32)
 
 add_executable(Flag_preprocessor
         FlagPreprocessor/FlagPreprocessor.c
@@ -102,6 +91,11 @@ add_executable(Type_preprocessor
         TypePreprocessor/TPPParser.h
         TypePreprocessor/TPPParserInternal.h
         Errors.c
+        TypePreprocessor/TPPGenerator.c
+        TypePreprocessor/TPPGenerator.h
+        TypePreprocessor/TPPGeneratorInternal.h
 )
+
+add_hadron_support(Type_preprocessor)
 
 # [[todo]] need to create a lib from these add_executable(Type_preprocessor TypePreprocessor/TypePreprocessor.c.c TypePreprocessor/TypePreprocessor.h)
