@@ -12,7 +12,7 @@
 
 #define MIN_ARRAY_SIZE 10
 
-typedef struct {
+typedef struct Array {
     uint element_size;
     void* arr;
     size_t capacity;
@@ -37,20 +37,23 @@ void arr_destroy(Array* array);
 void arr_sort(const Array* arr, int (*cmp_func)(const void* a, const void* b));
 uint arr_search(const Array* array, const void* search_elem, int (*cmp_func)(const void* a, const void* b));
 
-#define ARRAY_PROTO(type, typename)                                            \
+#define ARRAY_TYPE(type, typename)                                             \
     typedef struct {                                                           \
         uint element_size;                                                     \
         type* arr;                                                             \
         size_t capacity;                                                       \
         size_t pos;                                                            \
-    } typename##Array;                                                         \
+    } typename##Array;
+
+#define ARRAY_PROTO(type, typename)                                            \
+    ARRAY_TYPE(type, typename)                                                 \
                                                                                \
     void typename##_arr_add(typename##Array* arr, const type element);         \
     type typename##_arr_get(const typename##Array* arr, const uint index);     \
     type* typename##_arr_ptr(const typename##Array* arr, const uint index);    \
     type typename##_arr_pop(typename##Array* arr);                             \
     type typename##_arr_peek(const typename##Array* arr);                      \
-    typename##Array typename##_arr_construct(uint elem_s, uint elem_c);        \
+    typename##Array typename##_arr_construct(uint elem_c);                     \
     typename##Array typename##_arr_create();                                   \
     bool typename##_arr_is_at_capacity(const typename##Array* array);          \
     void typename##_arr_resize(typename##Array* array);                        \
@@ -80,13 +83,13 @@ uint arr_search(const Array* array, const void* search_elem, int (*cmp_func)(con
         return *(type*)arr_peek((Array*)arr);                                  \
     }                                                                          \
                                                                                \
-    typename##Array typename##_arr_construct(const uint elem_s, uint elem_c) { \
-        type* memory= malloc(elem_s * elem_c);                                 \
+    typename##Array typename##_arr_construct(uint elem_c) {                    \
+        type* memory= malloc(sizeof (type) * elem_c);                          \
                                                                                \
         if (!memory) exit(ENOMEM);                                             \
                                                                                \
         const typename##Array arr= (typename##Array){                          \
-            elem_s,                                                            \
+            sizeof (type),                                                     \
             memory,                                                            \
             elem_c,                                                            \
             0                                                                  \
@@ -96,7 +99,7 @@ uint arr_search(const Array* array, const void* search_elem, int (*cmp_func)(con
     }                                                                          \
                                                                                \
     typename##Array typename##_arr_create() {                                  \
-        return typename##_arr_construct(sizeof (type), MIN_ARRAY_SIZE);        \
+        return typename##_arr_construct(MIN_ARRAY_SIZE);                       \
     }                                                                          \
                                                                                \
     void typename##_arr_resize(typename##Array* array) {                       \
@@ -155,7 +158,7 @@ uint arr_search(const Array* array, const void* search_elem, int (*cmp_func)(con
         const void* array_element                                              \
     ) {                                                                        \
         const void* array_attribute=((type*)array_element)->comparable_element;\
-        return generic_cmp(array_attribute, search_element);                   \
+        return generic_cmp(search_element, array_attribute);                   \
     }                                                                          \
                                                                                \
     uint typename##_arr_search_i(                                              \
