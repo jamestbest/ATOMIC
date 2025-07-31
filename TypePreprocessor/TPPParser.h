@@ -8,6 +8,8 @@
 #include "SharedIncludes/Array.h"
 #include "TPPLexer.h"
 
+#include <Errors.h>
+
 typedef enum {
     ROOT,
     STMNT_TYPEFIX,
@@ -35,6 +37,6 @@ typedef struct TPPNode {
     Vector children;
 } TPPNode;
 
-TPPNode* tpp_parse(Array tokens);
+errcode parse_types_file(TPPTokenArray tokens);
 
 #endif // ATOMIC_TPPPARSER_H
