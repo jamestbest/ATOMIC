@@ -1,11 +1,7 @@
 // TYPEFIX is the possible pre/post fix values to the types
 //  E.g. pointer (>), reference (&)
-
-TYPES
-
 TYPEFIX DEFAULT PREFIX
- POINTER >
- REFERENCE &
+ POINTER ptr >
 
 // The types create keywords, and general types for the language
 // OVER designates sizes
@@ -14,7 +10,7 @@ TYPEFIX DEFAULT PREFIX
 TYPES
  INTEGER PREFIX i OVER 1 2 4 8
  NATURAL PREFIX n OVER 1 2 4 8
- REAL PREFIX f OVER 4 8 10
+ REAL PREFIX r OVER 4 8 10
  RATIONAL PREFIX q OVER 4 8 16
  CHAR chr
  STRING str
@@ -25,11 +21,60 @@ TYPES
 
 // Operators gives a list of operator names, their symbol, the associativity, and precedence
 OPERATORS DEFAULT LEFT BI
- MULT  *   5
  PLUS  +   5
- INC   ++  3  PREFIX
- INC   ++  3  POSTFIX
- EQ    =   1
+ MINUS -   5
+
+ MULT  *   5
+ DIV   /   5
+
+ MOD   %   5
+ POW   ^   5
+
+ BAND  &   5
+ BOR   |   5
+ BXOR  |-  5
+
+ SHL   <<  5
+ SHR   >>  5
+ 
+ ASS_PLUS   +=  5
+ ASS_MINUS  -=  5 
+ ASS_MULT   *=  5
+ ASS_DIV    /=  5
+ ASS_MOD    %=  5
+ ASS_POW    ^=  5
+ ASS_BOR    |=  5
+ ASS_BAND   &=  5
+ ASS_SHL    <<= 5
+ ASS_SHR    >>= 5
+ 
+ LAND   &&  5
+ LOR    ||  5
+ LXOR   |-| 5
+ 
+ LNOT   !   5   PREFIX
+ BNOT   ~   5   PREFIX
+ 
+ INC    ++  5   UNARY
+ DEC    --  5   UNARY
+ 
+ AMPERSAND  &   5   PREFIX
+ TYPE_CONV  as  5
+ 
+ ASSIGN =   5
+ 
+ EQU    ==  5
+ NEQ    !=  5
+ LESS   <   5
+ MORE   >   5
+ LESSEQ <=  5
+ MOREEQ >=  5
+ 
+ DEREF  *   5   PREFIX
+ 
+ SWAP   <>  5
+ RANGE  ..  5
+ ARROW  ->  5
 
 // Alias is just used in this file, a short hand for types
 ALIASES
@@ -43,18 +88,28 @@ ALIASES
 COERCIONS
  CHAR <-> INTEGER|NATURAL
  INTEGER <-> NATURAL
- NUMERIC|ALPHABETICAL|NOT_A_VALUE -> BOOLEAN
+ NUMERIC|ALPHABETICAL|POINTER -> BOOLEAN
+ BOOLEAN -> NUMERIC
+ INTEGRAL <-> POINTER
+ INTEGRAL -> REAL
 
 // The types that are valid for a given operator
 // ; designates a new pattern
-// Single types mean symmetric, aliases expand to repeated singles
-//  e.g. ALPHABETICAL; => CHAR; STRING;
+// Single types mean symmetric, aliases expand to repeated ors
+//  e.g. ALPHABETICAL; => CHAR|STRING;
 //  it does not mean that CHAR + STRING is valid
+//   UNLESS YOU DO ALPHABETICAL || ALPHABETICAL;
 // || means that there is a strict type on one side but that it can occur on the left or right
 // && means that there is a strict type that must occur on that side
 // aliased types within || and && expand to repeated `|` i.e. || ALPHABETICAL => || CHAR|STRING
 OPERANDS
- PLUS=NUMERIC; ALPHABETICAL; POINTER || INTEGER|NATURAL|POINTER
- MINUS=NUMERIC; CHAR; POINTER && INTEGER | NATURAL|POINTER
+ PLUS= NUMERIC; ALPHABETICAL; POINTER || INTEGER|NATURAL|POINTER -> BOOLEAN
+ MINUS= NUMERIC; CHAR; POINTER && INTEGER|NATURAL|POINTER
 
- MULT=NUMERIC; CHAR || INTEGER|NATURAL
+ MULT= NUMERIC; CHAR || INTEGER|NATURAL
+ LOR= BOOLEAN
+
+ DEREF= POINTER -> UNWRAP
+
+ LESS= NUMERIC -> BOOLEAN
+
