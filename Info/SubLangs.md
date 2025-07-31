@@ -1,7 +1,7 @@
 # Atom Specific Sub-langs
 ATOMIC contains a couple of sub langs namely the 
- - Flag Listing, Argument Control, and Input Determination Lang
- - Type and Operator Pairings Lang
+ - Flag Listing, Argument Control, and Input Determination lang
+ - Type and Operator Pairings lang
 
 ## Flags Lang
 The first language is used to determine the flags and options that the CLI accepts
