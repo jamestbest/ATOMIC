@@ -16,8 +16,8 @@ ARRAY_ADD(TPPToken, TPPToken)
 uint c_pos = 0;
 const Buffer* c_line = NULL;
 
-bool setup = false;
-Array tok_arr;
+static bool setup = false;
+TPPTokenArray tok_arr;
 Vector const* operators_enum;
 Vector const* types_enum;
 
@@ -73,7 +73,7 @@ uint tpplex_setup(Vector const* type_enum, Vector const*operator_enum) {
     types_enum = type_enum;
     operators_enum = operator_enum;
 
-    tok_arr = arr_construct(sizeof (TPPToken), 25);
+    tok_arr = TPPToken_arr_construct(25);
 
     setup = true;
     return EXIT_SUCCESS;
@@ -257,7 +257,7 @@ next:
     if (temp = arr_peek(&tok_arr), temp && temp->type != EOS) add_symbol(EOS);
 }
 
-Array tpplex_end() {
+TPPTokenArray tpplex_end() {
     if (!setup) {
         panic("lex_setup has not been called before lex_end");
     }

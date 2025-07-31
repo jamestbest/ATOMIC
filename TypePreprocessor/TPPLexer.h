@@ -44,6 +44,8 @@ enum KEYWORDS {
     TRI,
     TYPEFIX,
     TYPES,
+    UNARY,
+    UNWRAP,
     VIRTUAL,
     KEYWORD_COUNT
 };
@@ -62,7 +64,7 @@ ARRAY_PROTO(TPPToken, TPPToken)
 
 uint tpplex_setup(const Vector* type_enum, const Vector* operator_enum);
 void tpplex_line(const Buffer* line_buffer);
-Array tpplex_end();
+TPPTokenArray tpplex_end();
 
 void print_tpptoken(const TPPToken* token);
 void print_tpptoken_type(TPPType type);
