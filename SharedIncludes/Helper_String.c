@@ -3,6 +3,8 @@
 //
 
 #include "Helper_String.h"
+
+#include <ctype.h>
 #include <malloc.h>
 #include <string.h>
 
@@ -316,6 +318,10 @@ void newline() {
     putchar('\n');
 }
 
+void fnewline(FILE* f) {
+    fputc('\n', f);
+}
+
 char* remove_ws_prefix(char* string) {
     uint pos = 0;
     while (is_whitespace(string[pos++])){}
@@ -337,4 +343,14 @@ char* str_cat_dyn(const char* stra, const char* strb) {
     res[l1 + l2] = '\0';
 
     return res;
+}
+
+size_t fputs_upper(FILE* stream, const char* string) {
+    char* s= string;
+    while (*s) {
+        putc(toupper(*s), stream);
+        s++;
+    }
+
+    return s - string;
 }

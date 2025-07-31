@@ -65,9 +65,12 @@ void fputz(FILE* file, const char* string);
 void putz(const char* string);
 void putz_santitize(char* string);
 
+size_t fputs_upper(FILE* stream, const char* string);
+
 char* remove_ws_prefix(char* string);
 
 void newline();
+void fnewline(FILE* f);
 
 char* str_cat_dyn(const char* stra, const char* strb);
 
