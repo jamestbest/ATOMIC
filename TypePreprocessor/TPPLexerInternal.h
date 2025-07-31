@@ -28,7 +28,9 @@ const char* KEYWORD_STRINGS[KEYWORD_COUNT] = {
     [BI] = "BI",
     [TRI] = "TRI",
     [OVER] = "OVER",
-    [REQUIRE] = "REQUIRE"
+    [REQUIRE] = "REQUIRE",
+    [UNWRAP] = "UNWRAP",
+    [UNARY] = "UNARY",
 };
 
 const char* TPPTypesStrings[TPPTYPE_COUNT] = {
@@ -39,6 +41,7 @@ const char* TPPTypesStrings[TPPTYPE_COUNT] = {
 
     [EQUALITY] = "EQUALITY (=)",
     [ARROW] = "ARROW (->)",
+    [BIRROW] = "BIRROW (<->)",
     [PIPE] = "PIPE (|)",
     [AND] = "AND (&&)",
     [OR] = "OR (||)",
