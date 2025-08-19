@@ -6,6 +6,7 @@
 #define ATOMIC_TPPPARSERINTERNAL_H
 
 #include "TypePreprocessor.h"
+#include <string.h>
 
 ARRAY_ADD_CMP(TypeFixInfo , TypeFixInfo , strcmp, name        )
 ARRAY_ADD_CMP(TypeInfo    , TypeInfo    , strcmp, general_type)

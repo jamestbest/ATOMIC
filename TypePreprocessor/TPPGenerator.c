@@ -5,6 +5,7 @@
 #include "TPPGenerator.h"
 
 #include "TPPGeneratorInternal.h"
+#include "TPPParser.h"
 
 static void generate_types(FILE* header_file) {
     fputs(
@@ -397,6 +398,44 @@ static void generate_arrays(FILE* code_file) {
         fnewline(code_file);
     }
     fputs("};\n\n", code_file);
+
+    /*-----------------------------------/
+     *                                  *
+     *          COERCION INFO           *
+     *                                  *
+    /-----------------------------------*/
+    size_t tm_b= type_matrix_bytes();
+    fprintf(
+        code_file,
+        "uint8_t COERCION_INTERNAL[%zu]= {\n",
+        tm_b
+    );
+
+    for (uint i = 0; i < tm_b; ++i) {
+        uint8_t row= coercions[i];
+
+        fprintf(
+            code_file,
+            "0b%s%s",
+            bit_rep[row >> 4],
+            bit_rep[row & 0x0F]
+        );
+
+        if (i != tm_b - 1) putc(',', code_file);
+        fnewline(code_file);
+    }
+
+    fprintf(
+        code_file,
+        "};\n\n"
+    );
+
+    fprintf(
+        code_file,
+        "TypeMatrix %s= (TypeMatrix) COERCION_INTERNAL;\n\n",
+        COERCION_MATRIX_NAME
+    );
+
 }
 
 errcode generate(FILE* header_output, FILE* code_output, const char* header_file_name) {

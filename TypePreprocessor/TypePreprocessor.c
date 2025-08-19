@@ -179,7 +179,7 @@ void fatal_file_errorf(const char* message, ...) {
     verror(message, args);
     va_end(args);
 
-    printf("\n\tcwd: %s", cwd);
+    printf("\n\tcwd: %s\n", cwd);
     free(cwd);
 
     exit(EXIT_FAILURE);

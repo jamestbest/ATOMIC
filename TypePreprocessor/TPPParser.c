@@ -60,6 +60,7 @@ static void print_coercion_info(const CoercionInfo* info);
 static void print_operand_info(const OperandInfo* info);
 static void print_type_matrix(const char* prefix, TypeMatrix matrix);
 static void print_type_matrix_diff(TypeMatrix old, TypeMatrix new);
+static void print_type_like_name(size_t i);
 
 ARRAY_JOINT(char*, String)
 
@@ -504,7 +505,7 @@ static size_t type_matrix_size() {
     return type_map_size() * type_map_size();
 }
 
-static size_t type_matrix_bytes() {
+size_t type_matrix_bytes() {
     return ceil((double)type_matrix_size() / (sizeof (uint8_t) * 8));
 }
 
@@ -882,10 +883,6 @@ errcode parse_operands_identifier_statement() {
         return error("Operator `%s` in operands statement has not been defined in operator list\n", op_t->data.str);
     }
 
-    if (!expect(EQUALITY)) {
-        return unexpected(EQUALITY, "Operand statement after identifier");
-    }
-
     // structure is <TYPELIKE>(|<TYPELIKE>)* ((`||` or `&&`) <TYPELIKE>(|<TYPELIKE>)*)?;
     OperatorInfo* operator_info= OperatorInfo_arr_ptr(&operators, op_i);
     OperandInfo operand_info= (OperandInfo) {
@@ -893,6 +890,28 @@ errcode parse_operands_identifier_statement() {
         .operator= operator_info,
         .explicit_out_type= 0
     };
+
+    if (expect(ARROW)) {
+        operand_info.explicit_out_type= 1;
+        operand_info.unwrapped_output= 0;
+
+        TPPToken* out;
+        if (out= expect(IDENTIFIER), out) {
+            uint pos= TypeInfo_arr_search_i(&types, out->data.str);
+            if (pos == (uint)-1) {
+                return error("Output type must be a defined type. Found `%s`", out->data.str);
+            }
+            operand_info.output_index= pos;
+        } else if (out= expect_keyword(UNWRAP), out) {
+            operand_info.unwrapped_output= 1;
+        } else {
+            return unexpected(IDENTIFIER, "explicit return type of operand statement");
+        }
+    }
+
+    if (!expect(EQUALITY)) {
+        return unexpected(EQUALITY, "Operand statement after identifier");
+    }
 
     if (operand_info.op_type == OIGT_BINARY)
         operand_info.matrix= create_type_matrix();
@@ -926,24 +945,6 @@ errcode parse_operands_identifier_statement() {
 
                 left >>= 1;
                 idx++;
-            }
-        }
-
-        if (expect(ARROW)) {
-            operand_info.explicit_out_type= 1;
-            operand_info.unwrapped_output= 0;
-
-            TPPToken* out;
-            if (out= expect(IDENTIFIER), out) {
-                uint pos= TypeInfo_arr_search_i(&types, out->data.str);
-                if (pos == (uint)-1) {
-                    return error("Output type must be a defined type. Found `%s`", out->data.str);
-                }
-                operand_info.output_index= pos;
-            } else if (out= expect_keyword(UNWRAP), out) {
-                operand_info.unwrapped_output= 1;
-            } else {
-                return unexpected(IDENTIFIER, "explicit return type of operand statement");
             }
         }
     } while (expect(DELIMITER));
@@ -1182,13 +1183,14 @@ void print_typemap_all(const char* prefix, const uint64_t map) {
         const bool active= (map >> map_i) & 1;
 
         const TypeInfo* type= TypeInfo_arr_ptr(&types, i);
-        printf("%s%s%-10s"C_RST": %s (%s)\n",
+        printf("%s%s%-10s"C_RST": %s (",
             prefix,
             active ? C_GRN : C_RST,
             type->general_type,
-            active ? "X" : "-",
-            type->has_variable_sizes ? type->prefix : type->name
+            active ? "X" : "-"
         );
+        print_type_like_name(i + types_start);
+        puts(")");
     }
 }
 
@@ -1203,15 +1205,27 @@ void print_alias_info(const AliasInfo* info) {
     newline();
 }
 
-const char* get_type_like_name(size_t i) {
+void print_type_like_name(size_t i) {
     if (i >= typefixes.pos + types.pos) {
-        return "INVALID TYPELIKE";
+        putz("INVALID TYPELIKE");
     }
     if (i >= typefixes.pos) {
-        return TypeInfo_arr_get(&types, i - typefixes.pos).name;
-    }
+        TypeInfo* info= TypeInfo_arr_ptr(&types, i - typefixes.pos);
 
-    return TypeFixInfo_arr_get(&typefixes, i).name;
+        if (info->has_multiple_names) {
+            for (uint j = 0; j < info->names.pos; ++j) {
+                const char* name= vector_get_unsafe(&info->names, j);
+                putz(name);
+                if (j != info->names.pos - 1) putz(" | ");
+            }
+        } else if (info->has_variable_sizes) {
+            putz(info->prefix);
+        } else {
+            putz(info->name);
+        }
+    } else {
+        putz(TypeFixInfo_arr_get(&typefixes, i).name);
+    }
 }
 
 void print_type_matrix_header(const char* prefix, uint typelike_c) {
@@ -1244,7 +1258,7 @@ void print_type_matrix_diff(TypeMatrix old, TypeMatrix new) {
             printf("%s%s"C_RST, n_m ? C_GRN : C_RST, (n_m || o_m) ? "-X-" : "   ");
             fflush(stdout);
         }
-        printf("%s", get_type_like_name(i));
+        print_type_like_name(i);
         newline();
     }
     newline();
@@ -1275,7 +1289,8 @@ void print_type_matrix(const char* prefix, const TypeMatrix matrix) {
             printf("%s", marked ? "-X-" : "   ");
             fflush(stdout);
         }
-        printf(" %s", get_type_like_name(i));
+        putchar(' ');
+        print_type_like_name(i);
         newline();
     }
 }

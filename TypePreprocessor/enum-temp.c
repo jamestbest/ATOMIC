@@ -5,7 +5,12 @@ typedef struct encodedType {
     uint64_t tf_offset: 16; // typefix offset e.g. POINTER
 } encodedType;
 
-bool type_check_op_bin(
+#include "enum-out.h"
+
+struct {
+    bool succ;
+    encodedType otype;
+} type_check_op_bin(
     ATOM_CT__LEX_OPERATORS_ENUM op,
     encodedType left,
     encodedType right
@@ -23,8 +28,16 @@ typedef enum OP_TYPES {
     OT_
 } OP_TYPES;
 
-#include "enum-out.h"
 
 OpInfo OP_INFO[10]= {
     [OP_ARROW]= (OpInfo){.type=1,.precedence=1,.assoc=1},
 };
+
+uint8_t arr[4]= {
+    0b10011000,
+    0b11010010,
+    0b11010010,
+    0b11010010
+};
+
+TypeMatrix test= (TypeMatrix) &arr;

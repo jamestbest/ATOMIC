@@ -15,12 +15,6 @@
 
 ARRAY_PROTO(Vector, Vector)
 
-typedef struct OperatorInfo_OLD {
-    const char* operator;
-    bool symmetrical;
-    Array types; //Array of Vectors of types
-} OperatorInfo_OLD;
-
 typedef struct OpInfo {
     uint enum_position;
     TypeMatrix type_matrix;

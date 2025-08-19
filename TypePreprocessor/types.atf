@@ -102,14 +102,17 @@ COERCIONS
 // || means that there is a strict type on one side but that it can occur on the left or right
 // && means that there is a strict type that must occur on that side
 // aliased types within || and && expand to repeated `|` i.e. || ALPHABETICAL => || CHAR|STRING
+// -> TYPE is the explicit output type designator, meaning that the output of the operator is not
+//   dependant on the left type but instead the specified type, appears after operator name before `=`
+//   this type can also be UNWRAP which is internal type for removing a typefix layer
 OPERANDS
- PLUS= NUMERIC; ALPHABETICAL; POINTER || INTEGER|NATURAL|POINTER -> BOOLEAN
+ PLUS= NUMERIC; ALPHABETICAL; POINTER || INTEGER|NATURAL|POINTER
  MINUS= NUMERIC; CHAR; POINTER && INTEGER|NATURAL|POINTER
 
  MULT= NUMERIC; CHAR || INTEGER|NATURAL
- LOR= BOOLEAN
+ LOR -> BOOLEAN= NUMERIC; BOOLEAN
 
- DEREF= POINTER -> UNWRAP
+ DEREF -> UNWRAP= POINTER
 
- LESS= NUMERIC -> BOOLEAN
+ LESS -> BOOLEAN= NUMERIC
 

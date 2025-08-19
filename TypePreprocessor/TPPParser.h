@@ -39,4 +39,6 @@ typedef struct TPPNode {
 
 errcode parse_types_file(TPPTokenArray tokens);
 
+size_t type_matrix_bytes();
+
 #endif // ATOMIC_TPPPARSER_H
