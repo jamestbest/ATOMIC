@@ -1,0 +1,28 @@
+entry func main(): i4 {
+    a':= malloc(10 * i4)
+    
+    p0(a')
+
+    ret 0;
+}
+
+proc p0(ptr': >'i4) {
+    free(ptr')
+}
+
+proc free(ptr': >'i4) {
+    ¬¬ garbage
+    unmark ptr' ¬¬ comp time statement
+}
+
+func malloc(size: n8): >'void {
+  ¬¬ garbage
+  mark res
+  return res'
+}
+
+entry func main(): i4 {
+  a:= malloc(4 * i4)
+
+    
+}
