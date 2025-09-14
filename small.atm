@@ -1,0 +1,19 @@
+entry func main(): i4 {
+    x: i4= 10
+    times x {
+        x = x + 1
+    }
+
+    b: i4= x + x
+
+    ret 8 + test(b + test(1 + 1))
+}
+
+func test(y: i4): i8 {
+    d: i4= 1
+    e: i4= 2
+
+    d= e
+
+    ret d + e + y
+}
