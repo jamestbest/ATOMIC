@@ -16,7 +16,12 @@ static const Vector VEC_ERR = (Vector){
     .pos = -1
 };
 
-Vector vector_create(const size_t element_count) {
+const FindRes FIND_RES_ERR= {
+    .elem= NULL,
+    .pos= -1
+};
+
+Vector vector_construct(const size_t element_count) {
     const size_t min_element_count = smax(element_count, MIN_VEC_SIZE);
     void** arr = malloc(min_element_count * sizeof (void*));
 
@@ -27,6 +32,10 @@ Vector vector_create(const size_t element_count) {
         .capacity = min_element_count,
         .pos = 0
     };
+}
+
+Vector vector_create() {
+    return vector_construct(MIN_VEC_SIZE);
 }
 
 bool vector_at_capacity(const Vector* vec) {
@@ -126,4 +135,53 @@ void vector_disseminate_destruction(Vector* vec) {
 
 vdd_destroy:
     vector_destroy(vec);
+}
+
+bool vec_add_d(Vector* vec, const void* data, size_t data_s) {
+    void* md= malloc(data_s);
+    if (!md) return false;
+
+    memcpy(md, data, data_s);
+
+    return vector_add(vec, md);
+}
+
+void vec_sort(const Vector* vec, int(*cmp)(const void* a, const void* b)) {
+    qsort(
+        vec->arr,
+        vec->pos,
+        sizeof(*vec->arr),
+        cmp
+    );
+}
+
+uint vec_search(Vector* vec, const void** search_element, int (*cmp)(const void* a, const void* b)) {
+    void** pos= bsearch(
+        search_element,
+        vec->arr,
+        vec->pos,
+        sizeof(*vec->arr),
+        cmp
+    );
+
+    if (!pos) return -1;
+
+    return (pos - vec->arr);
+}
+
+FindRes vec_search_e(Vector* vec, const void** s_e, int(*cmp)(const void* a, const void* b)) {
+    void** res= bsearch(
+        s_e,
+        vec->arr,
+        vec->pos,
+        sizeof(*vec->arr),
+        cmp
+    );
+
+    if (!res) return FIND_RES_ERR;
+
+    return (FindRes) {
+        .elem= *res,
+        .pos= res - vec->arr
+    };
 }
