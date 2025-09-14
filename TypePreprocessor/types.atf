@@ -1,22 +1,31 @@
+// WARNING
+//  In the current parser for atfs there are alot of size restrictions that are
+//   not written, e.g. the number of types or the max size (bytes) a type can be
+
 // TYPEFIX is the possible pre/post fix values to the types
 //  E.g. pointer (>), reference (&)
 TYPEFIX DEFAULT PREFIX
- POINTER ptr >
+ POINTER ptr > SIZE 8
+// ARRS  arrS []
+// ARRD  arrD [..]
+// ARRL  arrL [*]
 
 // The types create keywords, and general types for the language
 // OVER designates sizes
 // REQUIRE means that the type cannot exist unless it has the TYPEFIX specified
 // VIRTUAL means the type should exist but is not part of the type matrix i.e. cannot be used in calculations
+//  WARNING: multiple names for a GTYPE is now depr, and will be removed
 TYPES
  INTEGER PREFIX i OVER 1 2 4 8
  NATURAL PREFIX n OVER 1 2 4 8
  REAL PREFIX r OVER 4 8 10
  RATIONAL PREFIX q OVER 4 8 16
- CHAR chr
- STRING str
- BOOLEAN bool
+ CHAR chr SIZE 1
+ STRING str SIZE 16
+ BOOLEAN bool SIZE 1
  VOID void REQUIRE POINTER
- FUNCTION func | proc VIRTUAL REQUIRE POINTER
+ FUNCTION func VIRTUAL REQUIRE POINTER
+ PROCEDURE proc VIRTUAL REQUIRE POINTER
  STRUCT struct VIRTUAL
 
 // Operators gives a list of operator names, their symbol, the associativity, and precedence
@@ -75,6 +84,7 @@ OPERATORS DEFAULT LEFT BI
  SWAP   <>  5
  RANGE  ..  5
  ARROW  ->  5
+ DOT    .   5
 
 // Alias is just used in this file, a short hand for types
 ALIASES
@@ -86,12 +96,24 @@ ALIASES
 //  operator can be done on two given operand types
 // Coercions can only happen where a destination type's size is >= to the source type's size
 COERCIONS
- CHAR <-> INTEGER|NATURAL
+ CHAR <-> INTEGRAL
  INTEGER <-> NATURAL
- NUMERIC|ALPHABETICAL|POINTER -> BOOLEAN
+ NUMERIC|POINTER -> BOOLEAN
  BOOLEAN -> NUMERIC
  INTEGRAL <-> POINTER
  INTEGRAL -> REAL
+ TYPE -> NATURAL
+
+// LR values are the difference between locator values and... values
+//  LVALUE= RVALUE
+//  &LVALUE
+//
+// The system here is defining what type of expression an operation creates
+//  E.g. a dereference operation could create an LVALUE -> *x
+//   A variable is always an LVALUE, dot and arrow struct.x, structptr->x
+LRVALUES
+ LVALUE= DEREF VARIABLE ARROW DOT
+ RVALUE= ALL
 
 // The types that are valid for a given operator
 // ; designates a new pattern
@@ -103,8 +125,11 @@ COERCIONS
 // && means that there is a strict type that must occur on that side
 // aliased types within || and && expand to repeated `|` i.e. || ALPHABETICAL => || CHAR|STRING
 // -> TYPE is the explicit output type designator, meaning that the output of the operator is not
-//   dependant on the left type but instead the specified type, appears after operator name before `=`
+//   dependant on the types but instead the specified type, appears after operator name before `=`
 //   this type can also be UNWRAP which is internal type for removing a typefix layer
+// There are TWO types of RULES type maps & LR rules, type maps are for general arithmetic ops
+//  they allow certain types to be operands
+//  LR rules are for those that use LValue and RValue they can only have one rule
 OPERANDS
  PLUS= NUMERIC; ALPHABETICAL; POINTER || INTEGER|NATURAL|POINTER
  MINUS= NUMERIC; CHAR; POINTER && INTEGER|NATURAL|POINTER
@@ -112,7 +137,11 @@ OPERANDS
  MULT= NUMERIC; CHAR || INTEGER|NATURAL
  LOR -> BOOLEAN= NUMERIC; BOOLEAN
 
+ SWAP -> VOID= LVALUE
+ TYPE_CONV -> RIGHT= RVALUE && TYPE
+
  DEREF -> UNWRAP= POINTER
+ AMPERSAND -> WRAP POINTER= LVALUE
+ ASSIGN -> LEFT= LVALUE && LEFT
 
  LESS -> BOOLEAN= NUMERIC
-
