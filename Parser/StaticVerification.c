@@ -130,9 +130,9 @@ Scope* generate_scope(Node* creation_node, Node* brace_node, const bool is_globa
         .creation_node = is_global ? NULL : creation_node,
         .scope = is_global ? NULL : brace_node,
 
-        .child_scopes = vector_create(2),
-        .subroutines = vector_create(3),
-        .variables = vector_create(10),
+        .child_scopes = vector_create(),
+        .subroutines = vector_create(),
+        .variables = vector_create(),
 
         .parent = parent
     };
