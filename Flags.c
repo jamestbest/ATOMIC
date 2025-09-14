@@ -2,6 +2,7 @@
 
 const FlagInfo ATOM_CT__FLAGINFO[ATOM_CT__FLAG_COUNT] = {
     [ATOM_CT__FLAG_AST_OUT] = (FlagInfo){.flag_name= "AST-OUT", .default_value= false},
+    [ATOM_CT__FLAG_BYTE_OUT] = (FlagInfo){.flag_name= "BYTE-OUT", .default_value= false},
     [ATOM_CT__FLAG_EXPR_DBG] = (FlagInfo){.flag_name= "EXPR-DBG", .default_value= false},
     [ATOM_CT__FLAG_FLAGS_OUT] = (FlagInfo){.flag_name= "FLAGS-OUT", .default_value= false},
     [ATOM_CT__FLAG_HADRON_VERIFY] = (FlagInfo){.flag_name= "HADRON-VERIFY", .default_value= false},
@@ -22,9 +23,24 @@ bool ATOM_VR__FLAGS[ATOM_CT__FLAG_COUNT] = {
     false,
     false,
     false,
+    false,
 };
 
 const StaticOptionInfo ATOM_CT__OPTIONINFO[ATOM_CT__OPTION_COUNT] = {
+	[ATOM_CT__OPTION_BO]= (StaticOptionInfo) {
+		.option_name= "BO",
+		.arg_info_count= 1,
+		.args= (StaticOptionArgInfo[]) {
+			{
+				.arg_name= "OUTPUT-FILE",
+				.repeated= false,
+				.type= FP_TYPE_STR,
+				.arg_option_count= 0,
+				.data= (OptionData[]) {
+				},
+			},
+		},
+	},
 	[ATOM_CT__OPTION_DEBUGLVL]= (StaticOptionInfo) {
 		.option_name= "DEBUGLVL",
 		.arg_info_count= 1,
@@ -78,9 +94,10 @@ const StaticOptionInfo ATOM_CT__OPTIONINFO[ATOM_CT__OPTION_COUNT] = {
 				.arg_name= "OUTPUT",
 				.repeated= true,
 				.type= FP_TYPE_STR,
-				.arg_option_count= 6,
+				.arg_option_count= 7,
 				.data= (OptionData[]) {
 					{.str= "AST"},
+					{.str= "BYTE"},
 					{.str= "FLAGS"},
 					{.str= "SCOPE"},
 					{.str= "TOK"},
