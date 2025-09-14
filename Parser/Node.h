@@ -130,6 +130,10 @@ enum IdentifierTag {
     FIELD,
 };
 
+typedef struct {
+    COMMON_NODE
+} NodeBase;
+
 typedef struct NodeIdentifier {
     COMMON_NODE
     enum IdentifierPosition position;
