@@ -4,16 +4,15 @@
 
 #include "Compiler.h"
 
+#include "Commons.h"
 #include "Lexer/OpFolder.h"
+#include "Parser/StaticVerification.h"
+#include "SharedIncludes/Array.h"
+#include "SharedIncludes/Flag_shared.h"
 #include "SharedIncludes/Helper_File.h"
 
-#include "SharedIncludes/Array.h"
-
-#include "Parser/StaticVerification.h"
-#include "Commons.h"
-
-#include "SharedIncludes/Flag_shared.h"
-
+#include <Generator/Generator.h>
+#include <SharedIncludes/Messages.h>
 #include <string.h>
 
 /*  TODO
@@ -35,7 +34,7 @@ static void free_scopes(Scope* scope);
 
 //[[TODO]] IF ANYTHING FROM AN ARRAY IS REMOVED ALL EXTERNAL POINTERS WILL BE OFFSET INCORRECTLY
 
-CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, Vector files) {
+CompileRet compile(const char* entry_point, const char* out_format, const char* byte_out, const char* cwd, Vector files) {
     assert(ATOM_CT__LEX_KEYWORD_ENUM_COUNT == ATOM_CT__LEX_KEYWORDS.elem_count);
     assert(strcmp(ATOM_CT__LEX_KEYWORDS_RAW[IF], "if") == 0);
 
@@ -49,7 +48,7 @@ CompileRet compile(const char* entry_point, const char* out_format, const char* 
             return (CompileRet) {ERR_NO_SUCH_FILE, filename};
         }
 
-        CompileRet ret = compile_file(entry_point, out_format, fp);
+        CompileRet ret = compile_file(entry_point, out_format, byte_out, fp);
 
         if (ret.code != SUCCESS) return ret;
     }
@@ -57,15 +56,15 @@ CompileRet compile(const char* entry_point, const char* out_format, const char* 
     return (CompileRet) {SUCCESS, NULL};
 }
 
-CompileRet compile_file(const char* entry_point, const char* out_format, FILE* fp) {
-    Array base_tokens = arr_create(sizeof (Token));
+CompileRet compile_file(const char* entry_point, const char* out_format, const char* byte_out, FILE* fp) {
+    Array base_tokens= arr_create(sizeof (Token));
     Array folded_tokens;
     // [[maybe]] this is an array of structs, could become a struct of arrays:
     //  Is it more likely that the data of consecutive structs is accessed
     //  Or that the (data/type) of a structure is access more? - Printing will do this
     //  For now it will stay as AOS
 
-    Vector lines = vector_create(BUFF_MIN);
+    Vector lines = vector_create();
 
     const uint lexRet = lex(fp, &base_tokens, &lines);
     print_tokens_with_flag_check(&base_tokens, &lines, "\n\nBASE TOKENS");
@@ -111,6 +110,21 @@ CompileRet compile_file(const char* entry_point, const char* out_format, FILE* f
     verify_scope(parseRet.node, global_scope, parseRet.node);
 
     print_ast_with_flag_check(parseRet.node);
+
+    FILE* byte_file= stdout;
+    if (byte_out) {
+        byte_file= fopen(byte_out, "w");
+        if (!byte_file) error("Unable to open byte output file `%s` with error(%d): `%s`", byte_out, errno, strerror(errno));
+    }
+
+    // todo entry function is temp here
+    GeneratorRet generatorRet= generate_byte_code(parseRet.node, "main", byte_file);
+
+    if (generatorRet.err.code != SUCCESS) {
+        return (CompileRet){.code= generatorRet.err.code, NULL};
+    }
+
+    run(generatorRet.arr, generatorRet.function);
 
     // verify_types(parseRet.node, global_scope, parseRet.node);
 

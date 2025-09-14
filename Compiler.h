@@ -12,6 +12,7 @@
 #include "Lexer/Lexer.h"
 #include "Parser/Parser.h"
 #include "Lexer/Tokens.h"
+#include "235/VM.h"
 
 #define SUCCESS 0
 #define ERR_NO_SUCH_FILE 1
@@ -23,8 +24,8 @@ typedef struct CompileRet {
     const char* info;
 } CompileRet;
 
-CompileRet compile(const char* entry_point, const char* out_format, const char* cwd, Vector files);
-CompileRet compile_file(const char* entry_point, const char* out_format, FILE* fp);
+CompileRet compile(const char* entry_point, const char* out_format, const char* byte_out, const char* cwd, Vector files);
+CompileRet compile_file(const char* entry_point, const char* out_format, const char* byte_out, FILE* fp);
 
 void print_tokens_with_flag_check(Array* tokens, Vector* lines, const char* print_header);
 void print_ast_with_flag_check(Node* tl_node);
