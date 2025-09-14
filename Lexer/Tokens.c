@@ -506,8 +506,8 @@ TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
         case ASS_BAND:
         case ASS_BOR:
         case ASS_SHL:
-        case ASS_SHR:
-            return OP_ARITH_ASSIGN;
+        case ASS_SHR: // todo this was changed to remove OP_ARITH_ASSIGN
+            return OP_BIN;
 
         case LAND:
         case LOR:
@@ -608,6 +608,8 @@ bool is_arith_operator(Token* tok) {
         case OP_UN:
         case OP_UN_POST:
         case OP_UN_PRE:
+        case OP_ASSIGN:
+        case OP_ARITH_ASSIGN:
             return true;
 
         default:
