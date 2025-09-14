@@ -498,11 +498,11 @@ Node* form_operator_node(Token* op_token, Stack *output_s) {
         case OP_UN_POST:
             return form_un_op_node(op_token, output_s);
         case OP_BIN:
+        case OP_ASSIGN:
             return form_bin_op_node(op_token, output_s);
         case OP_TRINARY:
             return form_tri_op_node(op_token, output_s);
         case OP_ARITH_ASSIGN:
-        case OP_ASSIGN:
             assert(false);
 
         case OP_BIN_OR_UN:
