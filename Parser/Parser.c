@@ -338,8 +338,7 @@ NodeRet parse_identifier_statement(void) {
             return parse_subroutine_call();
         case OP_ASSIGN:
         case OP_ARITH_ASSIGN:
-        case BRACKET_OPEN:
-            return parse_assignment();
+        case BRACKET_OPEN: // todo this might need to be different
         case OP_UN_POST:
             return parse_expression_statement();
         default:
@@ -619,7 +618,7 @@ NodeRet parse_entry_statement(void) {
         assert(false);
     }
 
-    // [[todo]] add to something the fact that this is an entry function
+    // [[todo]] add to something the fact that this is an entry function -- yeah please do this
 
     return subroutine;
 }
@@ -1034,6 +1033,7 @@ NodeRet parse_expression_statement(void) {
         return (NodeRet){exprStatement, SUCCESS};
     }
 
+    // todo this is most likely redundant now that assignments are expressions
     Token* assign_op = consume();
 
     const ShuntRet rvalue = shunt(ptokens, t_pos, false);
