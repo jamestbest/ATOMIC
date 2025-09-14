@@ -28,10 +28,11 @@ Array arr_construct(const uint element_size, const uint min_element_count) {
     if (!memory) exit(ENOMEM);
 
     const Array vec = (Array) {
-        element_size,
         memory,
         min_element_count,
-        0
+        0,
+        element_size,
+        {0}
     };
 
     return vec;
@@ -57,17 +58,35 @@ void arr_resize(Array* array) {
     array->capacity = new_capacity;
 }
 
-void arr_set(const Array* array, const size_t index, const void* element) {
+void arr_set(Array* array, const size_t index, const void* element) {
     if (index >= array->pos) return;
 
     memcpy(&array->arr[index * array->element_size], element, array->element_size);
+
+    array->flags.sorted= false;
 }
 
-void arr_set_dyn(const Array* array, const size_t index, const void* element, const size_t element_size) {
+void arr_set_dyn(Array* array, const size_t index, const void* element, const size_t element_size) {
     if (index >= array->pos) return;
 
     memset(&array->arr[index * array->element_size], 0, array->element_size);
     memcpy(&array->arr[index * array->element_size], element, element_size);
+
+    array->flags.sorted= false;
+}
+
+void* arr_add_i(Array* arr) {
+    if (arr_is_at_capacity(arr)) {
+        arr_resize(arr);
+    }
+
+    void* res= &arr->arr[arr->pos * arr->element_size];
+    memset(res, 0, arr->element_size);
+
+    arr->pos++;
+    arr->flags.sorted= false;
+
+    return res;
 }
 
 void arr_add(Array* array, const void* element) {
@@ -77,6 +96,7 @@ void arr_add(Array* array, const void* element) {
     memcpy(&array->arr[array->pos * array->element_size], element, array->element_size);
 
     array->pos++;
+    array->flags.sorted= false;
 }
 
 // add to the array a value that is not the size of the array element size
@@ -88,6 +108,7 @@ void arr_add_dyn(Array* array, const void* element, const size_t element_size) {
     memcpy(&array->arr[array->pos * array->element_size], element, element_size);
 
     array->pos++;
+    array->flags.sorted= false;
 }
 
 bool arr_remove(Array* array, const uint index) {
@@ -133,16 +154,22 @@ void arr_destroy(Array* array) {
     *array = ARRAY_ERR;
 }
 
-void arr_sort(const Array* arr, int (*cmp_func)(const void* a, const void* b)) {
+void arr_sort(Array* arr, int (*cmp_func)(const void* a, const void* b)) {
+    if (arr->flags.sorted) return;
+
     qsort(
         arr->arr,
         arr->pos,
         arr->element_size,
         cmp_func
     );
+    arr->flags.sorted= true;
 }
 
-uint arr_search(const Array* array, const void* search_elem, int (*cmp_func)(const void* a, const void* b)) {
+uint arr_search(Array* array, const void* search_elem, int (*cmp_func)(const void* a, const void* b)) {
+    if (!array->flags.sorted)
+        arr_sort(array, cmp_func);
+
     const void* pos= bsearch(
         search_elem,
         array->arr,
@@ -154,4 +181,17 @@ uint arr_search(const Array* array, const void* search_elem, int (*cmp_func)(con
     if (!pos) return -1;
 
     return (pos - array->arr) / array->element_size;
+}
+
+void* arr_search_e(Array* array, const void* s_e, int (*cmp)(const void* a, const void* b)) {
+    if (!array->flags.sorted)
+        arr_sort(array, cmp);
+
+    return bsearch(
+        s_e,
+        array->arr,
+        array->pos,
+        array->element_size,
+        cmp
+    );
 }
