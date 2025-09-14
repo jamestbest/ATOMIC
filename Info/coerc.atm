@@ -1,0 +1,16 @@
+entry func main(): i4 {
+    a: i4= 1;
+    b: chr= 2;
+
+    c := a + b; ¬ b should coerce; WHY? because v
+    ¬*
+        first check if either are valid in the type matrix
+         i.e. that at least one is in the right spot
+
+        then choose the larger of the two types
+         e.g. i4 is 4 bytes vs chr's 1 byte
+         so the target output is i4, left side needs no coercion
+
+        can chr be an i4; can a CHAR be an INTEGER
+    *¬
+}
