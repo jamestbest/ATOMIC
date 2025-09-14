@@ -1,0 +1,17 @@
+entry func main(): i4 {
+
+
+
+    ret 0;
+}
+
+proc p1(ptr'': >''>''i4) { ¬ >'>'i4
+    times 10 with i {
+        free(ptr[i]'')
+    }
+    free(ptr'')
+}
+
+proc p0(ptr'': >''i4) {
+    free(ptr'')
+}
