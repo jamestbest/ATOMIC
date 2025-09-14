@@ -14,6 +14,7 @@
 
 char* ATOM_VR__CLI_ENTRY_POINT = NULL;
 char* ATOM_VR__CLI_OUTPUT_NAME = ATOM_CT__CLI_DEFAULT_OUT;
+char* ATOM_VR__CLI_BYTE_OUT= NULL;
 
 Vector ATOM_VR__CLI_FILES;
 
@@ -27,7 +28,7 @@ Vector ATOM_VR__CLI_FILES;
 int main(int argc, char** argv) {
     puts("Welcome to the ATOMIC CLI!");
 
-    ATOM_VR__CLI_FILES = vector_create(ATOM_CT__CLI_DEFAULT_FILE_BUFF_SIZE);
+    ATOM_VR__CLI_FILES = vector_construct(ATOM_CT__CLI_DEFAULT_FILE_BUFF_SIZE);
 
     if (!verify_args(argc, argv)) {
         return 1;
@@ -38,8 +39,12 @@ int main(int argc, char** argv) {
     if (flag_get_value(ATOM_CT__FLAG_FLAGS_OUT))
         print_flags();
 
-    printf("Entry point: %s\n"
-           "Output format: %s\n", ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME);
+    printf(
+        "Entry point: %s\n"
+        "Output format: %s\n",
+        ATOM_VR__CLI_ENTRY_POINT,
+        ATOM_VR__CLI_OUTPUT_NAME
+    );
 
     putchar('\n');
     for (uint i = 0; i < ATOM_VR__CLI_FILES.pos; i++) {
@@ -50,7 +55,13 @@ int main(int argc, char** argv) {
 
     char* cwd = get_dir(argv[0]); //get the c_char working directory
 
-    const CompileRet ret = compile(ATOM_VR__CLI_ENTRY_POINT, ATOM_VR__CLI_OUTPUT_NAME, cwd, ATOM_VR__CLI_FILES);
+    const CompileRet ret = compile(
+        ATOM_VR__CLI_ENTRY_POINT,
+        ATOM_VR__CLI_OUTPUT_NAME,
+        ATOM_VR__CLI_BYTE_OUT,
+        cwd,
+        ATOM_VR__CLI_FILES
+    );
 
     free(cwd);
 
@@ -182,6 +193,10 @@ void parse_option_o(const Array args) {
 
 void parse_option_entry(const Array args) {
     ATOM_VR__CLI_ENTRY_POINT = *(char**)arr_ptr(&args, ATOM_CT__OPTION_E_ARG_Entry);
+}
+
+void parse_option_byte_out(const Array args) {
+    ATOM_VR__CLI_BYTE_OUT= *(char**)arr_ptr(&args, ATOM_CT__OPTION_BO_ARG_OUTPUT_FILE);
 }
 
 uint verify_numeric_errno(const char* arg, const StaticOptionArgInfo* arg_info) {
@@ -423,6 +438,9 @@ void parse_option(char* option_name, char** cli_args, int cli_arg_count,
         case ATOM_CT__OPTION_OUT:
             parse_option_out(args_t);
             break;
+        case ATOM_CT__OPTION_BO:
+            parse_option_byte_out(args_t);
+            break;
         case ATOM_CT__OPTION_TEST:
         case ATOM_CT__OPTION_COUNT:
             assert(false);
@@ -431,7 +449,7 @@ void parse_option(char* option_name, char** cli_args, int cli_arg_count,
 }
 
 Vector get_option_args(char** argv, uint* argp, const int argc) {
-    Vector args = vector_create(ATOM_CT__CLI_DEFAULT_OPTION_BUFF_SIZE);
+    Vector args = vector_construct(ATOM_CT__CLI_DEFAULT_OPTION_BUFF_SIZE);
 
     while (*argp + 1 < argc && argv[*argp + 1][0] != '-') {
         vector_add(&args, argv[*argp + 1]);
