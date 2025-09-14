@@ -7,6 +7,7 @@
 
 #include "../Commons.h"
 #include "../Errors.h"
+#include "Tokens.h"
 
 extern Vector* llines;
 

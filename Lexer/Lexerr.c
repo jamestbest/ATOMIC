@@ -4,6 +4,9 @@
 
 #include "Lexerr.h"
 
+#include "Errors.h"
+#include "Tokerr.h"
+
 char* lexerr_process_char(const char a, char buff[2]) {
     if (a == '\n') return "\\n";
     if (a == '\t') return "\\t";
