@@ -58,7 +58,7 @@ marked_string error_code_string(errcode err);
 #define WARN(c)       ((errcode){.code= c})
 #define SUCC          ((errcode){.code= SUCCESS})
 
-#define BASEERR SEMANTIC_B_END
+#define BASEERR 1024
 #define LEXERR (BASEERR + 1)
 #define LEXERR_MAX (LEXERR + 1024)
 #define PARSERR (LEXERR_MAX + 1)
