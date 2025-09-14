@@ -18,15 +18,15 @@
 const Vector* t_types_enum;
 
 static TPPToken* expect(TPPType type);
+static TPPToken* expect_any(uint type, ...);
 static TPPToken* expect_keyword(enum KEYWORDS keyword);
 static TPPToken* consume(void);
 static TPPToken* peek(void);
+static TPPToken* peer(size_t amount);
 static TPPToken* current(void);
 
-static errcode unexpected(const TPPType
-                              expected,
-                          const char*
-                              context);
+static errcode unexpected(TPPType expected, const char* context);
+static errcode unexpected_keyword(enum KEYWORDS expected, const char* context);
 
 static const char* get_type_string(uint32_t position);
 static const char* get_tpptoken_type_string_from_token(const TPPToken* token);
@@ -47,6 +47,7 @@ static errcode parse_keyword_statement(const TPPToken* token);
 static errcode parse_identifier_statement(const TPPToken* identifier_token);
 
 static void enter_section(sections section);
+static void cleanup_section(sections section);
 
 static void print_typefix_info(const TypeFixInfo* info);
 static void print_type_info(const TypeInfo* info);
@@ -58,9 +59,15 @@ static void print_typemap_all(const char* prefix, uint64_t map);
 static void print_alias_info(const AliasInfo* info);
 static void print_coercion_info(const CoercionInfo* info);
 static void print_operand_info(const OperandInfo* info);
+static void print_lr_info(LRInfo* info);
 static void print_type_matrix(const char* prefix, TypeMatrix matrix);
 static void print_type_matrix_diff(TypeMatrix old, TypeMatrix new);
 static void print_type_like_name(size_t i);
+
+typedef union TypeLike {
+    TypeInfo* type;
+    TypeFixInfo* typefix;
+} TypeLike;
 
 ARRAY_JOINT(char*, String)
 
@@ -78,12 +85,13 @@ const char* section_strings[SECTION_COUNT] = {
     [SECTION_OPERATORS]= "Operators",
     [SECTION_ALIASES]= "Aliases",
     [SECTION_COERCIONS]= "Coercions",
-    [SECTION_OPERANDS]= "Operands"
+    [SECTION_OPERANDS]= "Operands",
+    [SECTION_LRVALUES]= "LR values"
 };
 
 bool parsed_sections[SECTION_COUNT] = {};
 
-#define MAX_SECTION_REQUIREMENTS 5
+#define MAX_SECTION_REQUIREMENTS 6
 int section_requirements[SECTION_COUNT][MAX_SECTION_REQUIREMENTS] = {
     [SECTION_NONE]= {-1},
     [SECTION_TYPEFIX]= {-1},
@@ -91,9 +99,11 @@ int section_requirements[SECTION_COUNT][MAX_SECTION_REQUIREMENTS] = {
     [SECTION_OPERATORS]= {-1},
     [SECTION_ALIASES]= {SECTION_TYPES, -1},
     [SECTION_COERCIONS]= {SECTION_TYPES, SECTION_ALIASES, -1},
+    [SECTION_LRVALUES]= {SECTION_OPERATORS, -1},
     [SECTION_OPERANDS]= {
         SECTION_TYPES, SECTION_TYPEFIX,
-        SECTION_ALIASES, SECTION_OPERATORS, -1
+        SECTION_ALIASES, SECTION_OPERATORS,
+        SECTION_LRVALUES,-1
     }
 };
 
@@ -142,11 +152,70 @@ errcode assert_required_sections_met(const sections section) {
 static TypeMatrix create_type_matrix();
 
 void setup_arrays() {
-    typefixes= TypeFixInfo_arr_create();
-    types=     TypeInfo_arr_create();
+    typelikes= TypeLikeInfo_vec_create();
+    typefix_mirror= TypeFixInfo_vec_create();
+
     operators= OperatorInfo_arr_create();
     aliases=   AliasInfo_arr_create();
     operands=  OperandInfo_arr_create();
+
+    coercion_rules= CoercionRule_arr_create();
+}
+
+TypeFixInfo* create_tf_info() {
+    return malloc(sizeof(TypeFixInfo));
+}
+
+TypeInfo* create_type_info() {
+    TypeInfo* info= malloc(sizeof(TypeInfo));
+
+    *info= (TypeInfo) {
+        .requirements= {
+            .pos= 0
+        },
+        .sizes= {
+            .pos= 0
+        },
+        .has_variable_sizes= false,
+        .is_virtual= false,
+    };
+
+    return info;
+}
+
+errcode verify_state(errcode code) {
+    if (code.code != SUCCESS) return code;
+
+    errcode ret= SUCC;
+    // verify that all operators have operand statements
+    for (size_t i= 0; i < operators.pos; ++i) {
+        OperatorInfo* info= OperatorInfo_arr_ptr(&operators, i);
+
+        if (!OperandInfo_arr_search_ie(&operands, info->name)) {
+            ret= error(
+                "Operator `%s` doesn't have a corresponding operand statement\n",
+                info->name
+            );
+        }
+    }
+
+    return ret;
+}
+
+TPPToken* find_first_in_statement(TPPType type) {
+    TPPToken* c= current();
+    size_t offset= 0;
+    while (c && c->type != EOS) {
+        if (c->type == type) {
+            return c;
+        }
+        c= peer(++offset);
+    }
+    return NULL;
+}
+
+bool statement_contains(TPPType type) {
+    return find_first_in_statement(type) != NULL;
 }
 
 errcode parse_types_file(const TPPTokenArray tokens) {
@@ -156,6 +225,14 @@ errcode parse_types_file(const TPPTokenArray tokens) {
 
     errcode code= SUCC;
     while (t_idx < t_tokens.pos) {
+        // todo not a huge fan of this, but what is the alternative?
+        //  keyvalues currently can't be used as typelike values, I think it requires too much change
+        //  most statement types (sections) have different requirements for keyvalues anyway so a split here seems reasonable
+        //  most of the issue comes from type -> natural in coercions though, this is a keyvalue in a typelike position
+        if (statement_contains(KEYVALUE)) {
+            parse_keyvalue_statement();
+        }
+
         const TPPToken* token= current();
 
         errcode stmt_code;
@@ -179,7 +256,11 @@ errcode parse_types_file(const TPPTokenArray tokens) {
         }
     }
 
-    return code;
+    if (section_state != SECTION_NONE) {
+        cleanup_section(section_state);
+    }
+
+    return verify_state(code);
 }
 
 static void clean_default() {
@@ -265,6 +346,7 @@ static void set_default(const enum KEYWORDS keyword) {
         case SECTION_ALIASES:
         case SECTION_COERCIONS:
         case SECTION_OPERANDS:
+        case SECTION_LRVALUES:
             warn_no_default();
         break;
         default:
@@ -280,6 +362,7 @@ void update_state(const enum KEYWORDS keyword) {
         case ALIASES: section_state= SECTION_ALIASES; break;
         case COERCIONS: section_state= SECTION_COERCIONS; break;
         case OPERANDS: section_state= SECTION_OPERANDS; break;
+        case LRVALUES: section_state= SECTION_LRVALUES; break;
         default:
             assert(false);
     }
@@ -294,6 +377,7 @@ bool is_header_keyword(enum KEYWORDS keyword) {
         case ALIASES:
         case COERCIONS:
         case OPERANDS:
+        case LRVALUES:
             return true;
         default:
             return false;
@@ -316,11 +400,10 @@ void cleanup_section(sections section) {
             return;
 
         case SECTION_TYPEFIX:
-            TypeFixInfo_arr_sort_i(&typefixes);
-            break;
-
+            TypeFixInfo_vec_sort_i(&typefix_mirror);
+            // fall through to sort type-likes, although not really needed
         case SECTION_TYPES:
-            TypeInfo_arr_sort_i(&types);
+            TypeLikeInfo_vec_sort_i(&typelikes);
             break;
 
         case SECTION_OPERATORS:
@@ -330,10 +413,16 @@ void cleanup_section(sections section) {
         case SECTION_ALIASES:
             AliasInfo_arr_sort_i(&aliases);
             break;
+
+        case SECTION_OPERANDS:
+            OperandInfo_arr_sort_i(&operands);
+            break;
     }
 }
 
 errcode parse_keyword_statement(const TPPToken* token) {
+    consume(); // EAT THE KEYWORD w(ﾟДﾟ)w
+
     if (section_state != SECTION_NONE) {
         cleanup_section(section_state);
     }
@@ -341,18 +430,15 @@ errcode parse_keyword_statement(const TPPToken* token) {
     const enum KEYWORDS keyword = token->data.keyword;
 
     if (!is_header_keyword(keyword)) {
-        return error("Expected keyword statement to start with a valid header keyword i.e. TYPEFIX, TYPES, ALIASES, OPERATORS, COERCIONS, OPERANDS. Got %s", get_tpptoken_keyword_string(keyword));
+        return error("Expected keyword statement to start with a valid header keyword i.e. TYPEFIX, TYPES, ALIASES, OPERATORS, COERCIONS, OPERANDS. Got `%s`\n", get_tpptoken_keyword_string(keyword));
     }
 
     update_state(keyword);
 
     errcode err= assert_required_sections_met(section_state);
     if (err.code != SUCCESS) {
-        consume();
         return err;
     }
-
-    consume(); // EAT THE KEYWORD w(ﾟДﾟ)w
 
     clean_default();
     if (!expect_keyword(DEFAULT)) goto parse_keyword_statement_end;
@@ -406,7 +492,9 @@ char* to_custom_op(const TPPType type) {
 
     const char* copy= op_type_to_str[type];
 
-    memcpy(ret, copy, strlen(copy));
+    const size_t l= strlen(copy);
+    memcpy(ret, copy, l + 1);
+    ret[l]= '\0';
 
     return ret;
 }
@@ -445,7 +533,7 @@ char* parse_symbol() {
 
 errcode parse_typefix_identifier_statement() {
     // The typefix line consists of
-    //  <name> <alt-name> <symbol> <PREFIX|POSTFIX>? <EOS>
+    //  <name> <alt-name> <symbol> SIZE <size> <PREFIX|POSTFIX>? <EOS>
     const TPPToken* identifier= consume();
 
     const TPPToken* alt_name_ident= expect(IDENTIFIER);
@@ -456,6 +544,15 @@ errcode parse_typefix_identifier_statement() {
     char* symbol= parse_symbol();
     if (!symbol) {
         return error("Unable to convert non-symbolic types to custom operator. Found: `%s`\n", get_tpptoken_type_string_from_token(current()));
+    }
+
+    if (!expect_keyword(SIZE)) {
+        return unexpected_keyword(SIZE, "Type fix identifier statement after symbol");
+    }
+
+    TPPToken* size= expect(NUMERIC);
+    if (!size) {
+        return unexpected(NUMERIC, "Type fix identifier statement after SIZE keyword");
     }
 
     bool prefix= false;
@@ -471,26 +568,43 @@ errcode parse_typefix_identifier_statement() {
         return error("Typefix statement has postceding non-EOS tokens. Found `%s`", get_tpptoken_type_string_from_token(peek()));
     }
 
-    const TypeFixInfo info = (TypeFixInfo) {
-        .name= identifier->data.str,
-        .alt_name= alt_name_ident->data.str,
+    const TypeLikeInfo base= (TypeLikeInfo) {
+        .general_type= identifier->data.str,
+        .name= alt_name_ident->data.str,
+        .size= size->data.numeric,
+        .type= TL_TYPE_FIX
+    };
+
+    TypeFixInfo* info = create_tf_info();
+
+    *info= (TypeFixInfo){
+        .base= base,
         .symbol= symbol,
         .prefix= prefix
     };
 
-    TypeFixInfo_arr_add(&typefixes, info);
+    TypeFixInfo_vec_add(&typefix_mirror, info);
+    TypeLikeInfo_vec_add(&typelikes, (TypeLikeInfo*)info);
 
-    print_typefix_info(&info);
+    print_typefix_info(info);
 
     return SUCC;
 }
 
-uint find_typefix(const char* name) {
-    return TypeFixInfo_arr_search_i(&typefixes, name);
+FindRes find_typelike_e(const char** name) { // todo consider changing vec_search pattern
+    return TypeLikeInfo_vec_search_ie(&typelikes, (const void**)name);
+};
+
+AliasInfo* find_alias_e(const char* name) {
+    return AliasInfo_arr_search_ie(&aliases, name);
 }
 
-uint find_type(const char* name) {
-    return TypeInfo_arr_search_i(&types, name);
+uint find_typefix(const char** name) {
+    return TypeFixInfo_vec_search_i(&typefix_mirror, name);
+}
+
+uint find_typelike(const char** name) {
+    return TypeLikeInfo_vec_search_i(&typelikes, name);
 }
 
 uint find_alias(const char* name) {
@@ -498,7 +612,7 @@ uint find_alias(const char* name) {
 }
 
 static size_t type_map_size() {
-    return types.pos + typefixes.pos;
+    return typelikes.pos;
 }
 
 static size_t type_matrix_size() {
@@ -511,27 +625,27 @@ size_t type_matrix_bytes() {
 
 struct TypeLikePos {
     enum {
-        TYPE_TYPE,
-        TYPE_TYPEFIX,
-        TYPE_ALIAS
+        TYPE_TYPELIKE,
+        TYPE_ALIAS,
+        TYPE_NOT_FOUND
     } type;
     uint pos;
+    union {
+        TypeLikeInfo* tl;
+        AliasInfo* alias;
+    } data;
 } find_type_like(const char* name) {
-    const uint typefix_pos= find_typefix(name);
-    const uint type_pos= find_type(name);
-    const uint alias_pos= find_alias(name);
+    // todo currently if it's an alias the position is undefined, because the array doesn't return FindRes
+    FindRes typelike_info= find_typelike_e(&name);
+    AliasInfo* alias_info= find_alias_e(name);
 
-    const uint MINUS_ONE= (uint)-1;
-    if (typefix_pos == MINUS_ONE && type_pos == MINUS_ONE && alias_pos == MINUS_ONE)
-        return (struct TypeLikePos){.type= TYPE_TYPE, .pos= -1};
+    if (!typelike_info.elem && !alias_info)
+        return (struct TypeLikePos){.type= TYPE_NOT_FOUND};
 
-    if (type_pos != MINUS_ONE)
-        return (struct TypeLikePos){.type= TYPE_TYPE, .pos= type_pos};
+    if (typelike_info.elem)
+        return (struct TypeLikePos){.type= TYPE_TYPELIKE, .data.tl= typelike_info.elem, .pos= typelike_info.pos};
 
-    if (typefix_pos != MINUS_ONE)
-        return (struct TypeLikePos){.type= TYPE_TYPEFIX, .pos= typefix_pos};
-
-    return (struct TypeLikePos){.type= TYPE_ALIAS, .pos= alias_pos};
+    return (struct TypeLikePos){.type= TYPE_ALIAS, .data.alias= alias_info};
 }
 
 errcode parse_types_tail(TypeInfo* info) {
@@ -555,7 +669,7 @@ errcode parse_types_tail(TypeInfo* info) {
         }
 
         while (requirement) {
-            const uint pos= find_typefix(requirement->data.str);
+            const uint pos= find_typefix((const char**)&requirement->data.str);
 
             if (pos == (uint)-1) {
                 uint_arr_destroy(&requirements);
@@ -580,18 +694,23 @@ errcode parse_types_identifier_statement() {
     // The type line consists of
     //  <general name> PREFIX <prefix> OVER <SIZE..>
     // OR
-    //  <general name> <name>
+    //  <general name> <name> SIZE <size>
     // WITH TRAILING
     //  VIRTUAL? REQUIRE <REF: TYPEFIX..>?
 
     const TPPToken* general_ident= consume();
 
-    TypeInfo info = (TypeInfo) {
-        .general_type= general_ident->data.str
+    TypeInfo* info = create_type_info();
+    TypeLikeInfo* base= &info->base;
+
+    *base= (TypeLikeInfo) {
+        .general_type= general_ident->data.str,
+        .type= TYPE,
     };
 
     if (default_info.has_info) {}
 
+    TPPToken* size= NULL;
     if (expect_keyword(PREFIX)) {
         // <prefix> OVER <SIZE..>
         const TPPToken* prefix= expect(IDENTIFIER);
@@ -605,7 +724,6 @@ errcode parse_types_identifier_statement() {
         }
 
         uintArray sizes = uint_arr_create();
-        TPPToken* size;
         while (size= expect(NUMERIC), size) {
             // [[todo]] this is long long -> uint
             //  but it shouldn't really matter for the
@@ -618,43 +736,50 @@ errcode parse_types_identifier_statement() {
             return error("Expected at least one size after OVER keyword in types statement. Found None before type: `%s`", get_tpptoken_type_string_from_token(peek()));
         }
 
-        info.has_variable_sizes= true;
-        info.prefix= prefix->data.str;
-        info.sizes= sizes;
+        info->has_variable_sizes= true;
+        base->prefix= prefix->data.str;
+        info->sizes= sizes;
     } else {
-        // <name> or <name> | <name>
+        // (<name> or <name> | <name>) SIZE <size>
         const TPPToken* identifier;
-        info.names= vector_create(4);
-        do {
-            identifier= expect(IDENTIFIER);
 
-            if (!identifier) {
-                return error("Expected identifier after general type in type statement. Found `%s`", get_tpptoken_type_string_from_token(peek()));
-            }
+        identifier= expect(IDENTIFIER);
 
-            vector_add(&info.names, identifier->data.str);
-        } while (expect(PIPE));
+        if (!identifier) {
+            return error("Expected identifier after general type in type statement. Found `%s`", get_tpptoken_type_string_from_token(peek()));
+        }
 
-        if (info.names.pos == 1) {
-            info.has_multiple_names= false;
-            info.name= identifier->data.str;
-            vector_destroy(&info.names);
-        } else {
-            info.has_multiple_names= true;
+        base->name= identifier->data.str;
+
+        if (expect_keyword(SIZE)) {
+            size= expect(NUMERIC);
+            base->size= size->data.numeric;
         }
     }
 
     TPPToken* c;
     while (c= current(), c && c->type != EOS) {
-        parse_types_tail(&info);
+        parse_types_tail(info);
     }
 
     if (!expect(EOS)) // EAT THE EOS
          return unexpected(EOS, "end of types identifier statement");
 
-    TypeInfo_arr_add(&types, info);
+    // the check here is for the size requirement
+    //  if the type is VIRTUAL or REQUIRES something then it does not need a size
+    //  else it does
+    if (!info->requirements.pos && !info->is_virtual && !info->has_variable_sizes) {
+        if (!size) {
+            return error(
+                "Non-virtual/Non-requirement types need to have a size attribute. Type `%s` does not, add `SIZE <size>` to type statement\n",
+                ((TypeLikeInfo*)info)->name
+            );
+        }
+    }
 
-    print_type_info(&info);
+    TypeLikeInfo_vec_add(&typelikes, base);
+
+    print_type_info(info);
 
     return SUCC;
 }
@@ -739,18 +864,14 @@ errcode parse_operators_identifier_statement() {
 int add_to_type_map(uint64_t* map, const char* name) {
     const struct TypeLikePos res= find_type_like(name);
 
-    if (res.pos == (uint)-1) return FAIL;
+    if (res.type == TYPE_NOT_FOUND) return FAIL;
 
     switch (res.type) {
-        case TYPE_TYPEFIX:
+        case TYPE_TYPELIKE:
             *map |= 1 << res.pos;
             break;
-        case TYPE_TYPE:
-            *map |= 1 << (res.pos + typefixes.pos);
-            break;
-        case TYPE_ALIAS:;
-            const AliasInfo* alias= AliasInfo_arr_ptr(&aliases, res.pos);
-            *map |= alias->type_map;
+        case TYPE_ALIAS:
+            *map |= res.data.alias->type_map;
             break;
     }
 
@@ -830,6 +951,64 @@ void type_maps_to_matrix(TypeMatrix matrix, uint64_t left, uint64_t right, bool 
     }
 }
 
+errcode token_to_rule_value(TPPToken* tok, CoercionRuleValue* out) {
+    *out= (CoercionRuleValue){
+        .is_keyvalue= tok->type == KEYVALUE
+    };
+
+    if (tok->type == KEYVALUE) {
+        out->idx = tok->data.keyvalue;
+    } else {
+        struct TypeLikePos tl= find_type_like(tok->data.str);
+
+        if (tl.type == TYPE_NOT_FOUND) {
+            return error("Unable to find type like with name `%s`\n", tok->data.str);
+        }
+
+        if (tl.type == TYPE_ALIAS) {
+            return error("Use of alias in a coercion keyvalue statement is not allowed\n");
+        }
+
+        out->idx= tl.pos;
+    }
+
+    return SUCC;
+}
+
+errcode parse_coercions_keyvalue_statement() {
+    // the Keyvalue version of a coercion can only have one on either side of the rule
+    CoercionRule rule;
+
+    TPPToken* left= expect_any(IDENTIFIER, KEYVALUE, -1);
+
+    TPPToken* d= expect_any(ARROW, BIRROW);
+    if (!d) {
+        return error(
+            "Expected ARROW (->) or BIRROW (<->) in coercion keyvalue statement. Found %s",
+            get_tpptoken_type_string(current()->type)
+        );
+    }
+
+    bool is_bi= d->type == BIRROW;
+
+    TPPToken* right= expect_any(IDENTIFIER, KEYVALUE, -1);
+
+    if (token_to_rule_value(left, &rule.left).code != SUCCESS || token_to_rule_value(right, &rule.right).code != SUCCESS) {
+        return error("Unable to continue parsing coercion keyvalue statement from issues parsing left or right rule\n");
+    }
+
+    CoercionRule_arr_add(&coercion_rules, rule);
+
+    if (is_bi) {
+        CoercionRuleValue save= rule.left;
+        rule.left= rule.right;
+        rule.right= save;
+        CoercionRule_arr_add(&coercion_rules, rule);
+    }
+
+    return SUCC;
+}
+
 errcode parse_coercions_identifier_statement() {
     uint64_t left_type_map= 0;
     uint64_t right_type_map= 0;
@@ -888,22 +1067,21 @@ errcode parse_operands_identifier_statement() {
     OperandInfo operand_info= (OperandInfo) {
         .op_type= operator_info->op_type,
         .operator= operator_info,
-        .explicit_out_type= 0
+        .out_type= OUT_BASED
     };
 
     if (expect(ARROW)) {
-        operand_info.explicit_out_type= 1;
-        operand_info.unwrapped_output= 0;
+        operand_info.out_type= OUT_EXPLICIT;
 
         TPPToken* out;
         if (out= expect(IDENTIFIER), out) {
-            uint pos= TypeInfo_arr_search_i(&types, out->data.str);
+            uint pos= TypeLikeInfo_vec_search_i(&typelikes, &out->data.str);
             if (pos == (uint)-1) {
                 return error("Output type must be a defined type. Found `%s`", out->data.str);
             }
             operand_info.output_index= pos;
         } else if (out= expect_keyword(UNWRAP), out) {
-            operand_info.unwrapped_output= 1;
+            operand_info.out_type= OUT_UNWRAP;
         } else {
             return unexpected(IDENTIFIER, "explicit return type of operand statement");
         }
@@ -958,6 +1136,110 @@ errcode parse_operands_identifier_statement() {
     return SUCC;
 }
 
+int int_cmp(const uint32_t a, const uint32_t b) {
+    return a - b;
+}
+
+LRBuiltInTypes keyword_to_lr_builtin(enum KEYWORDS keyword) {
+    switch (keyword) {
+        case VARIABLE:
+            return LRB_VARIABLE;
+        case ALL:
+            return LRB_ALL;
+        default:
+            assert(false);
+    }
+}
+
+errcode parse_lr_values_identifier_statement() {
+    TPPToken* lv= expect_keyword(LVALUE);
+    if (!lv && !expect_keyword(RVALUE)) {
+        return error("Unexpected keyword in LRVALUES statement, expected either LVALUE or RVALUE keyword found `%s`\n",  get_tpptoken_type_string(current()->type));
+    }
+
+    bool is_left= lv;
+
+    LRInfo info= (LRInfo) {
+        .is_left= is_left,
+        .rules= LRValueData_arr_create()
+    };
+
+    if (!expect(EQUALITY)) {
+        return unexpected(EQUALITY, "After L/RValue statement keyword in LRVALUES section");
+    }
+
+    TPPToken* t;
+    while (t= consume(), t->type == KEYWORD || t->type == IDENTIFIER) {
+        LRValueData data= (LRValueData) {
+            .is_builtin= t->type == KEYWORD,
+            .idx= -1
+        };
+
+        if (t->type == KEYWORD) {
+            data.idx= keyword_to_lr_builtin(t->data.keyword);
+        } else if (t->type == IDENTIFIER) {
+            uint op= OperatorInfo_arr_search_i(&operators, t->data.str);
+
+            if (op == (uint)-1) {
+                return error(
+                    "Unable to find operator specified in LRValue statement. Identifier `%s` is not an existing operator.\n",
+                    t->data.str
+                );
+            }
+
+            data.idx= op;
+        } else {
+            assert(false);
+        }
+
+        LRValueData_arr_add(&info.rules, data);
+    }
+
+    if (t->type != EOS) {
+        return error(
+            "Expected keyword or identifier in %cValue statement got %s\n",
+            is_left ? 'L' : 'R',
+            get_tpptoken_type_string(t->type)
+        );
+    }
+
+    print_lr_info(&info);
+
+    return SUCC;
+}
+
+errcode parse_keyvalue_statement(const TPPToken* tok) {
+    errcode err;
+    switch (section_state) {
+        case SECTION_TYPEFIX:
+        case SECTION_TYPES:
+        case SECTION_OPERATORS:
+        case SECTION_ALIASES:;
+            TPPToken* kv= find_first_in_statement(KEYVALUE);
+
+            return error(
+                "Keyvalue values are only allowed in COERCIONS, LRVALUES, and OPERANDS statements. Found keyvalue %s in %s statement\n",
+                get_tpptoken_keyvalue_string(kv->data.keyvalue),
+                section_strings[section_state]
+            );
+        case SECTION_COERCIONS:
+            err= parse_coercions_keyvalue_statement();
+            break;
+        case SECTION_LRVALUES:
+            err= parse_lr_values_keyvalue_statement();
+            break;
+        case SECTION_OPERANDS:
+            err= parse_operands_keyvalue_statement();
+            break;
+        case SECTION_NONE:
+            err= error("Expected state header e.g. ALIASES, TYPEFIX, etc before identifier statement. Got %s", get_tpptoken_type_string_from_token(tok));
+            consume();
+            break;
+        default:
+            assert(false);
+    }
+}
+
 errcode parse_identifier_statement(const TPPToken* identifier_token) {
     errcode err;
     switch (section_state) {
@@ -979,9 +1261,14 @@ errcode parse_identifier_statement(const TPPToken* identifier_token) {
         case SECTION_OPERANDS:
             err= parse_operands_identifier_statement();
             break;
+        case SECTION_LRVALUES:
+            err= parse_lr_values_identifier_statement();
+            break;
         case SECTION_NONE:
             err= error("Expected state header e.g. ALIASES, TYPEFIX, etc before identifier statement. Got identifier `%s`", identifier_token->data.str);
+            consume();
             break;
+        case SECTION_COUNT:
         default:
             assert(false);
     }
@@ -1005,13 +1292,13 @@ static void or_type_matrices(TypeMatrix dst, TypeMatrix or) {
 }
 
 static void add_to_type_matrix(TypeMatrix matrix, uint32_t x, uint32_t y) {
-    uint32_t width= types.pos + typefixes.pos;
+    uint32_t width= typelikes.pos;
     uint64_t index= y * width + x;
     matrix[index / 8] |= 1 << (index & 7);
 }
 
 static inline int get_from_type_matrix(TypeMatrix matrix, uint32_t x, uint32_t y) {
-    uint32_t width= types.pos + typefixes.pos;
+    uint32_t width= typelikes.pos;
     uint64_t index= y * width + x;
     return (matrix[index / 8] >> (index & 7)) & 1;
 }
@@ -1037,28 +1324,34 @@ static const char* get_tpptoken_type_string_from_token(const TPPToken* token) {
 }
 
 void print_typefix_info(const TypeFixInfo* info) {
-    printf("Typfix:\n"
-           "  Name   : `%s` (`%s`)\n"
-           "  Symbol : `%s`\n"
-           "  Prefix?: %s\n\n",
-           info->name,
-           info->alt_name,
-           info->symbol,
-           info->prefix ? "True" : "False"
+    TypeLikeInfo* base= (TypeLikeInfo*)info;
+    printf("%s:\n"
+        "  Name   : `%s` (`%s`)\n"
+        "  Symbol : `%s`\n"
+        "  Size   : %u\n"
+        "  Prefix?: %s\n\n",
+        TYPELIKE_TYPE_STRINGS[base->type],
+        base->general_type,
+        base->name,
+        info->symbol,
+        base->size,
+        info->prefix ? "True" : "False"
     );
 }
 
 void print_type_info(const TypeInfo* info) {
+    TypeLikeInfo* base= (TypeLikeInfo*)info;
+
     printf("Type (%s):\n"
            "  General: `%s`\n",
            info->has_variable_sizes ? "Variable sized" : "Fixed size",
-           info->general_type
+           base->general_type
     );
 
     if (info->has_variable_sizes) {
         printf("  Prefix : `%s`\n"
                "  sizes  :\n",
-               info->prefix
+               base->prefix
         );
         for (uint i = 0; i < info->sizes.pos; ++i) {
             const uint size= uint_arr_get(&info->sizes, i);
@@ -1066,16 +1359,12 @@ void print_type_info(const TypeInfo* info) {
             printf("    - %u\n", size);
         }
     } else {
-        if (info->has_multiple_names) {
-            printf("  Names  :\n");
-            for (uint i= 0; i < info->names.pos; ++i) {
-                const char* name= vector_get_unsafe(&info->names, i);
-
-                printf("    - `%s`\n", name);
-            }
-        } else {
-            printf("  Name   : `%s`\n", info->name);
-        }
+        printf(
+            "  Name   : `%s`\n"
+            "  Size   : %u\n",
+            base->name,
+            base->size
+        );
     }
 
     printf("  Virtual?: %s\n"
@@ -1086,9 +1375,8 @@ void print_type_info(const TypeInfo* info) {
 
     for (uint i = 0; i < info->requirements.pos; ++i) {
         const uint req_pos= uint_arr_get(&info->requirements, i);
-        const TypeFixInfo* req= TypeFixInfo_arr_ptr(&typefixes, req_pos);
-
-        printf("    - `%s`\n", req->name);
+        const TypeLikeInfo* req= TypeLikeInfo_vec_get_unsafe(&typelikes, req_pos);
+        printf("    - `%s`\n", req->general_type);
     }
 
     newline();
@@ -1132,65 +1420,34 @@ void print_operator_info(const OperatorInfo* info) {
 
 _Static_assert(sizeof(uint64_t) * 8 == 64, "Expected uint64_t to be available");
 void print_typemap_selected(const char* prefix, const uint64_t map) {
-    assert(types.pos + typefixes.pos <= 64);
+    assert(typelikes.pos <= 64);
     // - - - - - 0 1 0 0 1 1 1
-    // ^-------^ ^-^ ^-------^
-    //  EXCESS  TYFIX  TYPES
-    for (uint i= 0; i < typefixes.pos; i++) {
+    // ^-------^ ^-----------^
+    //  EXCESS     TYPE-LIKES
+    for (uint i= 0; i < typelikes.pos; i++) {
         if ((map >> i) & 1) {
-            const TypeFixInfo* typefix= TypeFixInfo_arr_ptr(&typefixes, i);
-            printf("%s%s (%s: %s)\n",
+            const TypeLikeInfo* typelike= TypeLikeInfo_vec_get_unsafe(&typelikes, i);
+            printf("%s%s\n",
                 prefix,
-                typefix->name,
-                typefix->symbol,
-                typefix->prefix ? "PREFIX" : "POSTFIX"
-            );
-        }
-    }
-
-    const uint type_start= typefixes.pos;
-    for (uint i = 0; i < types.pos; ++i) {
-        const uint map_i= type_start + i;
-        if ((map >> map_i) & 1) {
-            const TypeInfo* type= TypeInfo_arr_ptr(&types, i);
-            printf("%s%s (%s)\n",
-                prefix,
-                type->general_type,
-                type->has_variable_sizes ? type->prefix : type->name
+                typelike->general_type
             );
         }
     }
 }
 
 void print_typemap_all(const char* prefix, const uint64_t map) {
-    assert(types.pos + typefixes.pos <= 64);
+    assert(typelikes.pos <= 64);
 
-    for (uint i= 0; i < typefixes.pos; i++) {
-        const TypeFixInfo* typefix= TypeFixInfo_arr_ptr(&typefixes, i);
+    for (size_t i= 0; i < typelikes.pos; ++i) {
+        const TypeLikeInfo* info= TypeLikeInfo_vec_get_unsafe(&typelikes, i);
         const bool active= (map >> i) & 1;
-        printf("%s%s%-10s"C_RST": %s (%s: %s)\n",
-            prefix,
-            active ? C_GRN : C_RST,
-            typefix->name,
-            active ? "X" : "-",
-            typefix->symbol,
-            typefix->prefix ? "PREFIX" : "POSTFIX"
-        );
-    }
-    const uint types_start= typefixes.pos;
-    for (uint i= 0; i < types.pos; ++i) {
-        const uint map_i= types_start + i;
-        const bool active= (map >> map_i) & 1;
 
-        const TypeInfo* type= TypeInfo_arr_ptr(&types, i);
-        printf("%s%s%-10s"C_RST": %s (",
-            prefix,
-            active ? C_GRN : C_RST,
-            type->general_type,
-            active ? "X" : "-"
+        printf("%s%s%-10s"C_RST": %s\n",
+               prefix,
+               active ? C_GRN : C_RST,
+               info->general_type,
+               active ? "X" : "-"
         );
-        print_type_like_name(i + types_start);
-        puts(")");
     }
 }
 
@@ -1206,26 +1463,12 @@ void print_alias_info(const AliasInfo* info) {
 }
 
 void print_type_like_name(size_t i) {
-    if (i >= typefixes.pos + types.pos) {
+    if (i >= typelikes.pos) {
         putz("INVALID TYPELIKE");
     }
-    if (i >= typefixes.pos) {
-        TypeInfo* info= TypeInfo_arr_ptr(&types, i - typefixes.pos);
 
-        if (info->has_multiple_names) {
-            for (uint j = 0; j < info->names.pos; ++j) {
-                const char* name= vector_get_unsafe(&info->names, j);
-                putz(name);
-                if (j != info->names.pos - 1) putz(" | ");
-            }
-        } else if (info->has_variable_sizes) {
-            putz(info->prefix);
-        } else {
-            putz(info->name);
-        }
-    } else {
-        putz(TypeFixInfo_arr_get(&typefixes, i).name);
-    }
+    TypeLikeInfo* base= TypeLikeInfo_vec_get_unsafe(&typelikes, i);
+    putz(base->name);
 }
 
 void print_type_matrix_header(const char* prefix, uint typelike_c) {
@@ -1265,7 +1508,7 @@ void print_type_matrix_diff(TypeMatrix old, TypeMatrix new) {
 }
 
 void print_type_matrix(const char* prefix, const TypeMatrix matrix) {
-    assert(types.arr);
+    assert(typelikes.arr);
 
     uint typelike_c= type_map_size();
 
@@ -1305,20 +1548,31 @@ void print_coercion_info(const CoercionInfo* info) {
 void print_operand_info(const OperandInfo* info) {
     printf("Operand info: \n"
         "  Operator: `%s` (%p)\n"
-        "  Explicit output?: ",
+        "  Output type: %s",
         info->operator->name,
-        info->operator
+        info->operator,
+        OUTPUT_TYPE_STRINGS[info->out_type]
     );
 
-    if (info->explicit_out_type) {
-        if (info->unwrapped_output) {
-            putz("YES (Unwrapped typefix)");
-        } else {
-            TypeInfo* type= TypeInfo_arr_ptr(&types, info->output_index);
-            printf("YES (%s)", type->name);
-        }
-    } else {
-        putz("NO (left type)");
+    switch (info->out_type) {
+        case OUT_UNWRAP:
+            newline();
+            break;
+        case OUT_EXPLICIT:;
+            TypeLikeInfo* tl= TypeLikeInfo_vec_get_unsafe(&typelikes, info->output_index);
+            printf(" (%s)\n", tl->name);
+            break;
+        case OUT_BASED:
+        case OUT_LEFT:
+        case OUT_RIGHT:
+            printf("Based on %s\n",
+               info->out_type == OUT_BASED ? "types" :
+               info->out_type == OUT_LEFT ? "left type" : "right type"
+            );
+            break;
+        case OUT_COUNT:
+        default:
+            assert(false);
     }
 
     putz("\n  Operand info:\n");
@@ -1333,12 +1587,83 @@ void print_operand_info(const OperandInfo* info) {
     newline();
 }
 
+void print_lr_info(LRInfo* info) {
+    printf(
+        "Information for %cValues:\n",
+        info->is_left ? 'L' : 'R'
+    );
+
+    if (info->rules.pos == 0) {
+        printf("    [[!!]] No rules given\n");
+        return;
+    }
+
+    for (size_t i= 0; i < info->rules.pos; ++i) {
+        LRValueData* rule= LRValueData_arr_ptr(&info->rules, i);
+        printf(
+            "    [%.2zu]: ",
+            i
+        );
+        if (rule->is_builtin) {
+            puts(LRBuiltInTypesStrings[rule->idx]);
+        } else {
+            OperatorInfo* op= OperatorInfo_arr_ptr(&operators, rule->idx);
+
+            if (!op) {
+                assert(false);
+            }
+
+            puts(op->name);
+        }
+    }
+}
+
 static TPPToken* expect(const TPPType type) {
     if (current()->type == type) {
         return consume();
     }
 
     return NULL;
+}
+
+#define MAX_C 4
+#define YES_RED C_RED"YES"C_RST
+#define NO_GRN C_GRN"NO"C_RST
+static TPPToken* expect_any(uint type, ...) {
+    va_list args;
+    va_start(args, type);
+
+    if (type == (uint)-1) {
+        error("expect_any requires at least one argument that is not -1\n");
+        assert(false);
+    }
+
+    TPPToken* c_t= current();
+
+    if (c_t->type == type) {
+        return consume();
+    }
+
+    uint t, c= 0;
+    while (t= va_arg(args, uint), t != (uint)-1) {
+        if (c++ >= MAX_C || t >= TPPTYPE_COUNT) {
+            error(
+                "Call to expect_any has unexpected value `%d` which is: \n"
+                "   c >= MAX_C          ? %s\n"
+                "   t >= TPPTYPE_COUNT  ? %s\n",
+                t,
+                t >= MAX_C ? YES_RED : NO_GRN,
+                t >= TPPTYPE_COUNT ? YES_RED : NO_GRN
+            );
+            assert(false);
+        }
+
+        if (c_t->type == t) {
+            return consume();
+        }
+    }
+
+    return false;
 }
 
 static TPPToken* expect_keyword(const enum KEYWORDS keyword) {
@@ -1366,6 +1691,12 @@ static TPPToken* peek() {
     return TPPToken_arr_ptr(&t_tokens, t_idx + 1);
 }
 
+static TPPToken* peer(size_t amount) {
+    if (!is_valid_index(t_idx + amount)) return NULL;
+
+    return TPPToken_arr_ptr(&t_tokens, t_idx + amount);
+}
+
 static TPPToken* current() {
     if (!is_valid_index(t_idx)) return NULL;
 
@@ -1381,6 +1712,19 @@ static errcode unexpected(const TPPType expected, const char* context) {
     print_tpptoken(current());
     putchar('`');
     putchar('\n');
+
+    return ERROR(FAIL);
+}
+
+static errcode unexpected_keyword(const enum KEYWORDS expected, const char* context) {
+    error(
+        "Expected keyword `%s` in %s. Found `",
+        get_tpptoken_keyword_string(expected),
+        context
+    );
+    print_tpptoken(current());
+    putchar('`');
+    newline();
 
     return ERROR(FAIL);
 }

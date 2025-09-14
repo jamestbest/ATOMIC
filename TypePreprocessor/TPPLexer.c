@@ -94,10 +94,19 @@ void add_token(const TPPType type, void* data) {
     TPPToken_arr_add(&tok_arr, token);
 }
 
-void add_keyword(const enum KEYWORDS keyword) {
+void add_keyword(const KEYWORDS keyword) {
     const TPPToken tok = {
         .type= KEYWORD,
         .data.keyword= keyword
+    };
+
+    TPPToken_arr_add(&tok_arr, tok);
+}
+
+void add_keyvalue(const KEYVALUES kv) {
+    const TPPToken tok= {
+        .type= KEYVALUE,
+        .data.keyvalue= kv
     };
 
     TPPToken_arr_add(&tok_arr, tok);
@@ -157,12 +166,15 @@ void lex_identifier(char* start) {
     const char end_save = *end;
     *end = '\0';
 
-    const char** res = bsearch(start, KEYWORD_STRINGS, KEYWORD_COUNT, sizeof (KEYWORD_STRINGS[0]), compare_strings_for_search);
+    const char** kw_res= bsearch(start, KEYWORD_STRINGS, KEYWORD_COUNT, sizeof (KEYWORD_STRINGS[0]), compare_strings_for_search);
+    const char** kv_res= bsearch(start, KEYVALUE_STRINGS, KEYVALUE_COUNT, sizeof (KEYVALUE_STRINGS[0]), compare_strings_for_search);
 
     *end = end_save;
 
-    if (res) {
-        add_keyword(res - KEYWORD_STRINGS);
+    if (kw_res) {
+        add_keyword(kw_res - KEYWORD_STRINGS);
+    } else if (kv_res) {
+        add_keyvalue(kv_res - KEYVALUE_STRINGS);
     } else {
         add_token(IDENTIFIER, copy_identifier(start, end));
     }
@@ -252,9 +264,9 @@ void tpplex_line(const Buffer* line_buffer) {
         }
     }
 
-next:
+next:;
     TPPToken* temp;
-    if (temp = arr_peek(&tok_arr), temp && temp->type != EOS) add_symbol(EOS);
+    if (temp = arr_peek((Array*)&tok_arr), temp && temp->type != EOS) add_symbol(EOS);
 }
 
 TPPTokenArray tpplex_end() {
@@ -291,9 +303,7 @@ void gorge(const size_t amount) {
 }
 
 char peek() {
-    if (!is_valid_index(c_pos + 1)) return '\0';
-
-    return c_line->data[c_pos + 1];
+    return peer(1);
 }
 
 char peer(const size_t amount) {
@@ -338,8 +348,12 @@ const char* get_tpptoken_type_string(const TPPType type) {
     return TPPTypesStrings[type];
 }
 
-const char* get_tpptoken_keyword_string(const enum KEYWORDS keyword) {
+const char* get_tpptoken_keyword_string(const KEYWORDS keyword) {
     return KEYWORD_STRINGS[keyword];
+}
+
+const char* get_tpptoken_keyvalue_string(const KEYVALUES kv) {
+    return KEYVALUE_STRINGS[kv];
 }
 
 void print_tpptoken_type(const TPPType type) {
@@ -362,7 +376,9 @@ void print_tpptoken(const TPPToken* token) {
         case KEYWORD:
             printf("::%s", get_tpptoken_keyword_string(token->data.keyword));
             break;
+        case KEYVALUE:
+            printf("::%s", get_tpptoken_keyvalue_string(token->data.keyvalue));
         default:
-
+            break;
     }
 }

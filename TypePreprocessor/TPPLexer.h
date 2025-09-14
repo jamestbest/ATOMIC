@@ -10,6 +10,7 @@
 
 typedef enum TPPType {
     KEYWORD,
+    KEYVALUE,
 
     IDENTIFIER,
     CUSTOM_OPERATOR,
@@ -27,13 +28,23 @@ typedef enum TPPType {
     TPPTYPE_COUNT,
 } TPPType;
 
+typedef enum KEYVALUES {
+    ALL,
+    LVALUE,
+    RVALUE,
+    TYPE,
+    VARIABLE,
+    KEYVALUE_COUNT
+} KEYVALUES;
+
 // SORTED!
-enum KEYWORDS {
+typedef enum KEYWORDS {
     ALIASES,
     BI,
     COERCIONS,
     DEFAULT,
     LEFT,
+    LRVALUES,
     OPERANDS,
     OPERATORS,
     OVER,
@@ -41,14 +52,16 @@ enum KEYWORDS {
     PREFIX,
     REQUIRE,
     RIGHT,
+    SIZE,
     TRI,
     TYPEFIX,
     TYPES,
     UNARY,
     UNWRAP,
     VIRTUAL,
+    WRAP,
     KEYWORD_COUNT
-};
+} KEYWORDS;
 
 typedef struct TPPToken {
     TPPType type;
@@ -56,7 +69,8 @@ typedef struct TPPToken {
         char* str;
         unsigned int pos;
         long long numeric;
-        enum KEYWORDS keyword;
+        KEYWORDS keyword;
+        KEYVALUES keyvalue;
     } data;
 } TPPToken;
 
@@ -70,6 +84,7 @@ void print_tpptoken(const TPPToken* token);
 void print_tpptoken_type(TPPType type);
 
 const char* get_tpptoken_type_string(TPPType type);
-const char* get_tpptoken_keyword_string(enum KEYWORDS keyword);
+const char* get_tpptoken_keyword_string(KEYWORDS keyword);
+const char* get_tpptoken_keyvalue_string(KEYVALUES kv);
 
 #endif //TPPLEXER_H

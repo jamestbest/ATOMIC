@@ -28,8 +28,18 @@ typedef enum sections {
     SECTION_ALIASES,
     SECTION_COERCIONS,
     SECTION_OPERANDS,
+    SECTION_LRVALUES,
     SECTION_COUNT
 } sections;
+
+typedef enum LRBuiltInTypes {
+    LRB_VARIABLE,
+    LRB_LITERAL,
+    LRB_ALL,
+    LRB_COUNT
+} LRBuiltInTypes;
+
+extern const char* LRBuiltInTypesStrings[LRB_COUNT];
 
 typedef struct TPPNode {
     TPPNodeType type;

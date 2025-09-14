@@ -11,6 +11,13 @@
 #define COMP_STR_LEN(STR) (sizeof (STR) - 1)
 #define DBG_SPECIAL_SEQ 0x12345678
 
+const char* KEYVALUE_STRINGS[KEYVALUE_COUNT]= {
+    [ALL]= "ALL",
+    [LVALUE] = "LVALUE",
+    [RVALUE] = "RVALUE",
+    [TYPE]= "TYPE",
+    [VARIABLE] = "VARIABLE"
+};
 
 const char* KEYWORD_STRINGS[KEYWORD_COUNT] = {
     [ALIASES] = "ALIASES",
@@ -21,6 +28,7 @@ const char* KEYWORD_STRINGS[KEYWORD_COUNT] = {
     [DEFAULT] = "DEFAULT",
     [LEFT] = "LEFT",
     [RIGHT] = "RIGHT",
+    [SIZE] = "SIZE",
     [POSTFIX] = "POSTFIX",
     [PREFIX] = "PREFIX",
     [TYPEFIX] = "TYPEFIX",
@@ -30,11 +38,14 @@ const char* KEYWORD_STRINGS[KEYWORD_COUNT] = {
     [OVER] = "OVER",
     [REQUIRE] = "REQUIRE",
     [UNWRAP] = "UNWRAP",
+    [WRAP] = "WRAP",
     [UNARY] = "UNARY",
+    [LRVALUES] = "LRVALUES"
 };
 
 const char* TPPTypesStrings[TPPTYPE_COUNT] = {
     [KEYWORD] = "KEYWORD",
+    [KEYVALUE]= "KEYVALUE",
     [IDENTIFIER] = "IDENTIFIER",
     [CUSTOM_OPERATOR] = "CUSTOM OP",
     [NUMERIC] = "NUMERIC",
