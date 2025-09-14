@@ -53,6 +53,11 @@ add_executable(ATOMICLI
         SharedIncludes/Messages.c
         Lexer/Tokerr.c
         Lexer/Tokerr.h
+        Generator/Generator.c
+        Generator/Generator.h
+        Generator/GeneratorInternal.h
+
+        235/VM.c
 )
 
 add_hadron_support(ATOMICLI)
@@ -99,3 +104,9 @@ add_executable(Type_preprocessor
 add_hadron_support(Type_preprocessor)
 
 # [[todo]] need to create a lib from these add_executable(Type_preprocessor TypePreprocessor/TypePreprocessor.c.c TypePreprocessor/TypePreprocessor.h)
+add_executable(Testing
+        Testing/TypeMatrix.c
+        Testing/TypeMatrix.h
+        TypePreprocessor/output/enum-temp.c
+        TypePreprocessor/output/matrix-out.c
+)
