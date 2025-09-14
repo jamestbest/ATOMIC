@@ -5,37 +5,52 @@
 #ifndef TYPEPREPROCESSOR_H
 #define TYPEPREPROCESSOR_H
 
-#include <stdlib.h>
-
 #include "SharedIncludes/Array.h"
+#include "TPPParser.h"
+
+#include <stdlib.h>
 
 ARRAY_PROTO(uint, uint)
 
-typedef struct TypeFixInfo {
-    const char* name;
-    const char* symbol;
-    const char* alt_name;
+typedef enum TYPE_LIKE_TYPES {
+    TL_TYPE_FIX,
+    TL_TYPE,
+    TL_BUILTIN,
+    TL_TYPE_LIKE_TYPES_COUNT
+} TYPE_LIKE_TYPES;
 
-    unsigned char prefix: 1;
-} TypeFixInfo;
-
-typedef struct TypeInfo {
+typedef struct TypeLikeInfo {
     const char* general_type;
     union {
         const char* prefix;
         const char* name;
     };
 
-    union {
-        uintArray sizes; // Array of uint sizes
-        Vector names;
-    };
+    uint8_t size;
+    TYPE_LIKE_TYPES type;
+} TypeLikeInfo;
 
+typedef struct BuiltinInfo {
+    TypeLikeInfo base;
+
+    LRBuiltInTypes idx;
+} BuiltinInfo;
+
+typedef struct TypeFixInfo {
+    TypeLikeInfo base;
+    const char* symbol;
+
+    unsigned char prefix: 1;
+} TypeFixInfo;
+
+typedef struct TypeInfo {
+    TypeLikeInfo base;
+
+    uintArray sizes; // Array of uint sizes
     uintArray requirements; // Array of typefix positions
 
-    bool has_variable_sizes: 1;
-    bool has_multiple_names: 1;
-    bool is_virtual: 1;
+    uint8_t has_variable_sizes: 1;
+    uint8_t is_virtual: 1;
 } TypeInfo;
 
 typedef struct OperatorInfo {
@@ -60,6 +75,34 @@ typedef struct CoercionInfo {
     TypeMatrix matrix;
 } CoercionInfo;
 
+typedef struct CoercionRuleValue {
+    union {
+        struct {
+            uint16_t is_keyvalue: 1;
+            uint16_t idx: 15;
+        };
+        uint16_t cmpable;
+    };
+} CoercionRuleValue;
+
+typedef struct CoercionRule {
+    CoercionRuleValue left;
+    CoercionRuleValue right;
+} CoercionRule;
+
+int int_cmp(uint32_t a, uint32_t b);
+
+typedef enum OutputType {
+    OUT_BASED,
+    OUT_EXPLICIT,
+    OUT_LEFT,
+    OUT_RIGHT,
+    OUT_UNWRAP,
+    OUT_COUNT
+} OutputType;
+
+extern const char* OUTPUT_TYPE_STRINGS[OUT_COUNT + 1];
+
 typedef struct OperandInfo {
     OperatorInfo* operator;
 
@@ -69,25 +112,42 @@ typedef struct OperandInfo {
         // [[todo]] how to support trinary operators?
     };
 
-    uint16_t explicit_out_type  :  1;
-    uint16_t unwrapped_output   :  1;
-    uint16_t output_index       : 14;
-
-    unsigned char op_type: 2;
+    OutputType out_type         :  3;
+    uint16_t output_index       : 11; // for explicit outputs
+    uint16_t op_type            :  2;
 } OperandInfo;
 
-ARRAY_PROTO(TypeFixInfo , TypeFixInfo)
-ARRAY_PROTO(TypeInfo    , TypeInfo)
-ARRAY_PROTO(OperatorInfo, OperatorInfo)
-ARRAY_PROTO(AliasInfo   , AliasInfo)
-ARRAY_PROTO(OperandInfo , OperandInfo)
+typedef struct LRValueData {
+    union {
+        struct {
+            uint32_t is_builtin: 1;
+            uint32_t idx: 3;
+        };
+        uint32_t cmpable;
+    };
+} LRValueData;
 
-extern TypeFixInfoArray typefixes;
-extern TypeInfoArray types;
+VECTOR_PROTO(TypeFixInfo , TypeFixInfo)
+VECTOR_PROTO(TypeLikeInfo, TypeLikeInfo)
+ARRAY_PROTO (OperatorInfo, OperatorInfo)
+ARRAY_PROTO (AliasInfo   , AliasInfo)
+ARRAY_PROTO (OperandInfo , OperandInfo)
+ARRAY_PROTO (LRValueData , LRValueData)
+ARRAY_PROTO (CoercionRule, CoercionRule)
+
+typedef struct LRInfo {
+    uint8_t is_left: 1;
+
+    LRValueDataArray rules;
+} LRInfo;
+
+extern TypeLikeInfoVector typelikes;
+extern TypeFixInfoVector typefix_mirror;
 extern OperatorInfoArray operators;
 extern AliasInfoArray aliases;
 
 extern TypeMatrix coercions;
+extern CoercionRuleArray coercion_rules;
 extern OperandInfoArray operands;
 
 typedef struct DefaultTypeFixInfo {

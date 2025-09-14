@@ -26,4 +26,13 @@ typedef enum OperatorSeekState {
     SEEK_TYPES,
 } OperatorSeekState;
 
+const char* OUTPUT_TYPE_STRINGS[OUT_COUNT + 1]= {
+    [OUT_BASED]= "BASED",
+    [OUT_EXPLICIT]= "EXPLICIT",
+    [OUT_LEFT]= "LEFT",
+    [OUT_RIGHT]= "RIGHT",
+    [OUT_UNWRAP]= "UNWRAPPED",
+    [OUT_COUNT]= "[[ERROR]] USAGE OF COUNT ENUM"
+};
+
 #endif //TYPEPREPROCESSORINTERNAL_H

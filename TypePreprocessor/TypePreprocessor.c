@@ -51,8 +51,9 @@ bool unsafe = false;
 #define ENUM_FILE_OPERATOR_ENUM_NAME "ATOM_CT__LEX_OPERATORS_ENUM"
 #define ENUM_FILE_TYPE_ENUM_NAME "ATOM_CT__LEX_TYPES_GENERAL_ENUM"
 
-TypeFixInfoArray typefixes;
-TypeInfoArray types;
+TypeLikeInfoVector typelikes;
+TypeFixInfoVector typefix_mirror;
+
 OperatorInfoArray operators;
 AliasInfoArray aliases;
 
