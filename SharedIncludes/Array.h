@@ -220,7 +220,7 @@ void* arr_search_e(Array* array, const void* s_e, int (*cmp)(const void* a, cons
                                                                                \
         if (!pos) return -1;                                                   \
                                                                                \
-        return (pos - array->arr) / array->element_size;                       \
+        return (pos - array->arr);                                             \
     }                                                                          \
                                                                                \
     type* typename##_arr_search_ie(                                            \
