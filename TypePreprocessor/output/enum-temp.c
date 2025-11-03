@@ -1,3 +1,7 @@
+#include "Commons.h"
+#include "Parser/Node.h"
+#include "shared_types.h"
+
 #include <assert.h>
 #include <malloc.h>
 #include <math.h>
@@ -6,24 +10,18 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef struct encodedType {
-    uint64_t general: 4;    // 2^4= 16 different types
-    uint64_t type: 5;       // 2^5= 32 different types
-    uint64_t size: 4;       // 2^4= 16 bytes
-    uint64_t tf_offset: 16; // typefix offset e.g. POINTER
-    uint64_t is_lvalue: 1;
-    // todo to support multiple tfs need a map
-} encodedType;
+_Static_assert(KV_COUNT < 2 * 2 * 2, "builtin Idx currently only allows <= 8 keyvalues");
 
 #include "enum-out.h"
 
 extern OperandInfo OPERAND_INFO[41];
 extern TypeMatrix COERCION_INFO;
-extern TypeLike TYPE_INFO[12];
+extern const TypeLike TYPE_INFO[12];
+extern CoercionRule COERCION_RULES[1];
 
 #define TYPE_LIKE_COUNT GTYPE_COUNT
 
- static inline int get_from_type_matrix(TypeMatrix matrix, uint32_t x, uint32_t y) {
+ static int get_from_type_matrix(TypeMatrix matrix, uint32_t x, uint32_t y) {
     uint32_t width= TYPE_LIKE_COUNT;
     uint64_t index= y * width + x;
     return (matrix[index / 8] >> (index & 7)) & 1;
@@ -31,7 +29,7 @@ extern TypeLike TYPE_INFO[12];
 
 #define TYPE_MATRIX_ROWS 16
 // rc is ZERO INDEXED
-static inline bool is_in_type_matrix(const TypeMatrix matrix, uint32_t rc, bool is_row) {
+static bool is_in_type_matrix(const TypeMatrix matrix, uint32_t rc, bool is_row) {
     if (is_row) {
         uint32_t s_k= (TYPE_LIKE_COUNT * rc);
         size_t s_b= floor((double)s_k / 8);
@@ -73,13 +71,53 @@ const struct TypeRes TYPE_RES_FAIL= {
     .otype= {}
 };
 
+struct TypeRes type_check_expr(
+    Node* expr
+) {
+
+}
+
 struct TypeRes type_check_op_bin(
     ATOM_CT__LEX_OPERATORS_ENUM op,
     encodedType left,
     encodedType right
 ) {
-    OperandInfo info= OPERAND_INFO[op];
+    const OperandInfo info= OPERAND_INFO[op];
     TypeMatrix matrix= info.matrix;
+
+    if (left.is_builtin || right.is_builtin) {
+        // builtin types must be removed via coercion
+        if (left.is_builtin) {
+            for (size_t i= 0; i < sizeof(COERCION_RULES); ++i) {
+                const CoercionRule* rule= &COERCION_RULES[i];
+
+                if (rule->left.is_builtin && rule->left.idx == left.builtin_idx) {
+                    left.general= rule->right.idx;
+                    left.is_builtin= false;
+                    break;
+                }
+            }
+
+            if (left.is_builtin) {
+                return TYPE_RES_FAIL;
+            }
+        }
+        if (right.is_builtin) {
+            for (size_t i= 0; i < sizeof(COERCION_RULES); ++i) {
+                const CoercionRule* rule= &COERCION_RULES[i];
+
+                if (rule->left.is_builtin && rule->left.idx == right.builtin_idx) {
+                    right.general= rule->right.idx;
+                    right.is_builtin= false;
+                    break;
+                }
+            }
+
+            if (right.is_builtin) {
+                return TYPE_RES_FAIL;
+            }
+        }
+    }
 
     // check if the operand can accept the left and right type
     //  YES -> return type | explicit type
@@ -87,34 +125,41 @@ struct TypeRes type_check_op_bin(
     //     VALID -> return type | explicit type
     //     NOT VALID -> return error
 
-    bool valid= get_from_type_matrix(matrix, left.general, right.general);
+    const bool valid= get_from_type_matrix(matrix, left.general, right.general);
 
     if (valid) {
         switch (info.out_type) {
-            case OUT_EXPLICIT:;
+            case OUT_EXPLICIT: {
                 TypeLike* tinfo= &TYPE_INFO[info.output_index];
-                TypeLikeInfo* base= (TypeLikeInfo*)&tinfo->t;
+                const TypeLikeInfo* base= (TypeLikeInfo*)&tinfo->t;
 
-                size_t min_size= left.size > right.size ? left.size : right.size;
+                ATOM_CT__LEX_TYPES_ENUM new_type= GENERAL_TO_TYPES[info.output_index];
+
+                const size_t min_size= left.size > right.size ? left.size : right.size;
                 size_t new_size= base->size;
-                if (base->type == TYPE && tinfo->t.has_variable_sizes) {
+                if (base->type == TL_TYPE && tinfo->t.has_variable_sizes) {
+                    uint offset= 0;
                     for (size_t i= 0; i < tinfo->t.sizes.size; ++i) {
-                        unsigned int size= tinfo->t.sizes.arr[i];
+                        const unsigned int size= tinfo->t.sizes.arr[i];
                         if (size >= min_size) {
                             new_size= size;
+                            offset= i;
                             break;
                         }
                     }
+                    new_type += offset;
                 }
+
                 return (struct TypeRes){
                     .succ= true,
                     .otype= (encodedType){
                         .general= (ATOM_CT__LEX_TYPES_GENERAL_ENUM)info.output_index,
-                        .type= (ATOM_CT__LEX_TYPES_ENUM)0, // todo
+                        .type= new_type,
                         .size=new_size,
                         .tf_offset= 0
                     }
                 };
+            }
             case OUT_LEFT:
                 return (struct TypeRes) {
                     .succ= true,
@@ -130,6 +175,11 @@ struct TypeRes type_check_op_bin(
                     .succ= true,
                     .otype= (left.tf_offset--, left)
                 };
+            case OUT_WRAP:
+                return (struct TypeRes) {
+                    .succ= true,
+                    .otype= (left.tf_offset++, left)
+                };
             case OUT_BASED:
                 return (struct TypeRes){
                     .succ= true,
@@ -141,15 +191,15 @@ struct TypeRes type_check_op_bin(
     }
 
     // INVALID; try coercions
-    bool l_v= is_in_type_matrix(matrix, left.general, false);
-    bool r_v= is_in_type_matrix(matrix, right.general, true);
+    const bool l_v= is_in_type_matrix(matrix, left.general, false);
+    const bool r_v= is_in_type_matrix(matrix, right.general, true);
     if (!l_v && !r_v) {
         printf("This is a no-link type error\n");
         return TYPE_RES_FAIL;
     }
 
-    bool target_l= left.size >= right.size;
-    bool target_r= right.size >= left.size;
+    const bool target_l= left.size >= right.size;
+    const bool target_r= right.size >= left.size;
 
     // if the target type (larger) isn't valid then we can't coerce
     if ((target_l && !l_v) || (!target_l && !r_v)) {
