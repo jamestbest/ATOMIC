@@ -35,8 +35,8 @@ char* get_dir(char* file) {
     return dir;
 }
 
-char* get_file_name(const char* file_path) {
-    // /dir/dir2/dir3/file = file
+char* get_file_name_stripped(const char* file_path) {
+    // /dir/dir2/dir3/file.x = file
 
     const int loc = find_last(file_path, '/');
 
@@ -49,6 +49,24 @@ char* get_file_name(const char* file_path) {
 
     while (start[len] != '\0' && start[len] != '.') len++;
 
+    char* file_name = malloc(sizeof (char) * (len + 1));
+    memcpy(file_name, start, len);
+    file_name[len] = '\0';
+
+    return file_name;
+}
+
+char* get_file_name(const char* file_path) {
+    // /dir/dir2/dir3/file.x = file.x
+
+    const int loc = find_last(file_path, '/');
+
+    const char* start = NULL;
+
+    if (loc == -1) start = file_path;
+    else start = &file_path[loc + 1];
+
+    const uint len = strlen(start);
     char* file_name = malloc(sizeof (char) * (len + 1));
     memcpy(file_name, start, len);
     file_name[len] = '\0';
