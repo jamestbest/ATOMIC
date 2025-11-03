@@ -5,12 +5,12 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include "../Commons.h"
+#include "Commons.h"
 
-#include "../SharedIncludes/Vector.h"
-#include "../Lexer/Tokens.h"
+#include "SharedIncludes/Vector.h"
+#include "Lexer/Tokens.h"
 
-#include "../Errors.h"
+#include "Errors.h"
 
 #define MIN_CHILDREN 5
 
@@ -53,9 +53,9 @@ typedef enum NodeType {
     ST_EXPR,
 
     EXPR,
-    EXPR_BIN,
-    EXPR_UN,
-    EXPR_ASSIGN,
+    EXPR_BINARY,
+    EXPR_UNARY,
+    EXPR_ASSIGNMENT,
 
     EX_LIT,
 } NodeType;

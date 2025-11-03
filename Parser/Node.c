@@ -68,11 +68,11 @@ static const char* nodeTypeToString(NodeType type) {
             return "VAR ASS";
         case EXPR:
             return "EXPR";
-        case EXPR_BIN:
+        case EXPR_BINARY:
             return "BINARY EXPR";
-        case EXPR_UN:
+        case EXPR_UNARY:
             return "UNARY EXPR";
-        case EXPR_ASSIGN:
+        case EXPR_ASSIGNMENT:
             return "ASSIGN EXPR";
         case EX_LIT:
             return "LITERAL";
@@ -224,7 +224,7 @@ void print_node_multi_child(Node* parent, Array* levels) {
 }
 
 static bool is_expr_node(Node* node) {
-    return node->type == EXPR_UN || node->type == EXPR_BIN || node->type == EXPR_ASSIGN;
+    return node->type == EXPR_UNARY || node->type == EXPR_BINARY || node->type == EXPR_ASSIGNMENT;
 }
 
 Position include_position(Position c_pos, Position n_pos) {
@@ -347,10 +347,10 @@ static void printpostfix_value(Node* node) {
 
 void printpostfix(Node* node) {
     // First is to deal with un expressions to make sure they print in a nicer way
-    if (is_expr_node(node) && (node->token->type == OP_UN_PRE || node->token->type == OP_UN_POST) && node->children.arr) {
+    if (is_expr_node(node) && (node->token->type == EXPR_UN_PRE || node->token->type == EXPR_UN_POST) && node->children.arr) {
         Node* fchild = node->children.arr[0];
 
-        bool is_postfix = node->token->type == OP_UN_POST;
+        bool is_postfix = node->token->type == EXPR_UN_POST;
         bool is_single_child = fchild->children.arr == NULL;
 
         if (!is_postfix) printpostfix_value(node);
@@ -378,7 +378,7 @@ void printpostfix(Node* node) {
         return;
     }
 
-    if (node->type == EXPR_BIN && node->token->type == BRACKET_OPEN) {
+    if (node->type == EXPR_BINARY && node->token->type == BRACKET_OPEN) {
         Node* identifier = node->children.arr[0];
         Node* expr = node->children.arr[1];
 
