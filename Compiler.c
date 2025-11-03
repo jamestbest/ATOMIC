@@ -24,7 +24,7 @@
 ARRAY_ADD(Token, token)
 ARRAY_JOINT(Node, node)
 
-static void free_tokens(Array* tokens);
+static void free_tokens(tokenArray* tokens);
 static void free_scopes(Scope* scope);
 
 //[[todo]] better to use something like a block allocator(? is that the name) (ARENA ALLOC?)
@@ -57,8 +57,8 @@ CompileRet compile(const char* entry_point, const char* out_format, const char* 
 }
 
 CompileRet compile_file(const char* entry_point, const char* out_format, const char* byte_out, FILE* fp) {
-    Array base_tokens= arr_create(sizeof (Token));
-    Array folded_tokens;
+    tokenArray base_tokens= token_arr_create();
+    tokenArray folded_tokens;
     // [[maybe]] this is an array of structs, could become a struct of arrays:
     //  Is it more likely that the data of consecutive structs is accessed
     //  Or that the (data/type) of a structure is access more? - Printing will do this
@@ -76,7 +76,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, const c
         return (CompileRet) {LEXERR, NULL};
     }
 
-    folded_tokens = arr_construct(sizeof (Token), base_tokens.pos);
+    folded_tokens = token_arr_construct(base_tokens.pos);
     uint foldRet = fold(&base_tokens, &folded_tokens);
     // this is here for debug purposes, it should be after error checking in later versions
     print_tokens_with_flag_check(&folded_tokens, &lines, "\n\nFOLDED TOKENS");
@@ -150,14 +150,14 @@ void free_scopes(Scope* scope) {
     free(scope);
 }
 
-void free_tokens(Array* tokens) {
+void free_tokens(tokenArray* tokens) {
     for (uint i = 0; i < tokens->pos; i++) {
         const Token t = token_arr_get(tokens, i);
         if (type_needs_free(t.type)) {
             free(t.data.ptr);
         }
     }
-    arr_destroy(tokens);
+    token_arr_destroy(tokens);
 }
 
 void print_ast_with_flag_check(Node* tl_node) {
@@ -166,7 +166,7 @@ void print_ast_with_flag_check(Node* tl_node) {
     }
 }
 
-void print_tokens_with_flag_check(Array* tokens, Vector* lines, const char* print_header) {
+void print_tokens_with_flag_check(tokenArray* tokens, Vector* lines, const char* print_header) {
     const bool vltok = flag_get_value(ATOM_CT__FLAG_VLTOK_OUT);
     const bool vtok = flag_get_value(ATOM_CT__FLAG_VTOK_OUT);
     const bool tok = flag_get_value(ATOM_CT__FLAG_TOK_OUT);
@@ -185,6 +185,5 @@ void print_tokens_with_flag_check(Array* tokens, Vector* lines, const char* prin
     }
     if (tok) {
         print_tokens(tokens, false, false); //[[todo]] have white space and comments included in flag set
-        return;
     }
 }

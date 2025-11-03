@@ -27,7 +27,7 @@ typedef struct CompileRet {
 CompileRet compile(const char* entry_point, const char* out_format, const char* byte_out, const char* cwd, Vector files);
 CompileRet compile_file(const char* entry_point, const char* out_format, const char* byte_out, FILE* fp);
 
-void print_tokens_with_flag_check(Array* tokens, Vector* lines, const char* print_header);
+void print_tokens_with_flag_check(tokenArray* tokens, Vector* lines, const char* print_header);
 void print_ast_with_flag_check(Node* tl_node);
 
 static int ATOM_VR__COMPILER_DISPLAY_FLAGS = false;
