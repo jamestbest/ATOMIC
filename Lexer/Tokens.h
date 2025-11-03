@@ -7,12 +7,14 @@
 
 #include "Commons.h"
 
+#include "TypePreprocessor/output/enum-out.h"
+
 #include "SharedIncludes/Vector.h"
 #include "SharedIncludes/Helper_String.h"
 #include "SharedIncludes/Colours.h"
 
 typedef struct Arr {
-    char** arr;
+    const char** arr;
     uint elem_count;
 } Arr;
 
@@ -31,15 +33,11 @@ typedef enum TokenType {
     LIT_BOOL,
     LIT_NAV,
 
-    OP_BIN,
-    OP_UN,
-    OP_UN_PRE,
-    OP_UN_POST,
-    OP_TRINARY,
-    OP_BIN_OR_UN,
-
-    OP_ASSIGN,
-    OP_ARITH_ASSIGN,
+    EXPR_BIN,
+    EXPR_UN,
+    EXPR_UN_PRE,
+    EXPR_UN_POST,
+    EXPR_TRINARY,
 
     BRACKET_OPEN,
     BRACKET_CLOSE,
@@ -78,75 +76,12 @@ typedef enum ATOM_CT__LEX_KEYWORD_ENUM {
     ATOM_CT__LEX_KEYWORD_ENUM_COUNT
 } ATOM_CT__LEX_KEYWORD_ENUM;
 
-typedef enum ATOM_CT__LEX_TYPES_ENUM {
-    I1, I2, I4, I8,
-    N1, N2, N4, N8,
-    R4, R8, R10,
-    Q4, Q8, Q16,
-    STR,
-    CHR,
-    BOOL,
-    NAV
-} ATOM_CT__LEX_TYPES_ENUM;
-
-typedef enum ATOM_CT__LEX_TYPES_GENERAL_ENUM {
-    INTEGER,
-    NATURAL,
-    REAL,
-    RATIONAL,
-    STRING,
-    CHAR,
-    BOOLEAN,
-    NOT_A_VALUE,
-    POINTER,
-    STRUCT, // todo: impl structs
-} ATOM_CT__LEX_TYPES_GENERAL_ENUM;
 
 typedef enum ATOM_CT__LEX_OP_IDENTIFIERS_ENUM {
     AND, OR, XOR,
     NOT,
     AS
 } ATOM_CT__LEX_OP_IDENTIFIERS_ENUM;
-
-typedef enum ATOM_CT__LEX_OPERATORS_ENUM {
-    PLUS, MINUS,
-    MULT, DIV,
-    MOD, POW,
-
-    BAND, BOR,
-
-    SHL, SHR,
-
-    ASS_PLUS, ASS_MINUS,
-    ASS_MULT, ASS_DIV,
-    ASS_MOD, ASS_POW,
-
-    ASS_BAND, ASS_BOR,
-
-    ASS_SHL, ASS_SHR,
-
-    LAND, LOR, LXOR,
-    BXOR,
-
-    LNOT, BNOT,
-    INC, DEC,
-
-    QUESTION,
-
-    AMPERSAND, // address of
-
-    TYPE_CONVERSION,
-
-    ASSIGNMENT,
-
-    EQU, NEQ, LESS, MORE, LESSEQ, MOREEQ,
-
-    DEREFERENCE,
-
-    SWAP,
-    RANGE,
-    ARROW,
-} ATOM_CT__LEX_OPERATORS_ENUM;
 
 /* Should the base_tokens store their location?
  *   It would make printing their information easier
@@ -164,12 +99,12 @@ typedef struct Position {
     uint32_t end_col;
 } Position;
 
-typedef struct encodedType {
-    uint64_t general_type: 16;
-    uint64_t size: 16;
-    uint64_t ptr_offset: 16;
-    uint64_t enum_position: 16;
-} encodedType;
+// typedef struct encodedType {
+//     uint64_t general_type: 16;
+//     uint64_t size: 16;
+//     uint64_t ptr_offset: 16;
+//     uint64_t enum_position: 16;
+// } encodedType;
 
 //a base_tokens value is the |func mainfunction () : i4|
 //                            ^----------^
@@ -191,20 +126,14 @@ typedef struct Token {
 
 extern const char* ATOM_CT__LEX_NAV;
 
-extern Arr ATOM_CT__LEX_OP_IDENTIFIERS;
-extern char* ATOM_CT__LEX_OP_IDENTIFIERS_RAW[];
 extern Arr ATOM_CT__LEX_KEYWORDS;
-extern char* ATOM_CT__LEX_KEYWORDS_RAW[];
+extern const char* ATOM_CT__LEX_KEYWORDS_RAW[];
 extern Arr ATOM_CT__LEX_TYPES;
-extern char* ATOM_CT__LEX_TYPES_RAW[];
 extern Arr ATOM_CT__LEX_TYPES_GENERAL;
-extern char* ATOM_CT__LEX_TYPES_GENERAL_RAW[];
 extern Arr ATOM_CT__LEX_TYPES_GENERAL_SMALL;
-extern char* ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW[];
 extern Arr ATOM_CT__LEX_LIT_BOOLS;
-extern char* ATOM_CT__LEX_LIT_BOOLS_RAW[];
+extern const char* ATOM_CT__LEX_LIT_BOOLS_RAW[];
 extern Arr ATOM_CT__LEX_OPERATORS;
-extern char* ATOM_CT__LEX_OPERATORS_RAW[];
 
 TokenType operator_to_type(ATOM_CT__LEX_OPERATORS_ENUM op);
 

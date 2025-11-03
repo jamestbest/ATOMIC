@@ -3,12 +3,13 @@
 //
 
 #include "Tokens.h"
+#include "TypePreprocessor/output/enum-out.h"
 
 #include <math.h>
 
 const char* ATOM_CT__LEX_NAV = "nav";
 
-char* ATOM_CT__LEX_KEYWORDS_RAW[] = {
+const char* ATOM_CT__LEX_KEYWORDS_RAW[19] = {
         "for", "to", "do",
         "while",
         "foreach", "in", "with",
@@ -21,113 +22,32 @@ char* ATOM_CT__LEX_KEYWORDS_RAW[] = {
 };
 
 Arr ATOM_CT__LEX_KEYWORDS = {
-        ATOM_CT__LEX_KEYWORDS_RAW,
-        sizeof(ATOM_CT__LEX_KEYWORDS_RAW) / sizeof(char*)
-};
-
-char* ATOM_CT__LEX_OP_IDENTIFIERS_RAW[] = {
-        "and", "or", "xor",
-        "not",
-        "as"
-};
-
-Arr ATOM_CT__LEX_OP_IDENTIFIERS = {
-        ATOM_CT__LEX_OP_IDENTIFIERS_RAW,
-        sizeof(ATOM_CT__LEX_OP_IDENTIFIERS_RAW) / sizeof(char*)
-};
-
-char* ATOM_CT__LEX_TYPES_RAW[] = {
-    "i1","i2", "i4", "i8",
-    "n1", "n2", "n4", "n8",
-    "r4", "r8", "r10",
-    "q4", "q8", "q16",
-    "str", "chr",
-    "bool",
+    ATOM_CT__LEX_KEYWORDS_RAW,
+    sizeof(ATOM_CT__LEX_KEYWORDS_RAW) / sizeof (ATOM_CT__LEX_KEYWORDS_RAW[0])
 };
 
 Arr ATOM_CT__LEX_TYPES = {
     ATOM_CT__LEX_TYPES_RAW,
-    sizeof(ATOM_CT__LEX_TYPES_RAW) / sizeof(char*)
-};
-
-char* ATOM_CT__LEX_TYPES_GENERAL_RAW[] = {
-        "INTEGER",
-        "NATURAL",
-        "REAL",
-        "RATIONAL",
-        "STRING",
-        "CHAR",
-        "BOOLEAN",
-        "NOT A VALUE",
-        "POINTER"
+    sizeof(ATOM_CT__LEX_TYPES_RAW) / sizeof(ATOM_CT__LEX_TYPES_RAW[0])
 };
 
 Arr ATOM_CT__LEX_TYPES_GENERAL = {
         ATOM_CT__LEX_TYPES_GENERAL_RAW,
-        sizeof(ATOM_CT__LEX_TYPES_GENERAL_RAW) / sizeof(char*)
-};
-
-char* ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW[] = {
-    "i",
-    "n",
-    "r",
-    "q",
-    "str",
-    "chr",
-    "bool",
-    "nav"
+        sizeof(ATOM_CT__LEX_TYPES_GENERAL_RAW) / sizeof(ATOM_CT__LEX_TYPES_GENERAL_RAW[0])
 };
 
 Arr ATOM_CT__LEX_TYPES_GENERAL_SMALL = {
-        ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW,
-        sizeof(ATOM_CT__LEX_TYPES_GENERAL_SMALL) / sizeof (char*)
+    ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW,
+    sizeof(ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW) / sizeof(ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW[0])
 };
 
-char* ATOM_CT__LEX_LIT_BOOLS_RAW[] = {
+const char* ATOM_CT__LEX_LIT_BOOLS_RAW[] = {
         "true",
         "false"
 };
 
 Arr ATOM_CT__LEX_LIT_BOOLS = {ATOM_CT__LEX_LIT_BOOLS_RAW,
         sizeof(ATOM_CT__LEX_LIT_BOOLS_RAW) / sizeof(char*)
-};
-
-char* ATOM_CT__LEX_OPERATORS_RAW[] = {
-    "+", "-",
-    "*", "/",
-    "%", "^",
-
-    "&", "|",
-
-    "<<", ">>",
-
-    "+=", "-=",
-    "*=", "/=",
-    "%=", "^=",
-    "&=", "|=",
-    "<<=", ">>=",
-
-    "&&","||", "|-|",
-    "|-",
-
-    "!", "~",
-    "++", "--",
-
-    "?",
-
-    "&",
-
-    "as",
-
-    "=",
-
-    "==", "!=", "<", ">", "<=", ">=",
-
-    "*",
-
-    "<>",
-    "..",
-    "->",
 };
 
 Arr ATOM_CT__LEX_OPERATORS = {
@@ -206,14 +126,11 @@ const char* get_token_color(TokenType type) {
             return C_RED;
         case TYPE:
             return C_MGN;
-        case OP_BIN:
-        case OP_UN:
-        case OP_TRINARY:
-        case OP_BIN_OR_UN:
-        case OP_UN_PRE:
-        case OP_UN_POST:
-        case OP_ASSIGN:
-        case OP_ARITH_ASSIGN:
+        case EXPR_BIN:
+        case EXPR_UN:
+        case EXPR_TRINARY:
+        case EXPR_UN_PRE:
+        case EXPR_UN_POST:
         case COMMA:
         case CARROT:
         case TYPE_SET:
@@ -262,28 +179,19 @@ const char* get_token_type_string(TokenType type) {
         case LIT_NAV:
             title = "NAV";
             break;
-        case OP_ASSIGN:
-            title = "OP_ASSIGN";
-            break;
-        case OP_ARITH_ASSIGN:
-            title = "ARITHMETIC_ASSIGN";
-            break;
-        case OP_BIN_OR_UN:
-            title = "BIN_OR_UN_OP";
-            break;
-        case OP_BIN:
+        case EXPR_BIN:
             title = "BIN_OP";
             break;
-        case OP_UN:
+        case EXPR_UN:
             title = "UN_OP";
             break;
-        case OP_UN_PRE:
+        case EXPR_UN_PRE:
             title = "PRE_UN_OP";
             break;
-        case OP_UN_POST:
+        case EXPR_UN_POST:
             title = "POST_UN_OP";
             break;
-        case OP_TRINARY:
+        case EXPR_TRINARY:
             title = "TRINARY_OP";
             break;
         case BRACKET_OPEN:
@@ -387,10 +295,11 @@ void print_token_value(const Token* token) {
             break;
         case TYPE: {
             const encodedType encoded_data = token->data.type;
-            printf("%s (size: %d, ptr: %d)",
-                   ATOM_CT__LEX_TYPES_GENERAL.arr[encoded_data.general_type],
+            printf("%s (size: %u, ptr: %d)",
+                   ATOM_CT__LEX_TYPES_GENERAL.arr[encoded_data.general],
                    encoded_data.size,
-                   encoded_data.ptr_offset);
+                   encoded_data.tf_offset
+            );
             break;
         }
         case IDENTIFIER:
@@ -414,18 +323,12 @@ void print_token_value(const Token* token) {
             printf("NAV");
             break;
 
-        case OP_BIN:
-        case OP_UN:
-        case OP_UN_POST:
-        case OP_UN_PRE:
-        case OP_TRINARY:
-        case OP_BIN_OR_UN:
-        case OP_ARITH_ASSIGN:
+        case EXPR_BIN:
+        case EXPR_UN:
+        case EXPR_UN_POST:
+        case EXPR_UN_PRE:
+        case EXPR_TRINARY:
             printf("%s", ATOM_CT__LEX_OPERATORS.arr[token->data.enum_pos]);
-            break;
-
-        case OP_ASSIGN:
-            putchar('=');
             break;
         case COMMA:
             putchar(',');
@@ -481,66 +384,17 @@ void print_token_ln(Token* token) {
 }
 
 TokenType operator_to_type(const ATOM_CT__LEX_OPERATORS_ENUM op) {
-    switch (op) {
-        case PLUS:
-        case MINUS:
-        case MULT:
-        case DEREFERENCE:
-            return OP_BIN_OR_UN;
-
-        case DIV:
-        case MOD:
-        case POW:
-        case BAND:
-        case BOR:
-        case SHL:
-        case SHR:
-            return OP_BIN;
-
-        case ASS_PLUS:
-        case ASS_MINUS:
-        case ASS_MULT:
-        case ASS_DIV:
-        case ASS_MOD:
-        case ASS_POW:
-        case ASS_BAND:
-        case ASS_BOR:
-        case ASS_SHL:
-        case ASS_SHR: // todo this was changed to remove OP_ARITH_ASSIGN
-            return OP_BIN;
-
-        case LAND:
-        case LOR:
-        case LXOR:
-        case BXOR:
-            return OP_BIN;
-
-        case LNOT:
-        case BNOT:
-        case AMPERSAND:
-            return OP_UN_PRE;
-        case INC:
-        case DEC:
-            return OP_UN;
-
-        case QUESTION:
-            return OP_TRINARY;
-
-        case ASSIGNMENT:
-            return OP_ASSIGN;
-
-        case EQU:
-        case NEQ:
-        case LESS:
-        case MORE:
-        case LESSEQ:
-        case MOREEQ:
-        case SWAP:
-        case RANGE:
-        case ARROW:
-        case TYPE_CONVERSION:
-            return OP_BIN;
-
+    switch (OP_INFO[op].type) {
+        case OIGT_BINARY:
+            return EXPR_BIN;
+        case OIGT_UNARY:
+            return EXPR_UN;
+        case OIGT_POSTFIX:
+            return EXPR_UN_POST;
+        case OIGT_PREFIX:
+            return EXPR_UN_PRE;
+        case OIGT_TRINARY:
+            return EXPR_TRINARY;
         default:
             return TOKEN_INVALID;
     }
@@ -602,33 +456,16 @@ bool is_terminal(Token* tok) {
 
 bool is_arith_operator(Token* tok) {
     switch (tok->type) {
-        case OP_BIN:
-        case OP_BIN_OR_UN:
-        case OP_TRINARY:
-        case OP_UN:
-        case OP_UN_POST:
-        case OP_UN_PRE:
-        case OP_ASSIGN:
-        case OP_ARITH_ASSIGN:
+        case EXPR_BIN:
+        case EXPR_TRINARY:
+        case EXPR_UN:
+        case EXPR_UN_POST:
+        case EXPR_UN_PRE:
             return true;
 
         default:
             return false;
     }
-}
-
-bool is_assigning_operator(Token* tok) {
-    switch (tok->type) {
-        case OP_ASSIGN:
-        case OP_ARITH_ASSIGN:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool is_any_operator(Token* tok) {
-    return is_arith_operator(tok) || is_assigning_operator(tok);
 }
 
 void consolidate(Token* base_token, Token* token_to_eat) {
