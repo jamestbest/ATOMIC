@@ -4,7 +4,7 @@
 
 #include "Parser.h"
 
-const Array* ptokens;
+const tokenArray* ptokens;
 const Vector* plines;
 int t_pos;
 
@@ -62,7 +62,7 @@ void propagate_stmt_uid(Node* node, uint64_t stmt_uid) {
     for (uint i = 0; i < node->children.pos; ++i) {
         Node* child = node->children.arr[i];
 
-        if (child->statement_id != -1) propagate_stmt_uid(child, child->statement_id);
+        if (child->statement_id != (uint)-1) propagate_stmt_uid(child, child->statement_id);
         else {
             child->statement_id = stmt_uid;
             propagate_stmt_uid(child, stmt_uid);
@@ -106,7 +106,7 @@ void add_node_to_children(Node* parentNode, Node* node) {
     _add_node_to_children(parentNode, node, false);
 }
 
-NodeRet parse(const Array* tokens, const Vector* lines) {
+NodeRet parse(const tokenArray* tokens, const Vector* lines) {
     ptokens = tokens;
     plines = lines;
     t_pos = 0;
@@ -153,7 +153,7 @@ bool has_valid_statement_starter(void) {
         case IDENTIFIER:
         case KEYWORD:
         case CURLY_OPEN:
-        case OP_UN_PRE:
+        case EXPR_UN_PRE:
             return true;
 
         default:
@@ -187,7 +187,7 @@ NodeRet parse_statement(void) {
     t = current();
 
     switch (t->type) {
-        case OP_UN_PRE:
+        case EXPR_UN_PRE:
             ret = parse_expression_statement();
             break;
 
@@ -262,7 +262,7 @@ NodeRet parse_assignment(void) {
         assert(false);
     t_pos = lvalue.tok_end_pos;
 
-    if (!expect(OP_ASSIGN) && !expect(OP_ARITH_ASSIGN)) {
+    if (!expect(EXPR_BIN)) {
         assert(false);
     }
 
@@ -301,7 +301,7 @@ NodeRet parse_var_declaration(void) {
     vector_add(&declNode->children, create_leaf_node(DECLARATION, TOKEN_WRAPPER, identifier));
     vector_add(&declNode->children, create_leaf_node(DECLARATION, TOKEN_WRAPPER, type));
 
-    if (!expect(OP_ASSIGN)) {
+    if (!expect(EXPR_BIN)) {
         return (NodeRet){declNode, SUCCESS};
     }
 
@@ -336,10 +336,9 @@ NodeRet parse_identifier_statement(void) {
             return parse_var_declaration();
         case PAREN_OPEN:
             return parse_subroutine_call();
-        case OP_ASSIGN:
-        case OP_ARITH_ASSIGN:
+        case EXPR_BIN:
         case BRACKET_OPEN: // todo this might need to be different
-        case OP_UN_POST:
+        case EXPR_UN_POST:
             return parse_expression_statement();
         default:
             consume(); // eat the error identifier
@@ -435,53 +434,6 @@ NodeRet parse_keyword(void) {
             consume();
         //[[todo]] throw error
             return construct_error_node(NULL);
-    }
-}
-
-NodeRet parse_variable_decl_statement(void) {
-    //expects current() to be t.
-    //and t to be the variable
-
-    /* var could be:
-     * var: type                --DECLARATION
-     * var: type = expr         --DECLARATION + ASSIGNMENT
-     * var := expr              --DECLARATION + ASSIGNMENT
-     * var :: type = expr       --IMPLICIT CAST + DECL + OP_ASSIGN
-     */
-
-
-}
-
-NodeRet parse_variable_ass_statement(void) {
-    //     * var = expr               --ASSIGNMENT
-
-
-}
-
-NodeRet parse_variable_statement(void) {
-    /* var could be:
-     * var: type                --DECLARATION
-     * var: type = expr         --DECLARATION + ASSIGNMENT
-     * var := expr              --DECLARATION + ASSIGNMENT
-     * var :: type = expr       --IMPLICIT CAST + DECL + OP_ASSIGN
-     * var = expr               --ASSIGNMENT
-     *
-     * [[todo]] implicit cast&decl&assign's syntax means that it does not
-     *      distinguish between declaring a variable and using one that already
-     *      exists. There should probably be some kind of way to do this. For now
-     *      always assume its a new variable, but this will undoubtedly be annoying
-     *      Could have var ::= expr perhaps but this removes seeing the type its
-     *      being cast to which is the whole point. Also looks like implicit type
-     */
-
-    Token* look_ahead = peek();
-
-    switch (look_ahead->type) {
-        case TYPE_SET:
-            return parse_variable_decl_statement();
-        // case
-        default:
-            break;
     }
 }
 
@@ -686,7 +638,7 @@ NodeRet parse_for_setup(void) {
             if (setup.retCode != SUCCESS) assert(false);
 
             add_statement_to_children(stmt_chain, setup.node);
-        } else if (n->type == OP_ASSIGN || n->type == OP_ARITH_ASSIGN) {
+        } else if (n->type == EXPR_BIN) { //todo verify assignment
             const NodeRet assignment = parse_assignment();
 
             if (assignment.retCode != SUCCESS) assert(false);
@@ -1025,7 +977,7 @@ NodeRet parse_expression_statement(void) {
     }
     t_pos = lvalue.tok_end_pos;
 
-    if (!expect(OP_ASSIGN) && !expect(OP_ARITH_ASSIGN)) {
+    if (!expect(EXPR_BIN)) {
         Node* exprStatement = create_parent_node(STATEMENT, ST_EXPR,NULL);
 
         vector_add(&exprStatement->children, lvalue.expressionNode);
@@ -1055,6 +1007,7 @@ bool is_valid_index(int index) {
 
 Token* confungry(int offset, bool consume, bool ignore_whitespace, bool ignore_newline) {
     // :(  (๑ᵔ⤙ᵔ๑)
+    assert(false);
 }
 
 /*          v-peek
@@ -1070,7 +1023,7 @@ Token* peer(int amount) {
         return NULL;
     }
 
-    return arr_ptr(ptokens, t_pos + amount);
+    return token_arr_ptr(ptokens, t_pos + amount);
 }
 
 Token* peek(void) {
@@ -1078,7 +1031,7 @@ Token* peek(void) {
         return NULL;
     }
 
-    return arr_ptr(ptokens, t_pos + 1);
+    return token_arr_ptr(ptokens, t_pos + 1);
 }
 
 Token* justify(void) {
@@ -1086,7 +1039,7 @@ Token* justify(void) {
         return NULL;
     }
 
-    return arr_ptr(ptokens, t_pos - 1);
+    return token_arr_ptr(ptokens, t_pos - 1);
 }
 
 // todo: need to allow `\` to mean continue statement to next line
@@ -1095,7 +1048,7 @@ Token* consume(void) {
         return NULL;
     }
 
-    return arr_ptr(ptokens, t_pos++);
+    return token_arr_ptr(ptokens, t_pos++);
 }
 
 Token* current(void) {
@@ -1103,7 +1056,7 @@ Token* current(void) {
         return NULL;
     }
 
-    return arr_ptr(ptokens, t_pos);
+    return token_arr_ptr(ptokens, t_pos);
 }
 
 bool expect_op(const TokenType type, const ATOM_CT__LEX_OPERATORS_ENUM op) {

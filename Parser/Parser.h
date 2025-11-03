@@ -10,6 +10,7 @@
 #include "../Lexer/Tokens.h"
 #include "Node.h"
 #include "ShuntingYard.h"
+#include "Lexer/Lexer.h"
 
 #include "Parserr.h"
 
@@ -18,6 +19,6 @@ typedef struct TypeInformation {
     uint16_t pointer_level;
 } TypeInformation;
 
-NodeRet parse(const Array* token_vec, const Vector* lines);
+NodeRet parse(const tokenArray* token_vec, const Vector* lines);
 
 #endif //PARSER_H
