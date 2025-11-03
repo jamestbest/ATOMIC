@@ -6,14 +6,13 @@
 #define ATOMIC_SHUNTINGYARD_H
 
 #include "../Commons.h"
-
-#include "Node.h"
+#include "../Flags.h"
 #include "../Lexer/Tokens.h"
-
 #include "../SharedIncludes/Queue.h"
 #include "../SharedIncludes/Stack.h"
 #include "../SharedIncludes/Vector.h"
-#include "../Flags.h"
+#include "Lexer/Lexer.h"
+#include "Node.h"
 
 typedef enum STATE {
     EXPECTING_START,        // The start of an expression can
@@ -36,10 +35,10 @@ typedef struct ShuntRet {
 } ShuntRet;
 
 typedef struct ShuntData {
-    const Array* tokens;
+    const tokenArray* tokens;
     uint* t_pos;
 } ShuntData;
 
-ShuntRet shunt(const Array* tokens, uint t_pos, bool ignoreTrailingParens);
+ShuntRet shunt(const tokenArray* tokens, uint t_pos, bool ignoreTrailingParens);
 
 #endif //ATOMIC_SHUNTINGYARD_H
