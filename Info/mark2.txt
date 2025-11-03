@@ -1,0 +1,19 @@
+m: Mutex= {}
+
+lock_mutex(&m) -- mark *m
+-- func lock_mutex(m: >Mutex): Mutex'
+
+unlock_mutex(&m') -- unmark *m'
+-- func unlock_mutex(m': >Mutex'): Mutex
+
+lock_mutex(&m)
+
+
+
+
+
+a': >'i4= malloc(6 * i4)
+-- func malloc(size: u8): >'void
+
+free(a')
+-- proc free(ptr: >'void)
