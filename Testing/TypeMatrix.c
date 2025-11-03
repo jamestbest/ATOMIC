@@ -19,14 +19,6 @@
 
 typedef uint8_t* TypeMatrix;
 
-typedef struct encodedType {
-    uint64_t general: 4;    // 2^4= 16 different types
-    uint64_t type: 5;       // 2^5= 32 different types
-    uint64_t size: 4;       // 2^4= 16 bytes
-    uint64_t tf_offset: 16; // typefix offset e.g. POINTER
-    // todo to support multiple tfs need a map
-} encodedType;
-
 struct TypeRes {
     bool succ;
     encodedType otype;
@@ -76,7 +68,7 @@ extern const char* ATOM_CT__LEX_TYPES_GENERAL_RAW[];
 
 int main() {
     struct TypeRes b= type_check_op_bin(
-        OP_LOR,
+        OP_PLUS,
         (encodedType) {
             .general= GTYPE_INTEGER,
             .type= TYPE_I8,
@@ -84,10 +76,10 @@ int main() {
             .tf_offset= 0
         },
         (encodedType) {
-            .general= GTYPE_POINTER,
-            .type= TYPE_CHR,
-            .size= 8,
-            .tf_offset= 1
+            .is_builtin= true,
+            .builtin_idx= KV_TYPE,
+            .size= 4,
+            .tf_offset= 0
         }
     );
 
