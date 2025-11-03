@@ -326,9 +326,9 @@ encodedType verify_expr_types(Node* expr, Scope* scope) {
             case IDENTIFIER:
                 return ((Node*)expr->link->children.arr[1])->token->data.type;
             case LIT_CHR:
-                return (encodedType){.general_type = CHAR, .enum_position = CHR, .ptr_offset = 0, .size = 1};
+                return (encodedType){.general= GTYPE_CHAR, .type= TYPE_CHR, .tf_offset= 0, .size= 1};
             case LIT_INT:
-                return (encodedType){.general_type = INTEGER, .enum_position = I4, .ptr_offset = 0, .size = 4};
+                return (encodedType){.general= GTYPE_INTEGER, .type= TYPE_I8, .tf_offset= 0, .size= 8};
         }
     }
 
@@ -342,7 +342,7 @@ encodedType verify_expr_types(Node* expr, Scope* scope) {
         return ((Node*)expr->link->children.arr[1])->token->data.type;
     }
 
-    if (expr->type == EXPR_BIN) {
+    if (expr->type == EXPR_BINARY) {
         Node* l_node = expr->children.arr[0];
         Node* r_node = expr->children.arr[1];
 
@@ -404,16 +404,16 @@ void print_variables(const Vector* variables) {
 void print_type(const Node* type) {
     putz(C_MGN);
     const encodedType t = type->token->data.type;
-    const uint ptr_offset = t.ptr_offset;
+    const uint ptr_offset = t.tf_offset;
 
     for (uint i = 0; i < ptr_offset; ++i) {
         putchar('>');
     }
 
-    printf("%s", ATOM_CT__LEX_TYPES_GENERAL_SMALL.arr[t.general_type]);
+    printf("%s", ATOM_CT__LEX_TYPES_GENERAL_SMALL.arr[t.general]);
 
     if (type->token->data.type.size != 0) {
-        printf("%d", t.size);
+        printf("%llu", t.size);
     }
     putz(C_RST);
 }
