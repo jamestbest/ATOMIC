@@ -35,9 +35,9 @@ typedef struct ArrPosCharp {
 typedef long long int llint;
 typedef unsigned char uchar;
 
-uint lex(FILE* file, Array* tokens, Vector* lines);
+uint lex(FILE* file, tokenArray* tokens, Vector* lines);
 
-void print_tokens(Array* token_vec, bool include_ws, bool include_comments);
-void print_verbose_tokens(Array* tokens, Vector* lines, bool print_labels);
+void print_tokens(tokenArray* token_vec, bool include_ws, bool include_comments);
+void print_verbose_tokens(tokenArray* tokens, Vector* lines, bool print_labels);
 
 #endif //ATOMIC_LEXER_H

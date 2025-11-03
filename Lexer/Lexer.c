@@ -39,7 +39,7 @@ static void update_line_count(void);
 
 static char* consume(void);
 static char* gourge_unsafe(uint32_t bytes, uint32_t new_col);
-static char* gourge(int amount);
+static char* gourge(size_t amount);
 static uint32_t get_utf_char_bytes(const char* character);
 static uint32_t consume_utf_char(char *start, bool consume, char** next_char);
 
@@ -64,7 +64,7 @@ bool load_line(void) {
 //new plan for the lexer
 //it will print out any errors it finds, makes more sense to use the information held inside
 //it will not return an error code as multiple errors could have occurred so just err code 1
-uint lex(FILE* file, Array* tokens, Vector *lines) {
+uint lex(FILE* file, tokenArray* tokens, Vector *lines) {
     line_num = 0;
     col_num = 1;
     c_char = NULL;
@@ -191,7 +191,7 @@ uint lex_line(const Buffer* line) {
     return ret;
 }
 
-void print_tokens(Array* tokens, bool include_ws, bool include_comments) {
+void print_tokens(tokenArray* tokens, bool include_ws, bool include_comments) {
     for (uint i = 0; i < tokens->pos; i++) {
         Token t = token_arr_get(tokens, i);
         const TokenType type = t.type;
@@ -203,7 +203,7 @@ void print_tokens(Array* tokens, bool include_ws, bool include_comments) {
     }
 }
 
-void print_verbose_tokens(Array* tokens, Vector* lines, bool print_labels) {
+void print_verbose_tokens(tokenArray* tokens, Vector* lines, bool print_labels) {
     if (tokens == NULL || lines == NULL) {
         printf("ERROR PRINTING TOKENS, found NULL for lines or token storage");
         return;
@@ -224,7 +224,7 @@ void print_verbose_tokens(Array* tokens, Vector* lines, bool print_labels) {
     }
 
     uint current_tok_pos = 0;
-    const Token* current_tok = arr_ptr(tokens, current_tok_pos);
+    const Token* current_tok = token_arr_ptr(tokens, current_tok_pos);
 
     for (uint i = 0; i < lines->pos; i++) {
         bool printable_token_on_line = false;
@@ -235,7 +235,7 @@ void print_verbose_tokens(Array* tokens, Vector* lines, bool print_labels) {
             printf(C_RST);
 
             if (++current_tok_pos >= tokens->pos) break;
-            current_tok = arr_ptr(tokens, current_tok_pos);
+            current_tok = token_arr_ptr(tokens, current_tok_pos);
         }
         if (printable_token_on_line) putchar('\n');
     }
@@ -570,46 +570,14 @@ void lex_word(void) {
         return;
     }
 
-    if (info = word_in_arr(c_char, ATOM_CT__LEX_OP_IDENTIFIERS), info.arr_pos != -1) {
-        Token token;
-        token.type = OP_BIN;
-        token.pos.start_line = line_num;
-        token.pos.end_line = line_num;
-        token.pos.end_col = col_num;
-
-        switch (info.arr_pos) {
-            case AND:
-                token.data.enum_pos = LAND;
-                break;
-            case OR:
-                token.data.enum_pos = LOR;
-                break;
-            case XOR:
-                token.data.enum_pos = LXOR;
-                break;
-            case NOT:
-                token.data.enum_pos = LNOT;
-                token.type = OP_UN_PRE;
-                break;
-            case AS:
-                token.data.enum_pos = TYPE_CONVERSION;
-                token.type = OP_BIN;
-                break;
-            default:
-                assert(false);
-        }
-
-        token.pos.start_col = col_num;
-        token.pos.end_col = col_num + len(ATOM_CT__LEX_OP_IDENTIFIERS.arr[info.arr_pos]) - 1;
-
-        add_token(token);
-        gourge(info.next_char - c_char);
-        return;
+    const PosCharp op_pos = longest_word_in_arr(c_char, ATOM_CT__LEX_OPERATORS);
+    if (op_pos.arr_pos != -1) {
+        lex_operator(op_pos);
     }
 
     int offset;
     if (offset = word_match_alphnumeric(c_char, ATOM_CT__LEX_NAV), offset != -1) {
-        int cols = strlen(ATOM_CT__LEX_NAV);
+        size_t cols = strlen(ATOM_CT__LEX_NAV);
         add_token(create_simple_token(LIT_NAV, col_num, col_num + cols));
         gourge(cols);
         return;
@@ -647,75 +615,25 @@ encodedType lex_type_to_encoded_int(ATOM_CT__LEX_TYPES_ENUM enum_position) {
     uint64_t ptr_offset = 0;
 
     if (enum_position >= ATOM_CT__LEX_TYPES.elem_count != 0) {
-        return (encodedType){-1, -1, -1, -1};
+        return (encodedType){-1, -1, -1, -1, -1, -1, -1};
     }
 
-    switch (enum_position) {
-        case I1:
-        case I2:
-        case I4:
-        case I8:
-            general_type = INTEGER;
-            break;
-
-        case N1:
-        case N2:
-        case N4:
-        case N8:
-            general_type = NATURAL;
-            break;
-
-        case R4:
-        case R8:
-        case R10:
-            general_type = REAL;
-            break;
-
-        case Q4:
-        case Q8:
-        case Q16:
-            general_type = RATIONAL;
-            break;
-
-        case STR:
-            general_type = STRING;
-            goto lex_type_to_encoded_int_ptr;
-
-        case CHR:
-            general_type = CHAR;
-            goto lex_type_to_encoded_int_ptr;
-
-        case BOOL:
-            general_type = BOOLEAN;
-            goto lex_type_to_encoded_int_ptr;
-
-        case NAV:
-            general_type = NOT_A_VALUE;
-            goto lex_type_to_encoded_int_ptr;
+    general_type= TYPES_TO_GENERAL[enum_position];
+    const TypeInfo ti= TYPE_INFO[general_type].t;
+    if (ti.has_variable_sizes) {
+        size= ti.sizes.arr[enum_position - GENERAL_TO_TYPES[general_type]];
+    } else {
+        size= ti.base.size;
     }
 
-    char* type = ATOM_CT__LEX_TYPES.arr[enum_position];
-
-    if (strlen(type) < 2) {
-        return (encodedType){-1, -1, -1, -1};
-        //todo error
-    }
-
-    // e.g. i4, r8, n2, q16
-    char* end;
-    llint type_size = strtoll(type + 1, &end, 10);
-    if (end != type + strlen(type) - 1) {
-        //todo error
-    }
-
-    size = type_size;
-
-lex_type_to_encoded_int_ptr:
     return (encodedType) {
         general_type,
         size,
         ptr_offset,
-        enum_position
+        enum_position,
+        false,
+        -1,
+        false
     };
 }
 
@@ -774,14 +692,11 @@ Token create_token(TokenType type, const void* data, uint64_t d_size, uint32_t s
         case LIT_FLOAT:
             t.data.real = *(long double*)data;
             break;
-        case OP_BIN:
-        case OP_UN:
-        case OP_UN_PRE:
-        case OP_UN_POST:
-        case OP_TRINARY:
-        case OP_BIN_OR_UN:
-        case OP_ARITH_ASSIGN:
-        case OP_ASSIGN:
+        case EXPR_BIN:
+        case EXPR_UN:
+        case EXPR_UN_PRE:
+        case EXPR_UN_POST:
+        case EXPR_TRINARY:
         case KEYWORD:
             t.data.enum_pos = *(int *)data;
             break;
@@ -844,8 +759,8 @@ char* gourge_unsafe(const uint32_t bytes, const uint32_t new_col) {
     return c_char;
 }
 
-char* gourge(int amount) {
-    for (int i = 0; i < amount; i++) consume();
+char* gourge(size_t amount) {
+    for (size_t i = 0; i < amount; i++) consume();
 
     return c_char;
 }
@@ -875,9 +790,6 @@ uint32_t get_utf_char_bytes(const char* character) {
     }
     else if ((fbyte & 0xf8) == 0xf0 && (fbyte <= 0xf4)) {
         byte_count = 4;
-    }
-    else {
-        byte_count = 1;
     }
 
     return byte_count;
