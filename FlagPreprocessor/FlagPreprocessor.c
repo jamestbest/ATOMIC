@@ -314,7 +314,7 @@ void write_header_out(FILE* header) {
 }
 
 void write_c_out_preamble(FILE* c_file, const char* header_output_filename) {
-    const char* file_name = get_file_name(header_output_filename);
+    const char* file_name = get_file_name_stripped(header_output_filename);
     fprintf(c_file, "#include \"%s.h\"\n\n", file_name);
     free((void*)file_name);
 }
