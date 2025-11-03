@@ -8,9 +8,10 @@ set(CMAKE_C_STANDARD 99)
 #add_link_options(-fsanitize=undefined,address)
 
 add_compile_options(
-        -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self -Wswitch-enum
+        -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align -Wunused-parameter -Winit-self -Wno-switch-enum
         -Wno-unused-parameter -Wno-unused-function -Wno-pedantic
         -ggdb3
+        -g
 #        -fsanitize=undefined,address
 )
 
@@ -58,6 +59,11 @@ add_executable(ATOMICLI
         Generator/GeneratorInternal.h
 
         235/VM.c
+        235/Kall.c
+        235/Kall.h
+        TypePreprocessor/output/TPPHeader.h
+        TypePreprocessor/output/enum-temp.c
+        TypePreprocessor/output/matrix-out.c
 )
 
 add_hadron_support(ATOMICLI)
@@ -99,6 +105,7 @@ add_executable(Type_preprocessor
         TypePreprocessor/TPPGenerator.c
         TypePreprocessor/TPPGenerator.h
         TypePreprocessor/TPPGeneratorInternal.h
+        TypePreprocessor/output/shared_types.h
 )
 
 add_hadron_support(Type_preprocessor)
