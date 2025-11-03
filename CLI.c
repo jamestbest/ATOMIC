@@ -70,8 +70,10 @@ int main(int argc, char** argv) {
 
     vector_destroy(&ATOM_VR__CLI_FILES);
 
-    hadron_verify();
-    hadron_cleanup();
+    if (flag_get_value(ATOM_CT__FLAG_HADRON_VERIFY)) {
+        hadron_verify();
+        hadron_cleanup();
+    }
 
     return ret.code;
 }
