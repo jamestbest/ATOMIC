@@ -8,7 +8,8 @@
 #include "../Commons.h"
 #include "Tokens.h"
 #include "Lexerr.h"
+#include "Lexer.h"
 
-uint fold(Array* base_tokens, Array* folded_tokens);
+uint fold(tokenArray* base_tokens, tokenArray* folded_tokens);
 
 #endif //ATOMIC_OPFOLDER_H
