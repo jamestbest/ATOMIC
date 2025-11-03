@@ -4,8 +4,6 @@
 
 #include "OpFolder.h"
 
-#include "Lexer.h"
-
 #include <stdlib.h>
 
 /* This is a lexing stage that will use the base_tokens around the operators to try and
@@ -17,8 +15,9 @@ typedef struct TokenWrapper {
     Token token;
 } TokenWrapper;
 
-static Array* btokens;
-static Array* ftokens;
+
+static tokenArray* btokens;
+static tokenArray* ftokens;
 static int t_pos;
 
 static bool is_valid_index(int index);
@@ -39,7 +38,7 @@ static TokenWrapper fold_plusminus(Token* operator);
 static TokenWrapper fold_pointer(Token* operator);
 static TokenWrapper fold_ampersand(Token* token);
 
-uint fold(Array* base_tokens, Array* folded_tokens) {
+uint fold(tokenArray* base_tokens, tokenArray* folded_tokens) {
     t_pos = 0;
     btokens = base_tokens;
     ftokens = folded_tokens;
@@ -79,16 +78,16 @@ bool is_skippable(TokenType type) {
 
 bool is_foldable(ATOM_CT__LEX_OPERATORS_ENUM operator) {
     switch (operator) {
-        case MULT:
-        case DEREFERENCE:
-        case BAND:
-        case AMPERSAND:
-        case INC:
-        case DEC:
-        case PLUS:
-        case MINUS:
-        case SHR:
-        case MORE:
+        case OP_MULT:
+        case OP_DEREF:
+        case OP_BAND:
+        case OP_AMPERSAND:
+        case OP_INC:
+        case OP_DEC:
+        case OP_PLUS:
+        case OP_MINUS:
+        case OP_SHR:
+        case OP_MORE:
             return true;
         default:
             return false;
@@ -99,24 +98,24 @@ void fold_operator(Token* operator) {
     TokenWrapper toAdd;
 
     switch (operator->data.enum_pos) {
-        case MULT:
-        case DEREFERENCE:
+        case OP_MULT:
+        case OP_DEREF:
             toAdd = fold_mult(operator);
             break;
-        case INC:
-        case DEC:
+        case OP_INC:
+        case OP_DEC:
             toAdd = fold_incdec(operator);
             break;
-        case PLUS:
-        case MINUS:
+        case OP_PLUS:
+        case OP_MINUS:
             toAdd = fold_plusminus(operator);
             break;
-        case SHR:
-        case MORE:
+        case OP_SHR:
+        case OP_MORE:
             toAdd = fold_pointer(operator);
             break;
-        case BAND:
-        case AMPERSAND:
+        case OP_BAND:
+        case OP_AMPERSAND:
             toAdd = fold_ampersand(operator);
             break;
         default:
@@ -160,15 +159,15 @@ TokenWrapper fold_mult(Token* operator) {
 
     const Token* prev = justify();
 
-    const bool is_bin = prev && (is_lit(prev->type) || prev->type == PAREN_CLOSE || prev->type == BRACKET_CLOSE || prev->type == OP_UN_POST);
+    const bool is_bin = prev && (is_lit(prev->type) || prev->type == PAREN_CLOSE || prev->type == BRACKET_CLOSE || prev->type == EXPR_UN_POST);
 
     if (is_bin) {
-        operator->type = OP_BIN;
-        operator->data.enum_pos = MULT;
+        operator->type = EXPR_BIN;
+        operator->data.enum_pos = OP_MULT;
     }
     else {
-        operator->type = OP_UN_PRE;
-        operator->data.enum_pos = DEREFERENCE;
+        operator->type = EXPR_UN_PRE;
+        operator->data.enum_pos = OP_DEREF;
     }
 
     return (TokenWrapper){0, *operator};
@@ -186,12 +185,12 @@ TokenWrapper fold_incdec(Token* operator) {
     // [[maybe]] currently this means that the prefix is of higher pres?
 
     if (next && next->type == IDENTIFIER) {
-        operator->type = OP_UN_PRE;
+        operator->type = EXPR_UN_PRE;
 
         return (TokenWrapper){SUCCESS, *operator};
     }
 
-    operator->type = OP_UN_POST;
+    operator->type = EXPR_UN_POST;
     return (TokenWrapper){SUCCESS, *operator};
 }
 
@@ -204,7 +203,7 @@ TokenWrapper fold_plusminus(Token* operator) {
 
     Token* next = peek();
 
-    if (operator->data.enum_pos == MINUS && next) {
+    if (operator->data.enum_pos == OP_MINUS && next) {
         TokenType ntype = peek()->type;
 
         bool needs_consolidation = true;
@@ -229,9 +228,9 @@ TokenWrapper fold_plusminus(Token* operator) {
 
     // bool is_bin = prev && (is_terminal(prev) || prev->type == CURLY_CLOSE) && next && (is_terminal(next) || next->type == CURLY_OPEN);
     // bool is_un = !prev || (is_arith_operator(prev) && prev->type != OP_UN_POST);
-    const bool is_bin = prev && (is_lit(prev->type) || prev->type == PAREN_CLOSE || prev->type == BRACKET_CLOSE || prev->type == OP_UN_POST);
+    const bool is_bin = prev && (is_lit(prev->type) || prev->type == PAREN_CLOSE || prev->type == BRACKET_CLOSE || prev->type == EXPR_UN_POST);
 
-    operator->type = is_bin ? OP_BIN : OP_UN_PRE;
+    operator->type = is_bin ? EXPR_BIN : EXPR_UN_PRE;
 
     return (TokenWrapper){SUCCESS, *operator};
 }
@@ -240,19 +239,24 @@ TokenWrapper fold_pointer(Token* operator) {
     /*
      * This is the `>` value it could be
      *      pointer modifier e.g.  myVar: >>>i4;  //this would be 3 levels of pointer but two operators >> and >
+     *         >i4
+     *         >>i4
+     *
      *      Binary comparison e.g. myVar > myOtherVar
      *      Binary operator e.g. myVar << myOtherVar
      */
 
-    const Token* previous = justify();
-
-    if (previous->type == TYPE_SET) {
-        //This is a pointer modifier, calculate the level of
-        uint ptr_level = (operator->data.enum_pos == SHR) + 1;
+    // todo TEST THIS!!
+    const Token* n= current();
+    if ((n->type == EXPR_BIN && (n->data.enum_pos == OP_SHR || n->data.enum_pos == OP_MORE))
+        || n->type == TYPE) {
+        // if we have them consecutively then it must be a type
+        // if the next is a type then it must be a type
+        uint ptr_level = (operator->data.enum_pos == OP_SHR) + 1;
 
         Token* next;
-        while (next = peek(), next->data.enum_pos == SHR || next->data.enum_pos == MORE) {
-            ptr_level += (next->data.enum_pos == SHR) + 1;
+        while (next = peek(), next->data.enum_pos == OP_SHR || next->data.enum_pos == OP_MORE) {
+            ptr_level += (next->data.enum_pos == OP_SHR) + 1;
             consume();
         }
 
@@ -266,8 +270,8 @@ TokenWrapper fold_pointer(Token* operator) {
             return (TokenWrapper){lexerr(LEXERR_EXPECTED_TYPE_AFTER_PTR_OFFSET, type->pos, type)};
         }
 
-        type->data.type.general_type = POINTER;
-        type->data.type.ptr_offset = ptr_level;
+        type->data.type.general = GTYPE_POINTER;
+        type->data.type.tf_offset = ptr_level;
 
         return (TokenWrapper){SUCCESS, *type};
     }
@@ -289,11 +293,11 @@ TokenWrapper fold_ampersand(Token* operator) {
 //    bool is_un = !prev || (is_arith_operator(prev) && prev->type != OP_UN_POST) || prev->type == EQU;
 
     if (!is_bin) {
-        operator->type == OP_UN_PRE;
-        operator->data.enum_pos = AMPERSAND;
+        operator->type = EXPR_UN_PRE;
+        operator->data.enum_pos = OP_AMPERSAND;
     } else {
-        operator->type == OP_BIN;
-        operator->data.enum_pos = BAND;
+        operator->type = EXPR_BIN;
+        operator->data.enum_pos = OP_BAND;
     }
 
     return (TokenWrapper){SUCCESS, *operator};
@@ -307,7 +311,7 @@ bool is_valid_index(int index) {
 Token* confungry(int offset, bool consume, bool ignore_whitespace,
                  bool ignore_newline) {
     if (offset == 0) {
-        return arr_ptr(btokens, t_pos);
+        return token_arr_ptr(btokens, t_pos);
     }
 
     if (!ignore_whitespace) {
@@ -320,10 +324,10 @@ Token* confungry(int offset, bool consume, bool ignore_whitespace,
 
         if (consume) {
             t_pos += offset;
-            return arr_ptr(btokens, t_pos);
+            return token_arr_ptr(btokens, t_pos);
         }
 
-        return arr_ptr(btokens, t_pos + offset);
+        return token_arr_ptr(btokens, t_pos + offset);
     }
 
     int valid_skipped = 0;
@@ -349,10 +353,10 @@ Token* confungry(int offset, bool consume, bool ignore_whitespace,
 
     if (consume) {
         t_pos += current_offset;
-        return arr_ptr(btokens, t_pos);
+        return token_arr_ptr(btokens, t_pos);
     }
 
-    return arr_ptr(btokens, t_pos + current_offset);
+    return token_arr_ptr(btokens, t_pos + current_offset);
 }
 
 Token* peer(int amount) {
