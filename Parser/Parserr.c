@@ -3,6 +3,7 @@
 //
 
 #include "Parserr.h"
+#include "Lexer/TokErr.h"
 
 NodeRet parsewarn(const ParseWarns warningCode, Token* parent_token, Token* issue_token, ...) {
     putz(C_MGN"PARSEWARNING"C_RST": ");
