@@ -89,7 +89,7 @@ ARRAY_PROTO(Value, Value)
 typedef struct ByteStmt {
     BYTE_CODE code;
 
-    uint arith_idx;
+    uint sub_idx;
 
     ValueArray args; // function calls, arith ops, memory ops, coerce, ret, cocks, so ALL mostly
     Value arg;
@@ -111,5 +111,6 @@ typedef struct GeneratorRet {
 } GeneratorRet;
 
 GeneratorRet generate_byte_code(Node* root, const char* entry_function, FILE* out);
+uint8_t get_free_reg();
 
 #endif // ATOMIC_GENERATOR_H

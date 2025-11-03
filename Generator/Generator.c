@@ -4,6 +4,8 @@
 
 #include "GeneratorInternal.h"
 
+#include <235/Kall.h>
+
 uint8_t next_reg= 0;
 uint8_t freed_reg= NO_FREED;
 uint64_t reg_map= 0;
@@ -138,7 +140,7 @@ void generate_register_op(BYTE_CODE op, size_t size, Value arg, uint8_t reg) {
 void generate_bin_arith_op(ATOM_CT__LEX_OPERATORS_ENUM sub_op, size_t size, Value l, Value r, uint8_t reg) {
     ByteStmt stmt= {
         .code= B_ARITH_BI,
-        .arith_idx= sub_op,
+        .sub_idx= sub_op,
         .size= size,
         .args= Value_arr_construct(2),
         .dest_reg= reg
@@ -242,7 +244,7 @@ Value create_value(Node* expr) {
                     assert(false);
             }
         }
-        case EXPR_ASSIGN: {
+        case EXPR_ASSIGNMENT: {
             Node* l= vector_get_unsafe(&expr->children, 0);
             Node* r= vector_get_unsafe(&expr->children, 1);
 
@@ -261,7 +263,7 @@ Value create_value(Node* expr) {
 
             return lv;
         }
-        case EXPR_BIN: {
+        case EXPR_BINARY: {
             Node* l= vector_get_unsafe(&expr->children, 0);
             Node* r= vector_get_unsafe(&expr->children, 1);
 
@@ -300,8 +302,6 @@ Value create_value(Node* expr) {
                     Value a= create_value(a_expr);
                     Value_arr_add(&t_args, a);
 
-//                    generate_mem_op(B_STORE, 8, a, arg_reg);
-
                     arg_reg++;
                 }
                 generate_fcall(ident->token->data.ptr, t_args);
@@ -325,8 +325,8 @@ uint generate_expr(Node* expr) {
 
             return dest_reg;
         }
-        case EXPR_ASSIGN:
-        case EXPR_BIN: {
+        case EXPR_ASSIGNMENT:
+        case EXPR_BINARY: {
             return create_value(expr).data.reg;
         }
         case ST_EXPR: {
@@ -341,6 +341,23 @@ uint generate_expr(Node* expr) {
     }
 
     assert(false);
+}
+
+int generate_kall(const KALL code) {
+    ValueArray v= Value_arr_construct(1);
+    const uint8_t dst_reg= get_free_reg();
+
+    Value_arr_add(&v, (Value){.type= VT_IMM_U, .data.u64= 12});
+    ByteStmt_arr_add(
+        &stmts,
+        (ByteStmt) {
+            .code= B_KALL,
+            .sub_idx= code,
+            .args= v,
+            .dest_reg= dst_reg
+        }
+    );
+    return SUCCESS;
 }
 
 int generate_stmts(Node* stmt) {
@@ -366,11 +383,27 @@ int generate_stmts(Node* stmt) {
     }
 
     if (stmt->type == ST_FUNC || stmt->type == ST_PROC) {
-        Node* ident= vector_get_unsafe(&stmt->children, 0);
-        size_t f_label= generate_label();
-        // need a link between function names and label ids
+        const Node* ident= vector_get_unsafe(&stmt->children, 0);
+        const size_t f_label= generate_label();
+
+        // generate_kall(K_PRINTX); // todo remove
 
         add_function(ident->token->data.ptr, f_label);
+
+        const uint64_t rm_save= reg_map;
+        const uint8_t nr_save= next_reg;
+        const uint8_t fr_save= freed_reg;
+
+        for (uint i= 0; i < stmt->children.pos; ++i) {
+            Node* child= vector_get_unsafe(&stmt->children, i);
+            generate_stmts(child);
+        }
+
+        reg_map= rm_save;
+        next_reg= nr_save;
+        freed_reg= fr_save;
+
+        return SUCCESS;
     }
 
     if (stmt->type == ST_TIMES) {
@@ -391,7 +424,7 @@ int generate_stmts(Node* stmt) {
         );
         Node* c_s= vector_get_unsafe(&stmt->children, 1);
         generate_stmts(c_s);
-        generate_bin_arith_op(PLUS, 8, reg(count_reg), lit_i(1), count_reg);
+        generate_bin_arith_op(OP_PLUS, 8, reg(count_reg), lit_i(1), count_reg);
         generate_branch(start_label);
         uint end_label= generate_label();
         ByteStmt_arr_ptr(&stmts, cmp_idx)->label_id= end_label;
@@ -461,11 +494,11 @@ void write_value(FILE* out, Value* v, const char* post) {
 
 const char* op_enum_to_op_string(ATOM_CT__LEX_OPERATORS_ENUM op) {
     switch (op) {
-        case PLUS:
+        case OP_PLUS:
             return "ADD";
-        case MINUS:
+        case OP_MINUS:
             return "SUB";
-        case ASSIGNMENT:
+        case OP_ASSIGN:
             return "STORE";
         default:
             assert(false);
@@ -493,7 +526,7 @@ void write_byte_code(FILE* out) {
                 write_value(out, &stmt->arg, "");
                 break;
             case B_ARITH_BI:
-                fprintf(out, "%s%u ", op_enum_to_op_string(stmt->arith_idx), stmt->size);
+                fprintf(out, "%s%u ", op_enum_to_op_string(stmt->sub_idx), stmt->size);
                 write_args(out, &stmt->args, ", ");
                 write_reg(out, stmt->dest_reg);
                 break;
@@ -519,6 +552,11 @@ void write_byte_code(FILE* out) {
             case B_EXIT:
                 fprintf(out, "EXIT ");
                 write_value(out, &stmt->arg, "");
+                break;
+            case B_KALL:
+                fprintf(out, "KALL %s ", KALL_STRINGS[stmt->sub_idx]);
+                write_args(out, &stmt->args, ", ");
+                write_reg(out, stmt->dest_reg);
                 break;
             default:
                 fprintf(out, "MISSING WITH VALUE %d", stmt->code);
