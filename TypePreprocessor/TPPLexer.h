@@ -5,8 +5,9 @@
 #ifndef TPPLEXER_H
 #define TPPLEXER_H
 
-#include "../SharedIncludes/Array.h"
-#include "../SharedIncludes/Buffer.h"
+#include "SharedIncludes/Array.h"
+#include "SharedIncludes/Buffer.h"
+#include "output/shared_types.h"
 
 typedef enum TPPType {
     KEYWORD,
@@ -27,15 +28,6 @@ typedef enum TPPType {
     EOS, // End of Statement
     TPPTYPE_COUNT,
 } TPPType;
-
-typedef enum KEYVALUES {
-    ALL,
-    LVALUE,
-    RVALUE,
-    TYPE,
-    VARIABLE,
-    KEYVALUE_COUNT
-} KEYVALUES;
 
 // SORTED!
 typedef enum KEYWORDS {
@@ -75,6 +67,8 @@ typedef struct TPPToken {
 } TPPToken;
 
 ARRAY_PROTO(TPPToken, TPPToken)
+
+extern const char* KEYVALUE_STRINGS[KV_COUNT];
 
 uint tpplex_setup(const Vector* type_enum, const Vector* operator_enum);
 void tpplex_line(const Buffer* line_buffer);

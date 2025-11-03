@@ -32,15 +32,6 @@ typedef enum sections {
     SECTION_COUNT
 } sections;
 
-typedef enum LRBuiltInTypes {
-    LRB_VARIABLE,
-    LRB_LITERAL,
-    LRB_ALL,
-    LRB_COUNT
-} LRBuiltInTypes;
-
-extern const char* LRBuiltInTypesStrings[LRB_COUNT];
-
 typedef struct TPPNode {
     TPPNodeType type;
     TPPToken token;

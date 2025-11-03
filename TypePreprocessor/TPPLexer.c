@@ -167,7 +167,7 @@ void lex_identifier(char* start) {
     *end = '\0';
 
     const char** kw_res= bsearch(start, KEYWORD_STRINGS, KEYWORD_COUNT, sizeof (KEYWORD_STRINGS[0]), compare_strings_for_search);
-    const char** kv_res= bsearch(start, KEYVALUE_STRINGS, KEYVALUE_COUNT, sizeof (KEYVALUE_STRINGS[0]), compare_strings_for_search);
+    const char** kv_res= bsearch(start, KEYVALUE_STRINGS, KV_COUNT, sizeof (KEYVALUE_STRINGS[0]), compare_strings_for_search);
 
     *end = end_save;
 

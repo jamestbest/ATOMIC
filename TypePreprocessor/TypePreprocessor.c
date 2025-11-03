@@ -58,6 +58,8 @@ OperatorInfoArray operators;
 AliasInfoArray aliases;
 
 TypeMatrix coercions;
+CoercionRuleArray coercion_rules;
+
 OperandInfoArray operands;
 
 void verify_args(const int argc, char** argv) {

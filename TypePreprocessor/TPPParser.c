@@ -20,6 +20,9 @@ const Vector* t_types_enum;
 static TPPToken* expect(TPPType type);
 static TPPToken* expect_any(uint type, ...);
 static TPPToken* expect_keyword(enum KEYWORDS keyword);
+static TPPToken* expect_any_keyword(uint keyword, ...);
+static TPPToken* expect_keyvalue(KEYVALUES keyvalue);
+static TPPToken* expect_any_keyvalue(uint keyvalue, ...);
 static TPPToken* consume(void);
 static TPPToken* peek(void);
 static TPPToken* peer(size_t amount);
@@ -40,6 +43,7 @@ static void add_to_type_matrix(TypeMatrix matrix, uint32_t x, uint32_t y);
 static void or_type_matrices(TypeMatrix dst, TypeMatrix or);
 
 static TPPNode* tpp_parse_statement(const TPPToken* c);
+static errcode parse_keyvalue_statement(const TPPToken* tok);
 
 static char* parse_symbol();
 
@@ -192,6 +196,7 @@ errcode verify_state(errcode code) {
         OperatorInfo* info= OperatorInfo_arr_ptr(&operators, i);
 
         if (!OperandInfo_arr_search_ie(&operands, info->name)) {
+            continue; // todo canary
             ret= error(
                 "Operator `%s` doesn't have a corresponding operand statement\n",
                 info->name
@@ -229,13 +234,14 @@ errcode parse_types_file(const TPPTokenArray tokens) {
         //  keyvalues currently can't be used as typelike values, I think it requires too much change
         //  most statement types (sections) have different requirements for keyvalues anyway so a split here seems reasonable
         //  most of the issue comes from type -> natural in coercions though, this is a keyvalue in a typelike position
-        if (statement_contains(KEYVALUE)) {
-            parse_keyvalue_statement();
-        }
-
         const TPPToken* token= current();
 
         errcode stmt_code;
+        if (statement_contains(KEYVALUE)) {
+            stmt_code= parse_keyvalue_statement(token);
+            goto code_check;
+        }
+
         switch (token->type) {
             case KEYWORD:
                 stmt_code= parse_keyword_statement(token);
@@ -248,6 +254,7 @@ errcode parse_types_file(const TPPTokenArray tokens) {
                 consume();
         }
 
+    code_check:
         if (stmt_code.code != SUCCESS) {
             if (stmt_code.fatal) {
                 return fatal("TPPParser encountered fatal error during parsing. Terminating `%s`", error_code_string(stmt_code));
@@ -599,7 +606,7 @@ AliasInfo* find_alias_e(const char* name) {
     return AliasInfo_arr_search_ie(&aliases, name);
 }
 
-uint find_typefix(const char** name) {
+uint find_typefix(char** name) {
     return TypeFixInfo_vec_search_i(&typefix_mirror, name);
 }
 
@@ -636,7 +643,7 @@ struct TypeLikePos {
     } data;
 } find_type_like(const char* name) {
     // todo currently if it's an alias the position is undefined, because the array doesn't return FindRes
-    FindRes typelike_info= find_typelike_e(&name);
+    const FindRes typelike_info= find_typelike_e(&name);
     AliasInfo* alias_info= find_alias_e(name);
 
     if (!typelike_info.elem && !alias_info)
@@ -705,7 +712,7 @@ errcode parse_types_identifier_statement() {
 
     *base= (TypeLikeInfo) {
         .general_type= general_ident->data.str,
-        .type= TYPE,
+        .type= TL_TYPE,
     };
 
     if (default_info.has_info) {}
@@ -951,9 +958,9 @@ void type_maps_to_matrix(TypeMatrix matrix, uint64_t left, uint64_t right, bool 
     }
 }
 
-errcode token_to_rule_value(TPPToken* tok, CoercionRuleValue* out) {
-    *out= (CoercionRuleValue){
-        .is_keyvalue= tok->type == KEYVALUE
+errcode token_to_rule_value(TPPToken* tok, RuleValue* out) {
+    *out= (RuleValue){
+        .is_builtin= tok->type == KEYVALUE
     };
 
     if (tok->type == KEYVALUE) {
@@ -1000,11 +1007,14 @@ errcode parse_coercions_keyvalue_statement() {
     CoercionRule_arr_add(&coercion_rules, rule);
 
     if (is_bi) {
-        CoercionRuleValue save= rule.left;
+        RuleValue save= rule.left;
         rule.left= rule.right;
         rule.right= save;
         CoercionRule_arr_add(&coercion_rules, rule);
     }
+
+    if (!expect(EOS)) // EAT THE EOS
+        return unexpected(EOS, "end of coercions keyvalue statement");
 
     return SUCC;
 }
@@ -1042,73 +1052,107 @@ errcode parse_coercions_identifier_statement() {
 
 void add_to_op_info(OperandInfo* operand, OperatorInfo* operator, uint64_t l, uint64_t r) {
     if (operator->op_type == OIGT_BINARY) {
-        add_to_type_matrix(operand->matrix, l, r);
+        add_to_type_matrix(operand->base.matrix, l, r);
     } else if (operator->op_type == OIGT_TRINARY) {
         assert(false);
     } else {
         // unary
-        operand->typemap |= 1 << l;
+        operand->base.typemap |= 1 << l;
     }
 }
 
-errcode parse_operands_identifier_statement() {
+errcode parse_operand_arrow(OperandInfo* info) {
+    if (expect(ARROW)) {
+        info->base.out_type= OUT_EXPLICIT;
+
+        TPPToken* out;
+        if (out= expect(IDENTIFIER), out) {
+            const uint pos= TypeLikeInfo_vec_search_i(&typelikes, &out->data.str);
+            if (pos == (uint)-1) {
+                return error("Output type must be a defined type. Found `%s`", out->data.str);
+            }
+            info->base.output_index= pos;
+        } else if (out= expect_keyword(UNWRAP), out) {
+            info->base.out_type= OUT_UNWRAP;
+        } else if (out= expect_keyword(WRAP), out) {
+            info->base.out_type= OUT_WRAP;
+
+            TPPToken* identifier= consume();
+            if (identifier->type != IDENTIFIER) {
+                return unexpected(IDENTIFIER, "After WRAP in OPERANDS statement");
+            }
+
+            const uint typefix= find_typefix(&identifier->data.str);
+            if (typefix == (uint)-1) {
+                return error("Identifier after WRAP must be a typefix identifier. Found `%s`\n", identifier->data.str);
+            }
+
+            info->base.output_index= typefix;
+        } else if (out= expect_keyword(LEFT), out) {
+            info->base.out_type= OUT_LEFT;
+        } else if (expect_keyword(RIGHT)) {
+            info->base.out_type= OUT_RIGHT;
+        } else {
+            return unexpected(IDENTIFIER, "explicit return type of operand statement");
+        }
+    }
+
+    return SUCC;
+}
+
+errcode parse_operand_identifier(OperandInfo* info) {
     TPPToken* op_t;
+
     if (op_t= expect(IDENTIFIER), !op_t) {
         return unexpected(IDENTIFIER, "Operand statement start");
     }
 
-    uint op_i= OperatorInfo_arr_search_i(&operators, op_t->data.str);
+    const uint op_i= OperatorInfo_arr_search_i(&operators, op_t->data.str);
     if (op_i == (uint)-1) {
         return error("Operator `%s` in operands statement has not been defined in operator list\n", op_t->data.str);
     }
 
     // structure is <TYPELIKE>(|<TYPELIKE>)* ((`||` or `&&`) <TYPELIKE>(|<TYPELIKE>)*)?;
     OperatorInfo* operator_info= OperatorInfo_arr_ptr(&operators, op_i);
-    OperandInfo operand_info= (OperandInfo) {
-        .op_type= operator_info->op_type,
-        .operator= operator_info,
-        .out_type= OUT_BASED
-    };
+    info->base.op_type= operator_info->op_type;
+    info->operator= operator_info;
+    info->base.out_type= OUT_BASED;
 
-    if (expect(ARROW)) {
-        operand_info.out_type= OUT_EXPLICIT;
+    return SUCC;
+}
 
-        TPPToken* out;
-        if (out= expect(IDENTIFIER), out) {
-            uint pos= TypeLikeInfo_vec_search_i(&typelikes, &out->data.str);
-            if (pos == (uint)-1) {
-                return error("Output type must be a defined type. Found `%s`", out->data.str);
-            }
-            operand_info.output_index= pos;
-        } else if (out= expect_keyword(UNWRAP), out) {
-            operand_info.out_type= OUT_UNWRAP;
-        } else {
-            return unexpected(IDENTIFIER, "explicit return type of operand statement");
-        }
-    }
+errcode parse_operands_identifier_statement() {
+    OperandInfo operand_info;
+    operand_info.base.is_keyvalue= false;
+
+    errcode ret= parse_operand_identifier(&operand_info);
+    if (ret.code != SUCCESS) return ret;
+
+    ret= parse_operand_arrow(&operand_info);
+    if (ret.code != SUCCESS) return ret;
 
     if (!expect(EQUALITY)) {
         return unexpected(EQUALITY, "Operand statement after identifier");
     }
 
-    if (operand_info.op_type == OIGT_BINARY)
-        operand_info.matrix= create_type_matrix();
+    if (operand_info.base.op_type == OIGT_BINARY)
+        operand_info.base.matrix= create_type_matrix();
     else
-        operand_info.typemap= 0;
+        operand_info.base.typemap= 0;
 
     do {
         uint64_t left= 0;
         parse_type_pipe_statement(&left);
 
-        bool bidirectional= expect(OR);
+        const bool bidirectional= expect(OR);
         if (bidirectional || expect(AND)) {
             uint64_t right= 0;
-            errcode r_ret= parse_type_pipe_statement(&right);
+            const errcode r_ret= parse_type_pipe_statement(&right);
 
             if (r_ret.code != SUCCESS)
                 return r_ret;
 
-            type_maps_to_matrix(operand_info.matrix, left, right, bidirectional);
+            type_maps_to_matrix(operand_info.base.matrix, left, right, bidirectional);
         } else {
             // this is a single valued, so we mark all as compatible with self
             //  e.g. 0 0 1 1 1 1 0 0 0 -> INTEGER x INTEGER, NATURAL x NATURAL
@@ -1119,7 +1163,7 @@ errcode parse_operands_identifier_statement() {
                     idx++;
                 }
 
-                add_to_op_info(&operand_info, operator_info, idx, idx);
+                add_to_op_info(&operand_info, operand_info.operator, idx, idx);
 
                 left >>= 1;
                 idx++;
@@ -1140,28 +1184,22 @@ int int_cmp(const uint32_t a, const uint32_t b) {
     return a - b;
 }
 
-LRBuiltInTypes keyword_to_lr_builtin(enum KEYWORDS keyword) {
-    switch (keyword) {
-        case VARIABLE:
-            return LRB_VARIABLE;
-        case ALL:
-            return LRB_ALL;
-        default:
-            assert(false);
-    }
-}
+errcode parse_lr_values_keyvalue_statement() {
+    const TPPToken* c= current();
 
-errcode parse_lr_values_identifier_statement() {
-    TPPToken* lv= expect_keyword(LVALUE);
-    if (!lv && !expect_keyword(RVALUE)) {
-        return error("Unexpected keyword in LRVALUES statement, expected either LVALUE or RVALUE keyword found `%s`\n",  get_tpptoken_type_string(current()->type));
+    if (c->type != KEYVALUE) {
+        return unexpected(KEYVALUE, "LR values statement");
     }
 
-    bool is_left= lv;
+    if (!expect_any_keyvalue(KV_LVALUE, KV_RVALUE, -1)) {
+        return error("Expected either LVALUE or RVALUE keywords to start the lr values statement. Found keyword `%s`\n", get_tpptoken_keyword_string(c->data.keyword));
+    }
+
+    const bool is_left= c->data.keyvalue == KV_LVALUE;
 
     LRInfo info= (LRInfo) {
         .is_left= is_left,
-        .rules= LRValueData_arr_create()
+        .rules= RuleValue_arr_create()
     };
 
     if (!expect(EQUALITY)) {
@@ -1169,14 +1207,16 @@ errcode parse_lr_values_identifier_statement() {
     }
 
     TPPToken* t;
-    while (t= consume(), t->type == KEYWORD || t->type == IDENTIFIER) {
-        LRValueData data= (LRValueData) {
-            .is_builtin= t->type == KEYWORD,
+    while (t= current(), t->type == KEYVALUE || t->type == IDENTIFIER) {
+        consume();
+
+        RuleValue data= (RuleValue) {
+            .is_builtin= t->type == KEYVALUE,
             .idx= -1
         };
 
-        if (t->type == KEYWORD) {
-            data.idx= keyword_to_lr_builtin(t->data.keyword);
+        if (t->type == KEYVALUE) {
+            data.idx= t->data.keyvalue;
         } else if (t->type == IDENTIFIER) {
             uint op= OperatorInfo_arr_search_i(&operators, t->data.str);
 
@@ -1192,7 +1232,7 @@ errcode parse_lr_values_identifier_statement() {
             assert(false);
         }
 
-        LRValueData_arr_add(&info.rules, data);
+        RuleValue_arr_add(&info.rules, data);
     }
 
     if (t->type != EOS) {
@@ -1205,6 +1245,75 @@ errcode parse_lr_values_identifier_statement() {
 
     print_lr_info(&info);
 
+    if (!expect(EOS)) // EAT THE EOS
+        return unexpected(EOS, "end of lr values keyvalue statement");
+
+    return SUCC;
+}
+
+errcode parse_operand_value_data(RuleValue* ret) {
+    const TPPToken* c= consume();
+
+    if (c->type == KEYVALUE) {
+        ret->is_builtin= true;
+        ret->idx= c->data.keyvalue;
+    } else if (c->type == IDENTIFIER) {
+        const struct TypeLikePos res= find_type_like(c->data.str);
+
+        if (res.type == TYPE_NOT_FOUND) {
+            return error("Identifier in Operand keyvalue statement is not a type-like (Typefix or Type). Found `%s`\n", c->data.str);
+        }
+
+        if (res.type == TYPE_ALIAS) {
+            return error("Cannot use aliases within Operand keyvalue statements, must be type or typefix value. Found `%s`\n", c->data.str);
+        }
+
+        ret->is_builtin= false;
+        ret->idx= res.pos;
+    }
+
+    return SUCC;
+}
+
+errcode parse_operands_keyvalue_statement() {
+    OperandInfo info;
+    info.base.is_keyvalue= true;
+
+    errcode ret= parse_operand_identifier(&info);
+    if (ret.code != SUCCESS) return ret;
+
+    ret= parse_operand_arrow(&info);
+    if (ret.code != SUCCESS) return ret;
+
+    if (!expect(EQUALITY)) {
+        return unexpected(EQUALITY, "Operand keyvalue statement after identifier or arrow section");
+    }
+
+    RuleValue left;
+    RuleValue right;
+
+    ret= parse_operand_value_data(&left);
+    if (ret.code != SUCCESS) return ret;
+
+    if (expect(OR)) {
+        return error("OR operator (||) is not supported in a typevalue operand statement, only && as only one rule can exist.\n");
+    }
+
+    if (expect(AND)) {
+        ret= parse_operand_value_data(&right);
+        if (ret.code != SUCCESS) return ret;
+    } else {
+        right= left;
+    }
+
+    info.base.left= left;
+    info.base.right= right;
+
+    if (!expect(EOS)) // EAT THE EOS
+        return unexpected(EOS, "end of operands keyvalues statement");
+
+    OperandInfo_arr_add(&operands, info);
+
     return SUCC;
 }
 
@@ -1215,7 +1324,7 @@ errcode parse_keyvalue_statement(const TPPToken* tok) {
         case SECTION_TYPES:
         case SECTION_OPERATORS:
         case SECTION_ALIASES:;
-            TPPToken* kv= find_first_in_statement(KEYVALUE);
+            const TPPToken* kv= find_first_in_statement(KEYVALUE);
 
             return error(
                 "Keyvalue values are only allowed in COERCIONS, LRVALUES, and OPERANDS statements. Found keyvalue %s in %s statement\n",
@@ -1238,6 +1347,17 @@ errcode parse_keyvalue_statement(const TPPToken* tok) {
         default:
             assert(false);
     }
+
+    if (err.code != SUCCESS) {
+        if (err.fatal) return err;
+        // if we did not successfully parse a line
+        //  then just go to the end of the line to skip bad tokens
+        TPPToken* c;
+        while (c= current(), c && c->type != EOS) consume();
+        consume();
+    }
+
+    return err;
 }
 
 errcode parse_identifier_statement(const TPPToken* identifier_token) {
@@ -1262,7 +1382,8 @@ errcode parse_identifier_statement(const TPPToken* identifier_token) {
             err= parse_operands_identifier_statement();
             break;
         case SECTION_LRVALUES:
-            err= parse_lr_values_identifier_statement();
+            err= error("LR value statements must begin with a keyvalue, specifically LVALUE or RVALUE. Found `%s`\n", get_tpptoken_type_string(identifier_token->type));
+            consume(); // todo: probably not needed as below consumes to EOS, so check, I won't
             break;
         case SECTION_NONE:
             err= error("Expected state header e.g. ALIASES, TYPEFIX, etc before identifier statement. Got identifier `%s`", identifier_token->data.str);
@@ -1292,14 +1413,14 @@ static void or_type_matrices(TypeMatrix dst, TypeMatrix or) {
 }
 
 static void add_to_type_matrix(TypeMatrix matrix, uint32_t x, uint32_t y) {
-    uint32_t width= typelikes.pos;
-    uint64_t index= y * width + x;
+    const uint32_t width= typelikes.pos;
+    const uint64_t index= y * width + x;
     matrix[index / 8] |= 1 << (index & 7);
 }
 
-static inline int get_from_type_matrix(TypeMatrix matrix, uint32_t x, uint32_t y) {
-    uint32_t width= typelikes.pos;
-    uint64_t index= y * width + x;
+static int get_from_type_matrix(TypeMatrix matrix, uint32_t x, uint32_t y) {
+    const uint32_t width= typelikes.pos;
+    const uint64_t index= y * width + x;
     return (matrix[index / 8] >> (index & 7)) & 1;
 }
 
@@ -1551,23 +1672,23 @@ void print_operand_info(const OperandInfo* info) {
         "  Output type: %s",
         info->operator->name,
         info->operator,
-        OUTPUT_TYPE_STRINGS[info->out_type]
+        OUTPUT_TYPE_STRINGS[info->base.out_type]
     );
 
-    switch (info->out_type) {
+    switch (info->base.out_type) {
         case OUT_UNWRAP:
             newline();
             break;
         case OUT_EXPLICIT:;
-            TypeLikeInfo* tl= TypeLikeInfo_vec_get_unsafe(&typelikes, info->output_index);
+            TypeLikeInfo* tl= TypeLikeInfo_vec_get_unsafe(&typelikes, info->base.output_index);
             printf(" (%s)\n", tl->name);
             break;
         case OUT_BASED:
         case OUT_LEFT:
         case OUT_RIGHT:
             printf("Based on %s\n",
-               info->out_type == OUT_BASED ? "types" :
-               info->out_type == OUT_LEFT ? "left type" : "right type"
+               info->base.out_type == OUT_BASED ? "types" :
+               info->base.out_type == OUT_LEFT ? "left type" : "right type"
             );
             break;
         case OUT_COUNT:
@@ -1576,10 +1697,10 @@ void print_operand_info(const OperandInfo* info) {
     }
 
     putz("\n  Operand info:\n");
-    if (info->op_type == OIGT_BINARY) {
-        print_type_matrix("    ", info->matrix);
-    } else if (info->op_type == OIGT_POSTFIX || info->op_type == OIGT_PREFIX) {
-        print_typemap_all("    ", info->typemap);
+    if (info->base.op_type == OIGT_BINARY) {
+        print_type_matrix("    ", info->base.matrix);
+    } else if (info->base.op_type == OIGT_POSTFIX || info->base.op_type == OIGT_PREFIX) {
+        print_typemap_all("    ", info->base.typemap);
     } else {
         assert(false);
     }
@@ -1599,13 +1720,13 @@ void print_lr_info(LRInfo* info) {
     }
 
     for (size_t i= 0; i < info->rules.pos; ++i) {
-        LRValueData* rule= LRValueData_arr_ptr(&info->rules, i);
+        RuleValue* rule= RuleValue_arr_ptr(&info->rules, i);
         printf(
             "    [%.2zu]: ",
             i
         );
         if (rule->is_builtin) {
-            puts(LRBuiltInTypesStrings[rule->idx]);
+            puts(KEYVALUE_STRINGS[rule->idx]);
         } else {
             OperatorInfo* op= OperatorInfo_arr_ptr(&operators, rule->idx);
 
@@ -1629,6 +1750,40 @@ static TPPToken* expect(const TPPType type) {
 #define MAX_C 4
 #define YES_RED C_RED"YES"C_RST
 #define NO_GRN C_GRN"NO"C_RST
+static TPPToken* expect_any_of(const char* context, const uint type, const uint max, va_list args) {
+    if (type == (uint)-1) {
+        error("expect_any requires at least one argument that is not -1\n");
+        assert(false);
+    }
+
+    const TPPToken* c_t= current();
+
+    if (c_t->type == type) {
+        return consume();
+    }
+
+    uint t, c= 0;
+    while (t= va_arg(args, uint), t != (uint)-1) {
+        if (c++ >= MAX_C || t >= max) {
+            error(
+                "Call to expect_any has unexpected value `%d` which is: \n"
+                "   c >= MAX_C  ? %s\n"
+                "   t >= COUNT  ? %s\n",
+                t,
+                t >= MAX_C ? YES_RED : NO_GRN,
+                t >= max ? YES_RED : NO_GRN
+            );
+            assert(false);
+        }
+
+        if (c_t->type == t) {
+            return consume();
+        }
+    }
+
+    return false;
+}
+
 static TPPToken* expect_any(uint type, ...) {
     va_list args;
     va_start(args, type);
@@ -1638,7 +1793,7 @@ static TPPToken* expect_any(uint type, ...) {
         assert(false);
     }
 
-    TPPToken* c_t= current();
+    const TPPToken* c_t= current();
 
     if (c_t->type == type) {
         return consume();
@@ -1666,13 +1821,43 @@ static TPPToken* expect_any(uint type, ...) {
     return false;
 }
 
-static TPPToken* expect_keyword(const enum KEYWORDS keyword) {
+static TPPToken* expect_any_keyword(uint keyword, ...) {
+    va_list args;
+    va_start(args, keyword);
+
+    TPPToken* res= expect_any_of("KEYWORD", KEYWORD, KEYWORD_COUNT, args);
+
+    va_end(args);
+
+    return res;
+}
+
+static TPPToken* expect_any_keyvalue(uint keyvalue, ...) {
+    va_list args;
+    va_start(args, keyvalue);
+
+    TPPToken* res= expect_any_of("KEYVALUE", KEYVALUE, KV_COUNT, args);
+
+    va_end(args);
+
+    return res;
+}
+
+static TPPToken* expect_of(const TPPType type, const uint ev) {
     const TPPToken* const c= current();
-    if (c->type == KEYWORD && c->data.keyword == keyword) {
+    if (c->type == type && c->data.keyword == ev) {
         return consume();
     }
 
     return NULL;
+}
+
+static TPPToken* expect_keyvalue(const KEYVALUES keyvalue) {
+    return expect_of(KEYVALUE, keyvalue);
+}
+
+static TPPToken* expect_keyword(const KEYWORDS keyword) {
+    return expect_of(KEYWORD, keyword);
 }
 
 static bool is_valid_index(uint index) {

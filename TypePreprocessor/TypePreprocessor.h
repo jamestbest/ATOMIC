@@ -5,19 +5,13 @@
 #ifndef TYPEPREPROCESSOR_H
 #define TYPEPREPROCESSOR_H
 
+#include "output/shared_types.h"
 #include "SharedIncludes/Array.h"
 #include "TPPParser.h"
 
 #include <stdlib.h>
 
 ARRAY_PROTO(uint, uint)
-
-typedef enum TYPE_LIKE_TYPES {
-    TL_TYPE_FIX,
-    TL_TYPE,
-    TL_BUILTIN,
-    TL_TYPE_LIKE_TYPES_COUNT
-} TYPE_LIKE_TYPES;
 
 typedef struct TypeLikeInfo {
     const char* general_type;
@@ -33,7 +27,7 @@ typedef struct TypeLikeInfo {
 typedef struct BuiltinInfo {
     TypeLikeInfo base;
 
-    LRBuiltInTypes idx;
+    KEYVALUES idx;
 } BuiltinInfo;
 
 typedef struct TypeFixInfo {
@@ -69,76 +63,30 @@ typedef struct AliasInfo {
     uint64_t type_map;
 } AliasInfo;
 
-typedef uint8_t* TypeMatrix;
-
 typedef struct CoercionInfo {
     TypeMatrix matrix;
 } CoercionInfo;
 
-typedef struct CoercionRuleValue {
-    union {
-        struct {
-            uint16_t is_keyvalue: 1;
-            uint16_t idx: 15;
-        };
-        uint16_t cmpable;
-    };
-} CoercionRuleValue;
-
-typedef struct CoercionRule {
-    CoercionRuleValue left;
-    CoercionRuleValue right;
-} CoercionRule;
-
 int int_cmp(uint32_t a, uint32_t b);
 
-typedef enum OutputType {
-    OUT_BASED,
-    OUT_EXPLICIT,
-    OUT_LEFT,
-    OUT_RIGHT,
-    OUT_UNWRAP,
-    OUT_COUNT
-} OutputType;
-
-extern const char* OUTPUT_TYPE_STRINGS[OUT_COUNT + 1];
-
 typedef struct OperandInfo {
+    OperandInfoBase base;
+
     OperatorInfo* operator;
-
-    union {
-        TypeMatrix matrix; // for binary
-        uint64_t typemap;  // for unary
-        // [[todo]] how to support trinary operators?
-    };
-
-    OutputType out_type         :  3;
-    uint16_t output_index       : 11; // for explicit outputs
-    uint16_t op_type            :  2;
 } OperandInfo;
-
-typedef struct LRValueData {
-    union {
-        struct {
-            uint32_t is_builtin: 1;
-            uint32_t idx: 3;
-        };
-        uint32_t cmpable;
-    };
-} LRValueData;
 
 VECTOR_PROTO(TypeFixInfo , TypeFixInfo)
 VECTOR_PROTO(TypeLikeInfo, TypeLikeInfo)
 ARRAY_PROTO (OperatorInfo, OperatorInfo)
 ARRAY_PROTO (AliasInfo   , AliasInfo)
 ARRAY_PROTO (OperandInfo , OperandInfo)
-ARRAY_PROTO (LRValueData , LRValueData)
+ARRAY_PROTO (RuleValue , RuleValue)
 ARRAY_PROTO (CoercionRule, CoercionRule)
 
 typedef struct LRInfo {
     uint8_t is_left: 1;
 
-    LRValueDataArray rules;
+    RuleValueArray rules;
 } LRInfo;
 
 extern TypeLikeInfoVector typelikes;

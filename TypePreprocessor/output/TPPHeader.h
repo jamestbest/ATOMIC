@@ -6,6 +6,18 @@
 #define ATOMIC_TPPHEADER_H
 
 #include <stdint.h>
+#include "shared_types.h"
+
+typedef struct encodedType {
+    uint64_t general: 4;    // 2^4= 16 different types
+    uint64_t type: 5;       // 2^5= 32 different types
+    uint64_t size: 4;       // 2^4= 16 bytes
+    uint64_t tf_offset: 16; // typefix offset e.g. POINTER
+    uint64_t is_builtin: 1;
+    uint64_t builtin_idx: 3;
+    uint64_t is_lvalue:  1;
+    // todo to support multiple tfs need a map
+} encodedType;
 
 typedef struct OpInfo {
     uint8_t precedence: 5;
@@ -13,31 +25,7 @@ typedef struct OpInfo {
     uint8_t type: 2;
 } OpInfo;
 
-typedef enum OutputType {
-    OUT_BASED,
-    OUT_EXPLICIT,
-    OUT_LEFT,
-    OUT_RIGHT,
-    OUT_UNWRAP,
-    OUT_COUNT
-} OutputType;
-
-typedef enum TYPE_LIKE_TYPES {
-    TYPE_FIX,
-    TYPE,
-    TYPE_LIKE_TYPES_COUNT
-} TYPE_LIKE_TYPES;
-
-typedef struct OperandInfo {
-    union {
-        uint8_t* matrix;
-        uint64_t typemap;
-    };
-
-    OutputType out_type         :  3;
-    uint16_t output_index       : 11; // for explicit outputs
-    uint16_t op_type            :  2;
-} OperandInfo;
+typedef OperandInfoBase OperandInfo;
 
 typedef struct uintArrayS {
     const size_t size;
@@ -71,5 +59,15 @@ typedef union TypeLike {
 } TypeLike;
 
 typedef uint8_t* TypeMatrix;
+
+extern OpInfo OP_INFO[42];
+
+typedef enum DefaultOperatorInfoGType {
+    OIGT_PREFIX,
+    OIGT_POSTFIX,
+    OIGT_UNARY,
+    OIGT_BINARY,
+    OIGT_TRINARY
+} DefaultOperatorInfoGType;
 
 #endif // ATOMIC_TPPHEADER_H

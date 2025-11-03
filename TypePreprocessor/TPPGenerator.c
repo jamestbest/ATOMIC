@@ -4,6 +4,7 @@
 
 #include "TPPGenerator.h"
 
+#include "SharedIncludes/Helper_File.h"
 #include "TPPGeneratorInternal.h"
 #include "TPPParser.h"
 
@@ -14,11 +15,15 @@ static void generate_types(FILE* header_file) {
 }
 
 static void generate_code_preamble(FILE* code_file, const char* header_file_name) {
+    char* just_file_name= get_file_name(header_file_name);
+
     fprintf(
         code_file,
         "#include \"%s\"\n\n",
-        header_file_name
+        just_file_name
     );
+
+    free(just_file_name);
 
     fputs(
         "#include <stdint.h>\n\n",
@@ -26,16 +31,45 @@ static void generate_code_preamble(FILE* code_file, const char* header_file_name
     );
 }
 
+static void generate_header_extern(FILE* header_file) {
+    fprintf(
+        header_file,
+        "extern ATOM_CT__LEX_TYPES_ENUM GENERAL_TO_TYPES[GTYPE_COUNT];\n"
+        "extern ATOM_CT__LEX_TYPES_GENERAL_ENUM TYPES_TO_GENERAL[TYPE_COUNT];\n"
+        "\n"
+        "extern const char* ATOM_CT__LEX_TYPES_RAW[TYPE_COUNT];\n"
+        "extern const char* ATOM_CT__LEX_TYPES_GENERAL_RAW[GTYPE_COUNT];\n"
+        "extern const char* ATOM_CT__LEX_TYPES_GENERAL_SMALL_RAW[GTYPE_COUNT];\n"
+        "extern const char* ATOM_CT__LEX_OPERATORS_RAW[OP_COUNT];\n"
+        "\n"
+        "extern const TypeLike TYPE_INFO[GTYPE_COUNT];\n"
+        "\n"
+    );
+}
+
+static void generate_header_examble(FILE* header_file) {
+    fprintf(
+        header_file,
+        "#endif // ENUMOUT_H\n"
+    );
+}
+
 static void generate_header_preamble(FILE* header_file) {
+    fprintf(
+        header_file,
+        "#ifndef ENUMOUT_H\n"
+        "#define ENUMOUT_H\n\n"
+    );
+
     size_t type_count= 0;
-    size_t gtype_count= typelikes.pos;
+    const size_t gtype_count= typelikes.pos;
 
     for (size_t i= 0; i < typelikes.pos; ++i) {
         TypeLikeInfo* base= TypeLikeInfo_vec_get_unsafe(&typelikes, i);
 
         if (base->type != TL_TYPE) continue;
 
-        TypeInfo* info= (TypeInfo*)base;
+        const TypeInfo* info= (TypeInfo*)base;
         if (info->has_variable_sizes) {
             type_count += info->sizes.pos;
         } else {
@@ -47,10 +81,12 @@ static void generate_header_preamble(FILE* header_file) {
         header_file,
         "#define TYPE_COUNT %zu\n"
         "#define GTYPE_COUNT %zu\n"
-        "#define TYPEFIX_COUNT %zu\n\n",
+        "#define TYPEFIX_COUNT %zu\n"
+        "#define OP_COUNT %zu\n\n",
         type_count,
         gtype_count,
-        gtype_count - type_count
+        typefix_mirror.pos,
+        operators.pos
     );
 }
 
@@ -161,6 +197,24 @@ static void generate_enums(FILE* enum_file) {
     );
 }
 
+static void generate_RuleValue(FILE* file, const RuleValue* rule, const char* prefix, const char* entry_name, bool last_entry) {
+    fprintf(
+        file,
+        "%s.%s= {\n"
+        "%s  .is_builtin= %u,\n"
+        "%s  .idx= %u\n"
+        "%s}%c\n",
+        prefix,
+        entry_name,
+        prefix,
+        rule->is_builtin,
+        prefix,
+        rule->idx,
+        prefix,
+        last_entry ? ' ' : ','
+    );
+}
+
 static void generate_arrays(FILE* code_file) {
     // arrays for
     /*
@@ -265,6 +319,106 @@ static void generate_arrays(FILE* code_file) {
 
     /*-----------------------------------/
      *                                  *
+     *           GTYPE to TYPE          *
+     *                                  *
+    /-----------------------------------*/
+    fprintf(
+        code_file,
+        "ATOM_CT__LEX_TYPES_ENUM GENERAL_TO_TYPES[GTYPE_COUNT]= {\n"
+    );
+    for (size_t i= 0; i < typelikes.pos; ++i) {
+        TypeLikeInfo* info= TypeLikeInfo_vec_get_unsafe(&typelikes, i);
+
+        fprintf(
+            code_file,
+            "\t[GTYPE_%s]= ",
+            info->general_type
+        );
+
+        if (info->type == TL_TYPE_FIX) {
+            fputs("-1", code_file);
+        } else if (info->type == TL_TYPE) {
+            const TypeInfo* type= (TypeInfo*)info;
+            fputs("TYPE_", code_file);
+            fputs_upper(code_file, info->name);
+
+            if (type->has_variable_sizes) {
+                fprintf(
+                    code_file,
+                    "%d",
+                    uint_arr_get(&type->sizes, 0)
+                );
+            }
+        } else {
+            assert(false);
+        }
+
+        fputc(i != typelikes.pos - 1 ? ',' : ' ', code_file);
+        fnewline(code_file);
+    }
+    fprintf(
+        code_file,
+        "};\n\n"
+    );
+
+    /*-----------------------------------/
+     *                                  *
+     *           TYPE to GTYPE          *
+     *                                  *
+    /-----------------------------------*/
+    fprintf(
+        code_file,
+        "ATOM_CT__LEX_TYPES_GENERAL_ENUM TYPES_TO_GENERAL[TYPE_COUNT]= {\n"
+    );
+    for (size_t i= 0; i < typelikes.pos; ++i) {
+        const TypeLikeInfo* info= TypeLikeInfo_vec_get_unsafe(&typelikes, i);
+
+        if (info->type != TL_TYPE) continue;
+
+        const TypeInfo* type= (TypeInfo*)info;
+        if (type->has_variable_sizes) {
+            for (size_t j= 0; j < type->sizes.pos; ++j) {
+                uint size= uint_arr_get(&type->sizes, j);
+
+                fprintf(
+                    code_file,
+                    "\t[TYPE_"
+                );
+                fputs_upper(code_file, info->name);
+                fprintf(
+                    code_file,
+                    "%u]= GTYPE_%s",
+                    size,
+                    info->general_type
+                );
+                fputc((i != typelikes.pos - 1) || (j != type->sizes.pos - 1) ? ',' : ' ', code_file);
+                fnewline(code_file);
+            }
+        } else {
+            fprintf(
+                code_file,
+                "\t[TYPE_"
+            );
+            fputs_upper(code_file, info->name);
+            fprintf(
+                code_file,
+                "]= GTYPE_%s",
+                info->general_type
+            );
+
+            fputc(i != typelikes.pos - 1 ? ',' : ' ', code_file);
+            fnewline(code_file);
+        }
+    }
+    fprintf(
+        code_file,
+        "};\n\n"
+    );
+
+
+
+    /*-----------------------------------/
+     *                                  *
      *             TYPE INFO            *
      *                                  *
     /-----------------------------------*/
@@ -341,7 +495,7 @@ static void generate_arrays(FILE* code_file) {
             "           },\n",
             base->general_type,
             base->type == TL_TYPE ? "t" : base->type == TL_TYPE_FIX ? "tf" : "ERROR_BAD_TYPE",
-            base->type == TL_TYPE ? "TYPE" : base->type == TL_TYPE_FIX ? "TYPE_FIX" : "ERROR_BAD_TYPE",
+            base->type == TL_TYPE ? "TL_TYPE" : base->type == TL_TYPE_FIX ? "TL_TYPE_FIX" : "ERROR_BAD_TYPE",
             base->size
         );
         if (base->type == TL_TYPE) {
@@ -498,8 +652,44 @@ static void generate_arrays(FILE* code_file) {
 
     fprintf(
         code_file,
-        "TypeMatrix %s= (TypeMatrix) COERCION_INTERNAL;\n\n",
+        "TypeMatrix %s= COERCION_INTERNAL;\n\n",
         COERCION_MATRIX_NAME
+    );
+
+    fprintf(
+        code_file,
+        "CoercionRule COERCION_RULES[%zu]= {\n",
+        coercion_rules.pos
+    );
+    for (size_t i= 0; i < coercion_rules.pos; ++i) {
+        const CoercionRule* rule= CoercionRule_arr_ptr(&coercion_rules, i);
+
+        fprintf(
+            code_file,
+            "  [%zu]= (CoercionRule){\n",
+            i
+        );
+        generate_RuleValue(code_file,
+            &rule->left,
+            "    ",
+            "left",
+            false
+        );
+        generate_RuleValue(code_file,
+            &rule->right,
+            "    ",
+            "right",
+            true
+        );
+        fprintf(
+            code_file,
+           "  }%c\n",
+           i != coercion_rules.pos - 1 ? ',' : ' '
+        );
+    }
+    fprintf(
+        code_file,
+        "};\n\n"
     );
 
     /*-----------------------------------/
@@ -510,12 +700,13 @@ static void generate_arrays(FILE* code_file) {
 
     // we need the type matrix for all BINARY operands
     for (size_t i= 0; i < operands.pos; ++i) {
-        OperandInfo* info= OperandInfo_arr_ptr(&operands, i);
+        const OperandInfo* info= OperandInfo_arr_ptr(&operands, i);
+        const OperandInfoBase* base= (OperandInfoBase*)info;
 
-        if (info->op_type != OIGT_BINARY)
-            continue;
+        if (base->is_keyvalue) continue;
+        if (base->op_type != OIGT_BINARY) continue;
 
-        TypeMatrix matrix= info->matrix;
+        TypeMatrix matrix= base->matrix;
 
         output_internal_matrix(
             code_file,
@@ -533,7 +724,8 @@ static void generate_arrays(FILE* code_file) {
 
     // now we have the main bulk of information
     for (size_t i= 0; i < operands.pos; ++i) {
-        OperandInfo* info= OperandInfo_arr_ptr(&operands, i);
+        const OperandInfo* info= OperandInfo_arr_ptr(&operands, i);
+        const OperandInfoBase* base= (OperandInfoBase*)info;
 
         // E.G. [OP_PLUS]= (OperandInfo){\n
         fprintf(code_file,
@@ -542,31 +734,53 @@ static void generate_arrays(FILE* code_file) {
                 info->operator->name
         );
 
-        // E.G. \t\t.matrix= PLUS_MATRIX
-        //      \t\t.typemap= 123
-        if (info->op_type == OIGT_BINARY) {
-            fprintf(code_file,
-                "\t\t.matrix= %s%s,\n",
-                info->operator->name,
-                "_MATRIX"
+        if (base->is_keyvalue) {
+            generate_RuleValue(
+                code_file,
+                &info->base.left,
+                "\t\t",
+                "left",
+                false
             );
-        } else if (info->op_type == OIGT_PREFIX || info->op_type == OIGT_POSTFIX) {
-            fprintf(code_file,
-                "\t\t.typemap=%lld,\n",
-                info->typemap
-            );
+
+            if (base->op_type == OIGT_BINARY) {
+                generate_RuleValue(
+                    code_file,
+                    &info->base.right,
+                    "\t\t",
+                    "right",
+                    false
+                );
+            }
         } else {
-            assert(false);
+            // E.G. \t\t.matrix= PLUS_MATRIX
+            //      \t\t.typemap= 123
+            if (base->op_type == OIGT_BINARY) {
+                fprintf(code_file,
+                    "\t\t.matrix= %s%s,\n",
+                    info->operator->name,
+                    "_MATRIX"
+                );
+            } else if (base->op_type == OIGT_PREFIX || base->op_type == OIGT_POSTFIX) {
+                fprintf(code_file,
+                    "\t\t.typemap=%lld,\n",
+                    base->typemap
+                );
+            } else {
+                assert(false);
+            }
         }
 
         fprintf(code_file,
             "\t\t.op_type= %u,\n"
-                "\t\t.out_type= %u,\n"
-                "\t\t.output_index= %u\n"
+                "\t\t.out_type= %s,\n"
+                "\t\t.output_index= %u,\n"
+                "\t\t.is_keyvalue= %u\n"
                 "\t}%c\n",
-            info->op_type,
-            info->out_type,
-            info->output_index,
+            base->op_type,
+            OUTPUT_TYPE_STRINGS[base->out_type],
+            base->output_index,
+            base->is_keyvalue,
             i == operands.pos - 1 ? ' ' : ','
         );
     }
@@ -608,6 +822,8 @@ errcode generate(FILE* header_output, FILE* code_output, const char* header_file
     generate_header_preamble(header_output);
     generate_types(header_output);
     generate_enums(header_output);
+    generate_header_extern(header_output);
+    generate_header_examble(header_output);
 
     fclose(header_output);
 

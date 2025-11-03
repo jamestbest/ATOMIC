@@ -11,12 +11,12 @@
 #define COMP_STR_LEN(STR) (sizeof (STR) - 1)
 #define DBG_SPECIAL_SEQ 0x12345678
 
-const char* KEYVALUE_STRINGS[KEYVALUE_COUNT]= {
-    [ALL]= "ALL",
-    [LVALUE] = "LVALUE",
-    [RVALUE] = "RVALUE",
-    [TYPE]= "TYPE",
-    [VARIABLE] = "VARIABLE"
+const char* KEYVALUE_STRINGS[KV_COUNT]= {
+    [KV_ALL]= "ALL",
+    [KV_LVALUE] = "LVALUE",
+    [KV_RVALUE] = "RVALUE",
+    [KV_TYPE]= "TYPE",
+    [KV_VARIABLE] = "VARIABLE"
 };
 
 const char* KEYWORD_STRINGS[KEYWORD_COUNT] = {
