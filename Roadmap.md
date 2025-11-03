@@ -30,13 +30,15 @@ Process the characters to create base_tokens
  - [X] lex operators
 
 ## PARSER
- - [ ] generate an AST of the base_tokens
- - [ ] parse expressions
- - [ ] type checking
- - [ ] environments hold variables/functions 
+ - [X] generate an AST of the base_tokens
+ - [X] parse expressions
+ - [~] type checking
+ - [X] environments hold variables/functions 
 
 ## OPTIMIZER
 
 ## CODEGEN
+ - [~] byte code output for VM
 
 ## RUNTIME
+ - [~] basic VM
