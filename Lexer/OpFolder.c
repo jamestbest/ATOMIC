@@ -376,5 +376,5 @@ Token* consume(void) {
 }
 
 Token* current(void) {
-    return arr_ptr(btokens, t_pos);
+    return token_arr_ptr(btokens, t_pos);
 }
