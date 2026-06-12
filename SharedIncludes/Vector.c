@@ -4,10 +4,11 @@
 
 #include "Vector.h"
 
-#include "../Errors.h"
+#include "Errors.h"
 #include "Helper_Math.h"
 
 #include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const Vector VEC_ERR = (Vector){
