@@ -256,13 +256,13 @@ ArrPosCharp longest_word_in_arrs(const char* word, const uint arr_count, ...) {
 
         if (ret.array == NULL || ret.posCharp.arr_pos == -1) {
             ret.posCharp = res;
-            ret.array = array.arr;
+            ret.array = (char**)array.arr;
             continue;
         }
 
         if (len(ret.array[ret.posCharp.arr_pos]) < len(array.arr[res.arr_pos])) {
             ret.posCharp = res;
-            ret.array = array.arr;
+            ret.array = (char**)array.arr;
         }
     }
 
