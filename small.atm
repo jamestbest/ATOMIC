@@ -4,6 +4,10 @@ entry func main(): i4 {
         x = x + 1
     }
 
+    for i: i4= 0 to 10 {
+        x= i + x
+    }
+
     b: i4= x + x
 
     ret 8 + test(b + test(1 + 1))
