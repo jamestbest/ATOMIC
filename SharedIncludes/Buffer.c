@@ -91,6 +91,23 @@ int buffer_fconcat(Buffer* buffer, const char* format, ...) {
     return EXIT_SUCCESS;
 }
 
+int buffer_insert(Buffer* buffer, const char* addition, size_t insert_pos) {
+    const size_t data_right= buffer->pos - insert_pos;
+    const size_t add_len= strlen(addition);
+
+    if (add_len + buffer->pos + 1 >= buffer->size) {
+        const uint new_size = buffer->size + add_len + 1;
+        const int res= buffer_resize_aligned(buffer, new_size, BUFF_ALIGN);
+
+        if (res != EXIT_SUCCESS) return res;
+    }
+
+    memmove(&buffer->data[insert_pos + add_len], &buffer->data[insert_pos], data_right);
+    memcpy(&buffer->data[insert_pos], addition, add_len);
+
+    return EXIT_SUCCESS;
+}
+
 char* buffer_steal(Buffer* buffer, uint new_size) {
     //can no longer assume that buffer.data is not NULL as a theft from buffer can leave realloced result as null
     //alt - could return NULL from steal - ?

@@ -25,6 +25,7 @@ int buffer_resize(Buffer* buffer, uint size);
 int buffer_concat(Buffer *buffer, char *to_add);
 int buffer_nconcat(Buffer* buffer, char* to_add, uint32_t d_size);
 int buffer_fconcat(Buffer* buffer, const char* format, ...);
+int buffer_insert(Buffer* buffer, const char* addition, size_t insert_pos);
 char* buffer_steal(Buffer* buffer, uint new_size);
 char* buffer_copy(Buffer* buffer);
 void buffer_clear(Buffer* buffer);
