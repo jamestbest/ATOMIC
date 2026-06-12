@@ -64,6 +64,12 @@ add_executable(ATOMICLI
         TypePreprocessor/output/TPPHeader.h
         TypePreprocessor/output/enum-temp.c
         TypePreprocessor/output/matrix-out.c
+        Parser2/Parser.c
+        Parser2/Parser.h
+        Parser2/Node.c
+        Parser2/Node.h
+        Parser2/Parserr.c
+        Parser2/Parserr.h
 )
 
 add_hadron_support(ATOMICLI)
