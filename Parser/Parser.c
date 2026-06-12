@@ -5,7 +5,7 @@
 #include "Parser.h"
 
 const tokenArray* ptokens;
-const Vector* plines;
+// const Vector* plines;
 int t_pos;
 
 Node* file_global_node;
@@ -29,11 +29,8 @@ static NodeRet parse_proc_statement(void);
 static NodeRet parse_entry_statement(void);
 static NodeRet parse_continue_statement(void);
 static NodeRet parse_break_statement(void);
-static NodeRet RETIRED_parse_unary_statement(void);
 
 static NodeRet parse_subroutine_call(void);
-
-static NodeRet RETIRED_parse_un_op_statement(void);
 
 static NodeRet parse_expression_statement(void);
 
@@ -700,8 +697,7 @@ NodeRet parse_for_statement(void) {
      */
     Token* keyword = consume();
 
-    const bool usingParens = expect(PAREN_OPEN);
-
+    const bool usingParens= expect(PAREN_OPEN);
     if (usingParens) consume();
 
     const NodeRet setup = parse_for_setup();
@@ -732,6 +728,7 @@ NodeRet parse_for_statement(void) {
         assert(false);
     }
 
+    Node* scopeNode= create_parent_node(STATEMENT, ST_BLOCK, NULL);
     Node* forNode = create_parent_node(STATEMENT, ST_FOR, keyword);
 
     add_statement_to_children(forNode, setup.node);
@@ -740,7 +737,8 @@ NodeRet parse_for_statement(void) {
 
     vector_add(&forNode->children, body.node);
 
-    return (NodeRet){forNode, SUCCESS};
+    vector_add(&scopeNode->children, forNode);
+    return (NodeRet){scopeNode, SUCCESS};
 }
 
 NodeRet parse_while_statement(void) {
