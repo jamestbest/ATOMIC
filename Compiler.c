@@ -83,7 +83,7 @@ CompileRet compile_file(const char* entry_point, const char* out_format, const c
 
     // we no longer need the base tokens BUT the token data inside is now under the control of the folded tokens
     // we shouldn't call free_tokens unless something went wrong, otherwise we will double free the data
-    arr_destroy(&base_tokens);
+    token_arr_destroy(&base_tokens);
 
     if (foldRet != SUCCESS) {
         free_tokens(&folded_tokens);
