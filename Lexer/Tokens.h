@@ -62,6 +62,40 @@ typedef enum TokenType {
     NEWLINE,
 } TokenType;
 
+const char* TOKEN_TYPE_STRS[]= {
+    [TOKEN_INVALID]= "TOKEN_INVALID",
+    [IDENTIFIER]= "IDENTIFIER",
+    [KEYWORD]= "KEYWORD",
+    [TYPE]= "TYPE",
+    [LIT_STR]= "LIT_STR",
+    [LIT_CHR]= "LIT_CHR",
+    [LIT_INT]= "LIT_INT",
+    [LIT_FLOAT]= "LIT_FLOAT",
+    [LIT_BOOL]= "LIT_BOOL",
+    [LIT_NAV]= "LIT_NAV",
+    [EXPR_BIN]= "EXPR_BIN",
+    [EXPR_UN]= "EXPR_UN",
+    [EXPR_UN_PRE]= "EXPR_UN_PRE",
+    [EXPR_UN_POST]= "EXPR_UN_POST",
+    [EXPR_TRINARY]= "EXPR_TRINARY",
+    [BRACKET_OPEN]= "BRACKET_OPEN",
+    [BRACKET_CLOSE]= "BRACKET_CLOSE",
+    [CURLY_OPEN]= "CURLY_OPEN",
+    [CURLY_CLOSE]= "CURLY_CLOSE",
+    [PAREN_OPEN]= "PAREN_OPEN",
+    [PAREN_CLOSE]= "PAREN_CLOSE",
+    [COMMA]= "COMMA",
+    [TYPE_SET]= "TYPE_SET",
+    [TYPE_IMPL_CAST]= "TYPE_IMPL_CAST",
+    [CARROT]= "CARROT",
+    [COMMENT]= "COMMENT",
+    [DELIMITER]= "DELIMITER",
+    [BACKSLASH]= "BACKSLASH",
+    [WS_S]= "WS_S",
+    [WS_T]= "WS_T",
+    [NEWLINE]= "NEWLINE"
+};
+
 typedef enum ATOM_CT__LEX_KEYWORD_ENUM {
     FOR, TO, DO,
     WHILE,
@@ -118,7 +152,7 @@ typedef struct Token {
         uint64_t natural;
         long double real;
         encodedType type;
-        int enum_pos;
+        unsigned int enum_pos;
     } data;
 
     Position pos;
