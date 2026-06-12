@@ -4,10 +4,10 @@
 
 #include "Node.h"
 
-static void print_node_basic(Node* node, Array* levels);
+static void print_node_basic(Node* node, NLEnumArray* levels);
 static void printpostfix(Node* node);
 
-ARRAY_ADD(NodeLevelPrintType, nodeLevelEnum)
+ARRAY_ADD(NodeLevelPrintType, NLEnum)
 
 // this is a bit mask
 //  and so --probably-- definitely will be worse in data struct
@@ -184,30 +184,30 @@ void free_node_head(Node* node) {
 }
 
 void print_top_level_node(Node* tl_node) {
-    Array levels = arr_construct(sizeof (NodeLevelPrintType), 10);
+    NLEnumArray levels = NLEnum_arr_construct(10);
 
     print_node_basic(tl_node, &levels);
 
-    arr_destroy(&levels);
+    NLEnum_arr_destroy(&levels);
 }
 
-void print_node_levels(const Array* levels) {
+void print_node_levels(const NLEnumArray* levels) {
     for (uint i = 0; i < levels->pos; ++i) {
-        putz(nodeLevelToString(nodeLevelEnum_arr_get(levels, i)));
+        putz(nodeLevelToString(NLEnum_arr_get(levels, i)));
     }
 }
 
-void print_node_end_child(Node* child, Array* levels) {
+void print_node_end_child(Node* child, NLEnumArray* levels) {
     print_node_levels(levels);
 
     putz(nodeLevelToString(LINK_END));
 
-    nodeLevelEnum_arr_add(levels, BLANK);
+    NLEnum_arr_add(levels, BLANK);
     print_node_basic(child, levels);
-    nodeLevelEnum_arr_pop(levels);
+    NLEnum_arr_pop(levels);
 }
 
-void print_node_multi_child(Node* parent, Array* levels) {
+void print_node_multi_child(Node* parent, NLEnumArray* levels) {
     for (uint i = 0; i < parent->children.pos - 1; ++i) {
         Node* child = parent->children.arr[i];
 
@@ -215,9 +215,9 @@ void print_node_multi_child(Node* parent, Array* levels) {
 
         putz(nodeLevelToString(LINK));
 
-        nodeLevelEnum_arr_add(levels, DRAW_DOWN);
+        NLEnum_arr_add(levels, DRAW_DOWN);
         print_node_basic(child, levels);
-        nodeLevelEnum_arr_pop(levels);
+        NLEnum_arr_pop(levels);
     }
 
     print_node_end_child(parent->children.arr[parent->children.pos - 1], levels);
@@ -289,7 +289,7 @@ void print_node_summary(const Node* node) {
         node->children.arr ? node->children.pos : 0);
 }
 
-void print_node_basic(Node *node, Array *levels) {
+void print_node_basic(Node* node, NLEnumArray* levels) {
     if (node == NULL) {
         puts("[[DEV]] NULL NODE IN PRINTING");
         return;

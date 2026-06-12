@@ -58,4 +58,10 @@ NodeRet parsewarn(const ParseWarns warningCode, Token* parent_token, Token* issu
 
 #define ATOM_CT__PARSEWARN_SA_SHADOWS_PREVIOUS_DECL "Declaration of '%s' shadows previous declaration\n"
 
+
+
+
+// NEW DEFINITIONS
+NodeRet parser_error(const char* message, Token* parent_tok, Token* issue_tok, ...);
+
 #endif // ATOMIC_PARSERR_H

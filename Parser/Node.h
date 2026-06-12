@@ -152,7 +152,7 @@ typedef enum NodeLevelPrintType {
     LINK_END        // `-
 } NodeLevelPrintType;
 
-ARRAY_PROTO(NodeLevelPrintType, nodeLevelEnum)
+ARRAY_PROTO(NodeLevelPrintType, NLEnum)
 
 bool is_stmt(NodeGeneralType type);
 
